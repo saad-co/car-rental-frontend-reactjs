@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { Dropdown } from '../ui/dropdown/Dropdown'
+import { useState } from "react";
+import { Dropdown } from "../ui/dropdown/Dropdown";
 
 // PLACEHOLDER: static user until login exists. It will show the signed-in user's
 // email and role (and a Sign out button) once authentication is wired in.
-const placeholderUser = { name: 'Staff User', email: 'staff@example.com' }
+const placeholderUser = { name: "Staff User", email: "staff@example.com" };
 
 export default function UserDropdown() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="relative">
@@ -22,7 +22,7 @@ export default function UserDropdown() {
         </span>
         <svg
           className={`stroke-gray-500 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
+            isOpen ? "rotate-180" : ""
           }`}
           width="18"
           height="20"
@@ -53,5 +53,5 @@ export default function UserDropdown() {
         </span>
       </Dropdown>
     </div>
-  )
+  );
 }

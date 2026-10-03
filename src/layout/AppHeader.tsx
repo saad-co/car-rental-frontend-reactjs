@@ -1,21 +1,21 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
-import { useSidebar } from '../context/SidebarContext'
-import UserDropdown from '../components/header/UserDropdown'
+import { useState } from "react";
+import { Link } from "react-router";
+import { useSidebar } from "../context/SidebarContext";
+import UserDropdown from "../components/header/UserDropdown";
 
 const AppHeader: React.FC = () => {
   // On mobile the user menu is hidden behind the "three dots" button.
-  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false)
+  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
-  const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar()
+  const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
   const handleToggle = () => {
     if (window.innerWidth >= 1280) {
-      toggleSidebar() // xl and above: collapse / expand the desktop sidebar
+      toggleSidebar(); // xl and above: collapse / expand the desktop sidebar
     } else {
-      toggleMobileSidebar() // below xl: slide the sidebar in / out
+      toggleMobileSidebar(); // below xl: slide the sidebar in / out
     }
-  }
+  };
 
   return (
     <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 xl:border-b">
@@ -23,7 +23,7 @@ const AppHeader: React.FC = () => {
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 sm:gap-4 xl:justify-normal xl:border-b-0 xl:px-0 lg:py-4">
           <button
             className={`items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 flex lg:h-11 lg:w-11 xl:border ${
-              isMobileOpen ? 'bg-gray-100' : ''
+              isMobileOpen ? "bg-gray-100" : ""
             }`}
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
@@ -62,7 +62,10 @@ const AppHeader: React.FC = () => {
           </button>
 
           {/* Text logo (mobile only; the sidebar shows it on desktop). */}
-          <Link to="/" className="text-lg font-semibold text-gray-900 xl:hidden">
+          <Link
+            to="/"
+            className="text-lg font-semibold text-gray-900 xl:hidden"
+          >
             Car Rental
           </Link>
 
@@ -90,14 +93,14 @@ const AppHeader: React.FC = () => {
 
         <div
           className={`${
-            isApplicationMenuOpen ? 'flex' : 'hidden'
+            isApplicationMenuOpen ? "flex" : "hidden"
           } items-center justify-end w-full gap-4 px-5 py-4 xl:flex shadow-theme-md xl:px-0 xl:shadow-none`}
         >
           <UserDropdown />
         </div>
       </div>
     </header>
-  )
-}
+  );
+};
 
-export default AppHeader
+export default AppHeader;

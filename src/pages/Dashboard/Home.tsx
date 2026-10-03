@@ -8,5 +8,5 @@ export default function Home() {
         Placeholder page. The app shell (sidebar, header, theme) is working.
       </p>
     </div>
-  )
+  );
 }

@@ -26,4 +26,5 @@ React, Vite, TypeScript, Tailwind (via TailAdmin), React Router, TanStack Query.
 - Dev: `npm run dev` (http://localhost:5173)
 - Build: `npm run build` (runs `tsc -b` then `vite build`)
 - Lint: `npm run lint`
+- Format: `npm run format` (Prettier, double quotes; run before committing)
 - Regenerate API client: (added with the API client step)
