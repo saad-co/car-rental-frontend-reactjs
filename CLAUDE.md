@@ -17,6 +17,13 @@ React, Vite, TypeScript, Tailwind (via TailAdmin), React Router, TanStack Query.
 - API calls only through the client generated from car-rental-backend-nestjs's OpenAPI document.
   Never hand-write request or response types for API data.
 - All server data through TanStack Query. No ad-hoc fetch calls in components.
+  - `src/api/queryClient.ts` is the only TanStack Query configuration: the `QueryClient`, its defaults, and
+    every query key (`queryKeys`, hierarchical, e.g. `["drivers", "list", params]`).
+  - One file per feature, `src/api/<feature>.queries.ts`. Every `useQuery` / `useMutation` is wrapped in a
+    custom hook there (e.g. `useDrivers(params)`, `useApproveApplication()`). Screens call only these hooks,
+    never `useQuery` / `useMutation` directly. Inside the file, build each query with `queryOptions(...)` so
+    the key and fetch function stay together.
+  - Exception: the `/auth/me` session query lives in `src/context/AuthContext.tsx` (its key is `queryKeys.me`).
 - Display money from integer cents with one shared formatter. Never do money math in the UI.
 - Lists use server-side pagination.
 
