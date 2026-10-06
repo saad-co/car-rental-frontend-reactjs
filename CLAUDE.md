@@ -28,10 +28,10 @@ React, Vite, TypeScript, Tailwind (via TailAdmin), React Router, TanStack Query.
 - Lists use server-side pagination.
 
 ## Commands
-<!-- Fill in once the scaffold exists -->
 - Install: `npm install`
 - Dev: `npm run dev` (http://localhost:5173)
 - Build: `npm run build` (runs `tsc -b` then `vite build`)
 - Lint: `npm run lint`
 - Format: `npm run format` (Prettier, double quotes; run before committing)
-- Regenerate API client: (added with the API client step)
+- Regenerate API client: `npm run api:generate` (reads `../car-rental-backend-nestjs/openapi.json`; run
+  `npm run openapi:export` in the backend first). Runs `openapi-typescript` through `npx` (D29).
