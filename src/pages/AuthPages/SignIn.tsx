@@ -14,8 +14,8 @@ import { useAuth } from "../../context/AuthContext";
  *
  * On submit it calls `login()` from AuthContext. On success there is no explicit redirect:
  * the auth status becomes "authenticated", this component re-renders, and the `<Navigate>`
- * at the top sends the user to the dashboard. The same check also sends an already logged-in
- * user away from this page.
+ * at the top sends the user to the dashboard (`/admin`). The same check also sends an already
+ * logged-in user away from this page.
  */
 export default function SignIn() {
   const { status, login } = useAuth();
@@ -27,7 +27,7 @@ export default function SignIn() {
   const [submitting, setSubmitting] = useState(false);
 
   if (status === "authenticated") {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

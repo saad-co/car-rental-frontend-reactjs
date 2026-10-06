@@ -11,7 +11,7 @@ type NavItem = {
 
 // Add a line here when a new screen exists (Drivers, Payments, ...).
 const navItems: NavItem[] = [
-  { name: "Dashboard", icon: <GridIcon />, path: "/" },
+  { name: "Dashboard", icon: <GridIcon />, path: "/admin" },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -31,7 +31,7 @@ const AppSidebar: React.FC = () => {
   return (
     <aside
       className={`fixed top-0 left-0 z-50 flex flex-col h-screen px-5 text-gray-900 transition-all duration-300 ease-in-out bg-white border-r border-gray-200
-        ${showLabels ? "w-[290px]" : "w-[90px]"}
+        ${showLabels ? "w-72.5" : "w-22.5"}
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         xl:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
@@ -43,7 +43,7 @@ const AppSidebar: React.FC = () => {
         }`}
       >
         {/* Text logo placeholder until the client provides a real one. */}
-        <Link to="/" className="text-xl font-semibold text-gray-900">
+        <Link to="/admin" className="text-xl font-semibold text-gray-900">
           {showLabels ? "Car Rental" : "CR"}
         </Link>
       </div>
@@ -51,7 +51,7 @@ const AppSidebar: React.FC = () => {
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <h2
-            className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+            className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${
               !isExpanded && !isHovered ? "xl:justify-center" : "justify-start"
             }`}
           >

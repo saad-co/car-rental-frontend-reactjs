@@ -63,7 +63,7 @@ const AppHeader: React.FC = () => {
 
           {/* Text logo (mobile only; the sidebar shows it on desktop). */}
           <Link
-            to="/"
+            to="/admin"
             className="text-lg font-semibold text-gray-900 xl:hidden"
           >
             Car Rental
