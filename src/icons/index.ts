@@ -3,5 +3,6 @@
 import { ReactComponent as DocsIcon } from "./docs.svg?react";
 import { ReactComponent as GridIcon } from "./grid.svg?react";
 import { ReactComponent as HorizontaLDots } from "./horizontal-dots.svg?react";
+import { ReactComponent as UserIcon } from "./user-line.svg?react";
 
-export { DocsIcon, GridIcon, HorizontaLDots };
+export { DocsIcon, GridIcon, HorizontaLDots, UserIcon };

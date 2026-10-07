@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router";
-import { DocsIcon, GridIcon, HorizontaLDots } from "../icons";
+import { DocsIcon, GridIcon, HorizontaLDots, UserIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -13,6 +13,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <GridIcon />, path: "/admin" },
   { name: "Applications", icon: <DocsIcon />, path: "/admin/applications" },
+  { name: "Drivers", icon: <UserIcon />, path: "/admin/drivers" },
 ];
 
 const AppSidebar: React.FC = () => {

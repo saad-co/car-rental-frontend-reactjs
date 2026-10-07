@@ -4,6 +4,7 @@ import AppLayout from "./layout/AppLayout";
 import ApplicationDetail from "./pages/Applications/ApplicationDetail";
 import ApplicationsList from "./pages/Applications/ApplicationsList";
 import Home from "./pages/Dashboard/Home";
+import DriversList from "./pages/Drivers/DriversList";
 import SignIn from "./pages/AuthPages/SignIn";
 
 /**
@@ -25,6 +26,7 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="applications" element={<ApplicationsList />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
+            <Route path="drivers" element={<DriversList />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />

@@ -1,8 +1,6 @@
-import { Link, useNavigate, useSearchParams } from "react-router";
-import {
-  useApplications,
-  type ApplicationStatus,
-} from "../../api/applications.queries";
+import { useSearchParams } from "react-router";
+import { useDrivers, type DriverStatus } from "../../api/drivers.queries";
+import Badge from "../../components/ui/badge/Badge";
 import Pagination from "../../components/ui/pagination/Pagination";
 import {
   Table,
@@ -11,30 +9,21 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { cn, formatDateTime } from "../../utils";
-import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
-import { APPLICATION_STATUS } from "../../components/applications/applicationStatus";
+import { cn, formatDateTime, formatUsPhone } from "../../utils";
 
-/** Applications per page. */
+/** Drivers per page. */
 const PAGE_SIZE = 20;
 
 /** The filter buttons, in display order. `undefined` means all statuses. */
-const STATUS_FILTERS: {
-  label: string;
-  value: ApplicationStatus | undefined;
-}[] = [
+const STATUS_FILTERS: { label: string; value: DriverStatus | undefined }[] = [
   { label: "All", value: undefined },
-  ...(Object.keys(APPLICATION_STATUS) as ApplicationStatus[]).map((value) => ({
-    label: APPLICATION_STATUS[value].label,
-    value,
-  })),
+  { label: "Active", value: "active" },
+  { label: "Inactive", value: "inactive" },
 ];
 
 /** Reads `?status=` from the URL, ignoring anything that is not a real status. */
-function parseStatus(value: string | null): ApplicationStatus | undefined {
-  return value && value in APPLICATION_STATUS
-    ? (value as ApplicationStatus)
-    : undefined;
+function parseStatus(value: string | null): DriverStatus | undefined {
+  return value === "active" || value === "inactive" ? value : undefined;
 }
 
 const headerCellClass =
@@ -42,22 +31,23 @@ const headerCellClass =
 const cellClass = "px-5 py-4 text-gray-500 text-start text-theme-sm";
 
 /**
- * Admin list of driver applications, newest first, with a status filter and pagination.
- *
- * The filter and page live in the URL (`?status=pending&page=2`), not in React state, so a
- * refresh, the back button or a shared link shows the same view.
+ * Admin list of drivers, newest first, with a status filter and pagination. Drivers are
+ * created by approving an application. Same structure as the applications list: the filter
+ * and page live in the URL.
  */
-export default function ApplicationsList() {
+export default function DriversList() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const status = parseStatus(searchParams.get("status"));
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
-  const { data, isPending, isError, error, isPlaceholderData } =
-    useApplications({ status, page, limit: PAGE_SIZE });
+  const { data, isPending, isError, error, isPlaceholderData } = useDrivers({
+    status,
+    page,
+    limit: PAGE_SIZE,
+  });
 
   /** Writes the filter and page to the URL; changing the filter goes back to page 1. */
-  const show = (next: { status?: ApplicationStatus; page?: number }) => {
+  const show = (next: { status?: DriverStatus; page?: number }) => {
     const params = new URLSearchParams();
     if (next.status) params.set("status", next.status);
     if (next.page && next.page > 1) params.set("page", String(next.page));
@@ -69,7 +59,7 @@ export default function ApplicationsList() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold text-gray-800">Applications</h1>
+        <h1 className="text-xl font-semibold text-gray-800">Drivers</h1>
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((filter) => (
             <button
@@ -97,7 +87,9 @@ export default function ApplicationsList() {
             {error.message}
           </p>
         ) : data.items.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500">No applications.</p>
+          <p className="p-6 text-sm text-gray-500">
+            No drivers. Drivers are created by approving an application.
+          </p>
         ) : (
           <>
             <div
@@ -119,51 +111,39 @@ export default function ApplicationsList() {
                       Phone
                     </TableCell>
                     <TableCell isHeader className={headerCellClass}>
-                      City
-                    </TableCell>
-                    <TableCell isHeader className={headerCellClass}>
                       Status
                     </TableCell>
                     <TableCell isHeader className={headerCellClass}>
-                      Received
+                      Since
                     </TableCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100">
-                  {data.items.map((application) => (
-                    <TableRow
-                      key={application.id}
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() =>
-                        navigate(`/admin/applications/${application.id}`)
-                      }
-                    >
+                  {data.items.map((driver) => (
+                    <TableRow key={driver.id}>
                       <TableCell
                         className={cn(cellClass, "font-medium text-gray-800")}
                       >
-                        {/* A real link too, so the row works with the keyboard and middle-click. */}
-                        <Link
-                          to={`/admin/applications/${application.id}`}
-                          onClick={(event) => event.stopPropagation()}
-                          className="hover:text-brand-500"
+                        {driver.firstName} {driver.lastName}
+                      </TableCell>
+                      <TableCell className={cellClass}>
+                        {driver.email}
+                      </TableCell>
+                      <TableCell className={cellClass}>
+                        {formatUsPhone(driver.phone)}
+                      </TableCell>
+                      <TableCell className={cellClass}>
+                        <Badge
+                          size="sm"
+                          color={
+                            driver.status === "active" ? "success" : "light"
+                          }
                         >
-                          {application.firstName} {application.lastName}
-                        </Link>
+                          {driver.status === "active" ? "Active" : "Inactive"}
+                        </Badge>
                       </TableCell>
                       <TableCell className={cellClass}>
-                        {application.email}
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        {application.phone}
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        {application.city ?? "—"}
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        <ApplicationStatusBadge status={application.status} />
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        {formatDateTime(application.receivedAt)}
+                        {formatDateTime(driver.createdAt)}
                       </TableCell>
                     </TableRow>
                   ))}
