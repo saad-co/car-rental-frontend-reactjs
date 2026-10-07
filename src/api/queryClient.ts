@@ -9,7 +9,9 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      refetchOnWindowFocus: false,
+      // Coming back to the tab refetches what is on screen, so data changed elsewhere (e.g. a
+      // new application from the website) shows up without a manual reload.
+      refetchOnWindowFocus: true,
     },
   },
 });

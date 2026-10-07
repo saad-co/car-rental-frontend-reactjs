@@ -26,7 +26,12 @@ export const api = createClient<paths>({
   baseUrl: import.meta.env.VITE_API_URL,
 });
 
-// Middleware: runs before every request and adds the token, if there is one.
+/** Fired on `window` when the API answers 401 to a logged-in request (B23). AuthContext logs out. */
+export const UNAUTHORIZED_EVENT = "carRental:unauthorized";
+
+// Middleware: adds the token to every request, and reports a 401 (expired or revoked token)
+// so the app can log out instead of showing errors. A 401 from the login form itself is just
+// a wrong password, so it is not reported.
 api.use({
   onRequest({ request }) {
     const token = tokenStorage.get();
@@ -34,5 +39,12 @@ api.use({
       request.headers.set("Authorization", `Bearer ${token}`);
     }
     return request;
+  },
+  onResponse({ request, response }) {
+    if (response.status === 401 && !request.url.endsWith("/auth/login")) {
+      tokenStorage.clear();
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+    }
+    return response;
   },
 });
