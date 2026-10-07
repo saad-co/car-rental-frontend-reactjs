@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, tokenStorage } from "../api/client";
+import { apiErrorMessage } from "../api/errors";
 import { queryKeys } from "../api/queryClient";
 import type { components } from "../api/schema";
 
@@ -14,10 +15,7 @@ export type AuthUser = components["schemas"]["AuthUserDto"];
  * - `error`: the API could not be reached, so we don't know yet (the token is kept).
  */
 export type AuthStatus =
-  | "loading"
-  | "authenticated"
-  | "unauthenticated"
-  | "error";
+  "loading" | "authenticated" | "unauthenticated" | "error";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -28,14 +26,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-/** Reads the message from a NestJS error body ({ message: string | string[] }). */
-function apiErrorMessage(error: unknown, fallback: string): string {
-  const message = (error as { message?: unknown } | undefined)?.message;
-  if (Array.isArray(message)) return message.join(", ");
-  if (typeof message === "string") return message;
-  return fallback;
-}
 
 /**
  * Provides the logged-in user to the whole app.

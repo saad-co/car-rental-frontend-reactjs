@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import RequireAuth from "./components/auth/RequireAuth";
 import AppLayout from "./layout/AppLayout";
+import ApplicationsList from "./pages/Applications/ApplicationsList";
 import Home from "./pages/Dashboard/Home";
 import SignIn from "./pages/AuthPages/SignIn";
 
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/admin" element={<RequireAuth />}>
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
+            <Route path="applications" element={<ApplicationsList />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />

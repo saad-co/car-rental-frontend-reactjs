@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router";
-import { GridIcon, HorizontaLDots } from "../icons";
+import { DocsIcon, GridIcon, HorizontaLDots } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -12,6 +12,7 @@ type NavItem = {
 // Add a line here when a new screen exists (Drivers, Payments, ...).
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <GridIcon />, path: "/admin" },
+  { name: "Applications", icon: <DocsIcon />, path: "/admin/applications" },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -24,7 +25,12 @@ const AppSidebar: React.FC = () => {
     setIsMobileOpen(false);
   }, [location.pathname, setIsMobileOpen]);
 
-  const isActive = (path: string) => location.pathname === path;
+  // A section stays highlighted on its sub-pages too (e.g. an application's detail page).
+  // The dashboard ("/admin") must match exactly, or it would be highlighted everywhere.
+  const isActive = (path: string) =>
+    path === "/admin"
+      ? location.pathname === path
+      : location.pathname === path || location.pathname.startsWith(`${path}/`);
   // Show text labels when the sidebar is open (wide, hovered, or open on mobile).
   const showLabels = isExpanded || isHovered || isMobileOpen;
 
