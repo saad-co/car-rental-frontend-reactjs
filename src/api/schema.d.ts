@@ -66,6 +66,147 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /applications`: one page of applications, newest first.
+         *
+         *     `@Query()` collects the query string into the DTO and validates it, the same way
+         *     `@Body()` does for a request body. An invalid value (e.g. `status=foo`) is a `400`.
+         */
+        get: operations["ApplicationsController_list"];
+        put?: never;
+        /**
+         * `POST /applications`: receives a driver application from the gonzocar.com form.
+         *
+         *     Public: applicants have no account. The body is typed `unknown` instead of a DTO class,
+         *     so the global ValidationPipe leaves it alone and ApplicationsService does the (lenient)
+         *     checks. Answers `201` with the same body for a new or a repeated submission.
+         */
+        post: operations["ApplicationsController_receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /applications/:id`: one application with its full details.
+         *
+         *     `ParseUUIDPipe` rejects an id that is not a UUID with `400` before any query runs
+         *     (Postgres would otherwise fail on it with a 500). A valid but unknown id is a `404`.
+         */
+        get: operations["ApplicationsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /applications/:id/approve`: creates the driver and marks the application approved.
+         *
+         *     POST because it is an action with side effects, not an edit of a field. `@HttpCode(200)`
+         *     because it returns the updated application rather than creating a resource at this URL.
+         */
+        post: operations["ApplicationsController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /applications/:id/reject`: rejects the application. No driver is created. */
+        post: operations["ApplicationsController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /applications/:id/hold`: puts the application on hold to decide later. */
+        post: operations["ApplicationsController_hold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers`: one page of drivers, newest first. */
+        get: operations["DriversController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers/:id`: one driver. `400` for a malformed id, `404` if unknown. */
+        get: operations["DriversController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -89,6 +230,103 @@ export interface components {
             /** @description Signed token the client sends back on every request as `Authorization: Bearer <token>`. */
             accessToken: string;
             user: components["schemas"]["AuthUserDto"];
+        };
+        ApplicationReceivedDto: {
+            /**
+             * @description Always `"received"`.
+             * @enum {string}
+             */
+            status: "received";
+            /** @description Our id for the application. A repeated submission (same `request_id`) gets the same id. */
+            application_id: string;
+        };
+        ApplicationListItemDto: {
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "on_hold";
+            firstName: string;
+            lastName: string;
+            email: string;
+            /** @description As the applicant typed it (usually 10 digits). */
+            phone: string;
+            city: string | null;
+            /**
+             * Format: date-time
+             * @description When the applicant pressed submit, by their browser's clock.
+             */
+            submittedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When our API received it.
+             */
+            receivedAt: string;
+        };
+        ApplicationListDto: {
+            items: components["schemas"]["ApplicationListItemDto"][];
+            /** @description Number of applications matching the filter, across all pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        ApplicationDetailDto: {
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "on_hold";
+            firstName: string;
+            lastName: string;
+            email: string;
+            /** @description As the applicant typed it (usually 10 digits). */
+            phone: string;
+            city: string | null;
+            /**
+             * Format: date-time
+             * @description When the applicant pressed submit, by their browser's clock.
+             */
+            submittedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When our API received it.
+             */
+            receivedAt: string;
+            /** @description The website's id for the submission. */
+            requestId: string;
+            zip: string | null;
+            /** @description Paths in the client's Supabase `driver-documents` bucket. */
+            licenseStoragePath: string | null;
+            ratingStoragePath: string | null;
+            earningsStoragePath: string | null;
+            /** @description The full submission as the website sent it, minus the bot-check token. */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** @description The admin who last reviewed it. Null while pending. */
+            reviewedById: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            /** @description The driver created on approval. Null unless approved. */
+            driverId: string | null;
+        };
+        DriverDto: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+            /** @description E.164, e.g. `+13125550123`. */
+            phone: string;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            /**
+             * Format: date-time
+             * @description When the driver was created (the application's approval).
+             */
+            createdAt: string;
+        };
+        DriverListDto: {
+            items: components["schemas"]["DriverDto"][];
+            /** @description Number of drivers matching the filter, across all pages. */
+            total: number;
+            page: number;
+            limit: number;
         };
     };
     responses: never;
@@ -156,6 +394,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthUserDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_list: {
+        parameters: {
+            query: {
+                /** @description Only applications with this status. Omit for all. */
+                status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationListDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The website's application JSON (snake_case fields, values mostly strings). Required: request_id, first_name, last_name, email, phone. Other fields are kept as sent. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationReceivedDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_hold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    DriversController_list: {
+        parameters: {
+            query: {
+                /** @description Only drivers with this status. Omit for all. */
+                status?: "active" | "inactive";
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverListDto"];
+                };
+            };
+        };
+    };
+    DriversController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
                 };
             };
         };
