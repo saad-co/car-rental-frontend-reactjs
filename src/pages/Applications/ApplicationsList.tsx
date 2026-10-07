@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import {
   useApplications,
   type ApplicationStatus,
@@ -50,6 +50,7 @@ const cellClass = "px-5 py-4 text-gray-500 text-start text-theme-sm";
  */
 export default function ApplicationsList() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const status = parseStatus(searchParams.get("status"));
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
@@ -131,11 +132,24 @@ export default function ApplicationsList() {
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100">
                   {data.items.map((application) => (
-                    <TableRow key={application.id}>
+                    <TableRow
+                      key={application.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() =>
+                        navigate(`/admin/applications/${application.id}`)
+                      }
+                    >
                       <TableCell
                         className={cn(cellClass, "font-medium text-gray-800")}
                       >
-                        {application.firstName} {application.lastName}
+                        {/* A real link too, so the row works with the keyboard and middle-click. */}
+                        <Link
+                          to={`/admin/applications/${application.id}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="hover:text-brand-500"
+                        >
+                          {application.firstName} {application.lastName}
+                        </Link>
                       </TableCell>
                       <TableCell className={cellClass}>
                         {application.email}

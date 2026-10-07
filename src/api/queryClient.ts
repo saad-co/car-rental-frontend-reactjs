@@ -31,8 +31,13 @@ export const queryKeys = {
   me: ["auth", "me"] as const,
   applications: {
     all: ["applications"] as const,
+    /** Prefix of every list query, whatever its filter and page. */
+    lists: ["applications", "list"] as const,
     list: (params: ApplicationsListParams) =>
       ["applications", "list", params] as const,
     detail: (id: string) => ["applications", "detail", id] as const,
+  },
+  drivers: {
+    all: ["drivers"] as const,
   },
 };
