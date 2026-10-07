@@ -1,6 +1,12 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, tokenStorage } from "../api/client";
+import { api, tokenStorage, UNAUTHORIZED_EVENT } from "../api/client";
 import { apiErrorMessage } from "../api/errors";
 import { queryKeys } from "../api/queryClient";
 import type { components } from "../api/schema";
@@ -20,8 +26,8 @@ export type AuthStatus =
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
-  /** Logs in; throws an Error with a readable message if it fails. */
-  login: (email: string, password: string) => Promise<void>;
+  /** Logs in and returns the user; throws an Error with a readable message if it fails. */
+  login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -60,7 +66,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const login = async (email: string, password: string): Promise<void> => {
+  // Any API call that gets a 401 (token expired or account deactivated) logs out (B23);
+  // RequireAuth then sends the user to the login page.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setToken(null);
+      queryClient.clear();
+    };
+    window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
+  }, [queryClient]);
+
+  const login = async (email: string, password: string): Promise<AuthUser> => {
     const { data, error } = await api.POST("/auth/login", {
       body: { email, password },
     });
@@ -72,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // cache instead of calling /auth/me again.
     queryClient.setQueryData(queryKeys.me, data.user);
     setToken(data.accessToken);
+    return data.user;
   };
 
   const logout = (): void => {

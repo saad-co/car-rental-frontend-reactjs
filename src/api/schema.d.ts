@@ -56,10 +56,52 @@ export interface paths {
          *     page loads to check that a stored token is still valid and to learn who is logged in.
          *
          *     It has no `@Public()`, so JwtAuthGuard requires a valid token before this runs.
+         *     `@Roles` opens it to drivers too (routes are admin-only by default), and it works before
+         *     a forced password change, so the frontend can learn that the change is required.
          */
         get: operations["AuthController_me"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /auth/verify-email`: confirms the email address from the token in the welcome
+         *     email's link. Public: the driver cannot log in before this. `204` on success.
+         */
+        post: operations["AuthController_verifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /auth/change-password`: the logged-in user replaces their password. This is the
+         *     one action allowed while a temporary password must be changed. Returns the updated user.
+         */
+        post: operations["AuthController_changePassword"];
         delete?: never;
         options?: never;
         head?: never;
@@ -225,11 +267,29 @@ export interface components {
             email: string;
             /** @enum {string} */
             role: "admin" | "driver";
+            /**
+             * @description True while the user still has a system-generated password. Until they change it, every
+             *     endpoint except `GET /auth/me` and `POST /auth/change-password` answers `403`.
+             */
+            mustChangePassword: boolean;
         };
         LoginResponseDto: {
             /** @description Signed token the client sends back on every request as `Authorization: Bearer <token>`. */
             accessToken: string;
             user: components["schemas"]["AuthUserDto"];
+        };
+        VerifyEmailDto: {
+            /** @description The `token` from the verification link in the welcome email. */
+            token: string;
+        };
+        ChangePasswordDto: {
+            /** @description The password the user logs in with now (the temporary one, at first login). */
+            currentPassword: string;
+            /**
+             * @description The new password: at least 8 characters. The 72-byte limit (bcrypt) is checked by the
+             *     service, since characters outside English can take more than one byte.
+             */
+            newPassword: string;
         };
         ApplicationReceivedDto: {
             /**
@@ -387,6 +447,50 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthUserDto"];
+                };
+            };
+        };
+    };
+    AuthController_verifyEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
