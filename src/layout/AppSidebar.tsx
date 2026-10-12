@@ -5,6 +5,7 @@ import {
   DollarIcon,
   GridIcon,
   HorizontaLDots,
+  MailIcon,
   UserIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
@@ -21,6 +22,7 @@ const navItems: NavItem[] = [
   { name: "Applications", icon: <DocsIcon />, path: "/admin/applications" },
   { name: "Drivers", icon: <UserIcon />, path: "/admin/drivers" },
   { name: "Payments", icon: <DollarIcon />, path: "/admin/payments" },
+  { name: "Email log", icon: <MailIcon />, path: "/admin/email-log" },
 ];
 
 const AppSidebar: React.FC = () => {
