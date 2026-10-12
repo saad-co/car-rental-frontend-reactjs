@@ -249,6 +249,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbound-emails": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /inbound-emails`: one page of processed emails with their outcome, newest first. */
+        get: operations["InboundEmailsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /payments`: one page of payments, most recent first. */
+        get: operations["PaymentsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -384,6 +418,70 @@ export interface components {
         DriverListDto: {
             items: components["schemas"]["DriverDto"][];
             /** @description Number of drivers matching the filter, across all pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        /** @enum {string} */
+        InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
+        InboundEmailDto: {
+            provider: components["schemas"]["InboundEmailProvider"];
+            id: string;
+            /**
+             * Format: date-time
+             * @description When our mail server received it.
+             */
+            receivedAt: string;
+            fromAddress: string | null;
+            subject: string;
+            /** @enum {string} */
+            status: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+            /** @description Why it was rejected or failed (always set for those statuses). */
+            statusReason: string | null;
+            /** @description True only when DKIM passed for the provider's own domain. */
+            authDkimPass: boolean;
+            /** @description The signing domain that passed, e.g. `venmo.com`. */
+            authDkimDomain: string | null;
+            /** @description The message's UID in the mailbox (for finding it in Gmail by hand if needed). */
+            imapUid: number;
+            /** @description The payment this email created, if any. */
+            paymentId: string | null;
+        };
+        InboundEmailListDto: {
+            items: components["schemas"]["InboundEmailDto"][];
+            /** @description Number of emails matching the filters, across all pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        PaymentDto: {
+            id: string;
+            /** @enum {string} */
+            source: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+            /** @enum {string} */
+            status: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
+            /** @description Integer cents. The frontend formats it; never a float. */
+            amountCents: number;
+            /** @description The payer's name exactly as the provider wrote it. */
+            senderName: string;
+            senderHandle: string | null;
+            /** @description The provider's transaction id, when the email showed one. */
+            transactionId: string | null;
+            /**
+             * Format: date-time
+             * @description When the payment happened (exact time from the email, or when the email arrived).
+             */
+            occurredAt: string;
+            /** @description How sure the AI was, 0 to 1. Null for sources without AI. */
+            extractionConfidence: number | null;
+            /** @description The record it came from; for email sources, the id of the inbound email. */
+            externalId: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PaymentListDto: {
+            items: components["schemas"]["PaymentDto"][];
+            /** @description Number of payments matching the filters, across all pages. */
             total: number;
             page: number;
             limit: number;
@@ -681,6 +779,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    InboundEmailsController_list: {
+        parameters: {
+            query: {
+                /** @description Only emails from this provider. Omit for all. */
+                provider?: components["schemas"]["InboundEmailProvider"];
+                /** @description Only emails with this outcome. Omit for all. */
+                status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboundEmailListDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_list: {
+        parameters: {
+            query: {
+                /** @description Only payments with this status. Omit for all. */
+                status?: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
+                /** @description Only payments from this source. Omit for all. */
+                source?: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentListDto"];
                 };
             };
         };

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 import UserDropdown from "../components/header/UserDropdown";
+import { chicagoUtcOffset } from "../utils";
 
 const AppHeader: React.FC = () => {
   // On mobile the user menu is hidden behind the "three dots" button.
@@ -96,6 +97,9 @@ const AppHeader: React.FC = () => {
             isApplicationMenuOpen ? "flex" : "hidden"
           } items-center justify-end w-full gap-4 px-5 py-4 xl:flex shadow-theme-md xl:px-0 xl:shadow-none`}
         >
+          <span className="text-theme-xs text-gray-500">
+            All times: Chicago ({chicagoUtcOffset()})
+          </span>
           <UserDropdown />
         </div>
       </div>

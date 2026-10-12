@@ -23,6 +23,10 @@ export type ApplicationsListParams =
 /** Query string of `GET /drivers` (status filter, page, limit), from the generated types. */
 export type DriversListParams = paths["/drivers"]["get"]["parameters"]["query"];
 
+/** Query string of `GET /payments` (status and source filters, page, limit), from the generated types. */
+export type PaymentsListParams =
+  paths["/payments"]["get"]["parameters"]["query"];
+
 /**
  * Every query key used in the app, in one place, so a key is never mistyped when a
  * query is read, set or invalidated.
@@ -45,5 +49,9 @@ export const queryKeys = {
   drivers: {
     all: ["drivers"] as const,
     list: (params: DriversListParams) => ["drivers", "list", params] as const,
+  },
+  payments: {
+    all: ["payments"] as const,
+    list: (params: PaymentsListParams) => ["payments", "list", params] as const,
   },
 };
