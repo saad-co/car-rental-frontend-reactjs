@@ -421,6 +421,17 @@ export interface components {
             /** @description The driver created on approval. Null unless approved. */
             driverId: string | null;
         };
+        DriverAliasDto: {
+            /** @enum {string} */
+            type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
+            /** @description As entered or as the provider wrote it. */
+            value: string;
+            /**
+             * @description Imported from the old system, learned from a confident AI match, or entered by an admin.
+             * @enum {string}
+             */
+            source: "legacy" | "manual" | "ai_match";
+        };
         DriverDto: {
             id: string;
             firstName: string;
@@ -435,6 +446,15 @@ export interface components {
              * @description When the driver was created (the application's approval).
              */
             createdAt: string;
+            /** @description Every payment alias of the driver, grouped by payment method then by value. Empty if none yet. */
+            aliases: components["schemas"]["DriverAliasDto"][];
+            /** @description Number of payments assigned to this driver. */
+            paymentCount: number;
+            /**
+             * Format: date-time
+             * @description When the driver's most recent payment happened; null if none.
+             */
+            lastPaymentAt: string | null;
         };
         DriverListDto: {
             items: components["schemas"]["DriverDto"][];
@@ -874,6 +894,8 @@ export interface operations {
                 status?: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
                 /** @description Only payments from this source. Omit for all. */
                 source?: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+                /** @description Only payments assigned to this driver (the driver page). Omit for all. */
+                driverId?: string;
                 /**
                  * @description `assigned`: has a driver. `review`: matching looked at it and could not place it ("Needs review").
                  *     Omit for all.

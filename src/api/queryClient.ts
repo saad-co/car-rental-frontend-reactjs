@@ -53,6 +53,7 @@ export const queryKeys = {
   drivers: {
     all: ["drivers"] as const,
     list: (params: DriversListParams) => ["drivers", "list", params] as const,
+    detail: (id: string) => ["drivers", "detail", id] as const,
   },
   payments: {
     all: ["payments"] as const,
