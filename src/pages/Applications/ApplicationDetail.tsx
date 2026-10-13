@@ -10,45 +10,61 @@ import {
 import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
+import Tabs from "../../components/ui/tabs/Tabs";
 import { formatDateTime } from "../../utils";
+import {
+  ANSWER_TABS,
+  DOCUMENT_FIELDS,
+  otherFields,
+  textOf,
+  type FieldSpec,
+  type Payload,
+} from "./applicationFields";
 
-/** A titled white card, the same look as TailAdmin's ComponentCard. */
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/** A white card with a title, the look of TailAdmin's transaction page cards. */
+function Card({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white">
-      <h2 className="px-6 py-4 text-base font-medium text-gray-800">{title}</h2>
-      <div className="border-t border-gray-100 px-6 py-4">{children}</div>
+    <div className="rounded-2xl border border-gray-200 bg-white p-6">
+      {title && (
+        <h2 className="mb-4 text-base font-semibold text-gray-800">{title}</h2>
+      )}
+      {children}
     </div>
   );
 }
 
-/** Label/value rows in two columns on wide screens. */
-function Fields({ rows }: { rows: [label: string, value: ReactNode][] }) {
+/** Label/value rows with dividers (TailAdmin's `CustomerDetails` layout). */
+function Rows({ rows }: { rows: [label: string, value: ReactNode][] }) {
   return (
-    <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+    <ul className="divide-y divide-gray-100">
       {rows.map(([label, value]) => (
-        <div key={label}>
-          <dt className="text-theme-xs text-gray-500">{label}</dt>
-          <dd className="text-sm text-gray-800 wrap-break-words">{value}</dd>
-        </div>
+        <li key={label} className="flex items-start gap-5 py-2.5">
+          <span className="w-1/2 text-sm text-gray-500 sm:w-2/5">{label}</span>
+          <span className="w-1/2 text-sm wrap-break-word text-gray-800 sm:w-3/5">
+            {value}
+          </span>
+        </li>
       ))}
-    </dl>
+    </ul>
   );
 }
 
-/** Shows any submitted value as text: lists joined, true/false as Yes/No, empty as a dash. */
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (Array.isArray(value)) return value.map(formatValue).join(", ");
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
-/** `has_insurance_last_45_days` → `Has insurance last 45 days`. */
-function formatKey(key: string): string {
-  const words = key.replace(/_/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
+/** The rows of one tab, leaving out everything the applicant left empty. */
+function FieldRows({
+  fields,
+  payload,
+}: {
+  fields: FieldSpec[];
+  payload: Payload;
+}) {
+  const rows = fields.flatMap((f): [string, string][] => {
+    const value = f.value(payload);
+    return value === null ? [] : [[f.label, value]];
+  });
+  if (rows.length === 0) {
+    return <p className="text-sm text-gray-500">Nothing submitted.</p>;
+  }
+  return <Rows rows={rows} />;
 }
 
 /** Which review buttons make sense in each status. Approved is final (API rule). */
@@ -61,8 +77,10 @@ function availableActions(status: ApplicationDetailData["status"]) {
 }
 
 /**
- * Admin page for one application: contact details, the full submission, and the review
- * buttons. Approve asks for confirmation because it creates a driver and cannot be undone.
+ * Admin page for one application: a header with the review buttons, the answers in tabs
+ * (Contact, Driving, Rental, Documents, and Other only when the website sent fields we don't place),
+ * and a side column with the review state and where the submission came from.
+ * Approve asks for confirmation because it creates a driver and cannot be undone.
  */
 export default function ApplicationDetail() {
   const { id = "" } = useParams();
@@ -102,6 +120,39 @@ export default function ApplicationDetail() {
 
   const actions = availableActions(application.status);
   const fullName = `${application.firstName} ${application.lastName}`;
+  const payload = application.payload;
+  const uploadError = textOf(payload.license_upload_error);
+  const others = otherFields(payload).filter((f) => f.value(payload) !== null);
+
+  const tabs = [
+    ...ANSWER_TABS.map((tab) => ({
+      id: tab.id,
+      label: tab.label,
+      content: <FieldRows fields={tab.fields} payload={payload} />,
+    })),
+    {
+      id: "documents",
+      label: "Documents",
+      content: (
+        <>
+          <FieldRows fields={DOCUMENT_FIELDS} payload={payload} />
+          <p className="mt-3 text-theme-xs text-gray-500">
+            Files are stored in the client's Supabase bucket; viewing them needs
+            access to it (B17).
+          </p>
+        </>
+      ),
+    },
+    ...(others.length > 0
+      ? [
+          {
+            id: "other",
+            label: "Other",
+            content: <FieldRows fields={others} payload={payload} />,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="space-y-6">
@@ -112,10 +163,15 @@ export default function ApplicationDetail() {
         ← Back to applications
       </Link>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>
-          <ApplicationStatusBadge status={application.status} />
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>
+            <ApplicationStatusBadge status={application.status} />
+          </div>
+          <p className="text-sm text-gray-500">
+            Submitted {formatDateTime(application.submittedAt)}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {actions.hold && (
@@ -159,6 +215,15 @@ export default function ApplicationDetail() {
         </p>
       )}
 
+      {uploadError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700"
+        >
+          The licence upload failed on the website: {uploadError}
+        </p>
+      )}
+
       <ConfirmDialog
         isOpen={confirmingApprove}
         title={`Approve ${fullName}?`}
@@ -173,53 +238,44 @@ export default function ApplicationDetail() {
         {application.phone}. An approved application cannot be changed.
       </ConfirmDialog>
 
-      <Section title="Applicant">
-        <Fields
-          rows={[
-            ["Email", application.email],
-            ["Phone (as entered)", application.phone],
-            ["City", formatValue(application.city)],
-            ["ZIP", formatValue(application.zip)],
-            ["Submitted", formatDateTime(application.submittedAt)],
-            ["Received", formatDateTime(application.receivedAt)],
-          ]}
-        />
-      </Section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <Card>
+            <Tabs tabs={tabs} />
+          </Card>
+        </div>
 
-      <Section title="Review">
-        <Fields
-          rows={[
-            ["Last reviewed", formatDateTime(application.reviewedAt)],
-            [
-              "Driver",
-              application.driverId ? "Created on approval" : "Not created",
-            ],
-          ]}
-        />
-      </Section>
+        <div className="space-y-6 lg:col-span-4">
+          <Card title="Review">
+            <Rows
+              rows={[
+                [
+                  "Status",
+                  <ApplicationStatusBadge
+                    key="status"
+                    status={application.status}
+                  />,
+                ],
+                ["Last reviewed", formatDateTime(application.reviewedAt)],
+                [
+                  "Driver",
+                  application.driverId ? "Created on approval" : "Not created",
+                ],
+              ]}
+            />
+          </Card>
 
-      <Section title="Documents">
-        <Fields
-          rows={[
-            ["Licence", formatValue(application.licenseStoragePath)],
-            ["Driver rating", formatValue(application.ratingStoragePath)],
-            ["Earnings", formatValue(application.earningsStoragePath)],
-          ]}
-        />
-        <p className="mt-3 text-theme-xs text-gray-500">
-          Files are stored in the client's Supabase bucket; viewing them needs
-          access to it (B17).
-        </p>
-      </Section>
-
-      <Section title="Full submission">
-        <Fields
-          rows={Object.entries(application.payload).map(([key, value]) => [
-            formatKey(key),
-            formatValue(value),
-          ])}
-        />
-      </Section>
+          <Card title="Submission">
+            <Rows
+              rows={[
+                ["Received", formatDateTime(application.receivedAt)],
+                ["Form", textOf(payload.source) ?? "—"],
+                ["Website id", application.requestId],
+              ]}
+            />
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

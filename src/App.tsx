@@ -9,6 +9,9 @@ import ChangePassword from "./pages/Driver/ChangePassword";
 import DriverHome from "./pages/Driver/DriverHome";
 import VerifyEmail from "./pages/Driver/VerifyEmail";
 import DriversList from "./pages/Drivers/DriversList";
+import DriverDetail from "./pages/Drivers/DriverDetail";
+import PaymentsList from "./pages/Payments/PaymentsList";
+import EmailLogList from "./pages/EmailLog/EmailLogList";
 
 /**
  * Routing table: two areas in one app.
@@ -34,6 +37,9 @@ export default function App() {
             <Route path="applications" element={<ApplicationsList />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
             <Route path="drivers" element={<DriversList />} />
+            <Route path="drivers/:id" element={<DriverDetail />} />
+            <Route path="payments" element={<PaymentsList />} />
+            <Route path="email-log" element={<EmailLogList />} />
           </Route>
         </Route>
 

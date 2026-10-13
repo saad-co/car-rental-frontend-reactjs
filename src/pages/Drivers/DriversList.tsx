@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useDrivers, type DriverStatus } from "../../api/drivers.queries";
 import Badge from "../../components/ui/badge/Badge";
 import Pagination from "../../components/ui/pagination/Pagination";
@@ -37,6 +37,7 @@ const cellClass = "px-5 py-4 text-gray-500 text-start text-theme-sm";
  */
 export default function DriversList() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const status = parseStatus(searchParams.get("status"));
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
@@ -120,11 +121,22 @@ export default function DriversList() {
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100">
                   {data.items.map((driver) => (
-                    <TableRow key={driver.id}>
+                    <TableRow
+                      key={driver.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => navigate(`/admin/drivers/${driver.id}`)}
+                    >
                       <TableCell
                         className={cn(cellClass, "font-medium text-gray-800")}
                       >
-                        {driver.firstName} {driver.lastName}
+                        {/* A real link too, so the row works with the keyboard and middle-click. */}
+                        <Link
+                          to={`/admin/drivers/${driver.id}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="hover:text-brand-500"
+                        >
+                          {driver.firstName} {driver.lastName}
+                        </Link>
                       </TableCell>
                       <TableCell className={cellClass}>
                         {driver.email}
