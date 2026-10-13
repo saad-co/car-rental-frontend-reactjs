@@ -1,5 +1,4 @@
-import type { PaymentSource, PaymentStatus } from "../../api/payments.queries";
-import type { BadgeColor } from "../ui/badge/Badge";
+import type { Payment, PaymentSource } from "../../api/payments.queries";
 
 /** How each payment source is shown. */
 export const PAYMENT_SOURCE_LABEL: Record<PaymentSource, string> = {
@@ -12,17 +11,13 @@ export const PAYMENT_SOURCE_LABEL: Record<PaymentSource, string> = {
   manual: "Manual",
 };
 
-/**
- * Label and badge colour for each payment status. Kept out of the component files: React's fast
- * refresh only works when a .tsx file exports nothing but components.
- */
-export const PAYMENT_STATUS: Record<
-  PaymentStatus,
-  { label: string; color: BadgeColor }
+/** How a payment was assigned, as shown next to the driver. */
+export const MATCH_METHOD_LABEL: Record<
+  NonNullable<Payment["matchMethod"]>,
+  string
 > = {
-  unmatched: { label: "Unmatched", color: "warning" },
-  reported: { label: "Reported", color: "info" },
-  confirmed: { label: "Confirmed", color: "success" },
-  rejected: { label: "Rejected", color: "error" },
-  discrepancy: { label: "Discrepancy", color: "error" },
+  alias: "Alias",
+  name: "Exact name",
+  ai: "AI",
+  manual: "Manual",
 };

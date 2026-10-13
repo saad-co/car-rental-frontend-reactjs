@@ -273,10 +273,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** `GET /payments`: one page of payments, most recent first. */
+        /** `GET /payments`: one page of payments, most recent first. `?match=review` lists "Needs review". */
         get: operations["PaymentsController_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /payments/:id/assign`: assigns or re-assigns a payment to a driver and saves the payer's name as
+         *     that driver's alias (unless another driver already owns it, which the answer reports).
+         *     `404` unknown payment, `400` unknown driver, `409` a rejected or discrepancy payment.
+         */
+        post: operations["PaymentsController_assign"];
         delete?: never;
         options?: never;
         head?: never;
@@ -454,6 +475,11 @@ export interface components {
             page: number;
             limit: number;
         };
+        PaymentDriverDto: {
+            id: string;
+            firstName: string;
+            lastName: string;
+        };
         PaymentDto: {
             id: string;
             /** @enum {string} */
@@ -472,10 +498,23 @@ export interface components {
              * @description When the payment happened (exact time from the email, or when the email arrived).
              */
             occurredAt: string;
-            /** @description How sure the AI was, 0 to 1. Null for sources without AI. */
+            /** @description How sure the AI was about what it read from the email, 0 to 1. Null for sources without AI. */
             extractionConfidence: number | null;
             /** @description The record it came from; for email sources, the id of the inbound email. */
             externalId: string;
+            /** @description The driver it is assigned to. Null while unmatched. */
+            driver: components["schemas"]["PaymentDriverDto"] | null;
+            /** @description The AI's best guess when it was not sure enough: "Needs review". */
+            suggestedDriver: components["schemas"]["PaymentDriverDto"] | null;
+            /**
+             * @description How it was assigned: alias, exact name, AI or by an admin.
+             * @enum {string|null}
+             */
+            matchMethod: "alias" | "name" | "ai" | "manual" | null;
+            /** @description 1 for alias and name, the AI's confidence for AI matches and suggestions, null for manual. */
+            matchConfidence: number | null;
+            /** @description One line on why (the alias, the AI's reason, or why matching failed). */
+            matchExplanation: string | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -485,6 +524,23 @@ export interface components {
             total: number;
             page: number;
             limit: number;
+        };
+        AssignPaymentDto: {
+            /**
+             * Format: uuid
+             * @description The driver the payment belongs to.
+             */
+            driverId: string;
+        };
+        AssignPaymentResultDto: {
+            payment: components["schemas"]["PaymentDto"];
+            /** @description True if the payer's name was saved as a new alias of the driver. */
+            aliasSaved: boolean;
+            /**
+             * @description The driver who already owns the payer's name as an alias, if it is someone else: that alias is NOT
+             *     moved (one alias, one driver); the admin decides.
+             */
+            aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
         };
     };
     responses: never;
@@ -818,6 +874,11 @@ export interface operations {
                 status?: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
                 /** @description Only payments from this source. Omit for all. */
                 source?: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+                /**
+                 * @description `assigned`: has a driver. `review`: matching looked at it and could not place it ("Needs review").
+                 *     Omit for all.
+                 */
+                match?: "assigned" | "review";
                 /** @description Page number, starting at 1. */
                 page: number;
                 /** @description Items per page (1 to 100). */
@@ -835,6 +896,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentListDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_assign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignPaymentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignPaymentResultDto"];
                 };
             };
         };

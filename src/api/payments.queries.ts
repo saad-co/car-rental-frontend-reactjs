@@ -1,7 +1,9 @@
 import {
   keepPreviousData,
   queryOptions,
+  useMutation,
   useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { api } from "./client";
 import { apiErrorMessage } from "./errors";
@@ -42,4 +44,36 @@ const paymentsListOptions = (params: PaymentsListParams) =>
 /** One page of payments, most recent first, optionally filtered by status and source. */
 export function usePayments(params: PaymentsListParams) {
   return useQuery(paymentsListOptions(params));
+}
+
+/** What an assignment did: the updated payment, and whether the payer's name became an alias. */
+export type AssignPaymentResult =
+  components["schemas"]["AssignPaymentResultDto"];
+
+/**
+ * Assigns (or re-assigns) a payment to a driver. On success every payments list refetches, because the
+ * payment moved between "Needs review" and "Assigned".
+ */
+export function useAssignPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { paymentId: string; driverId: string }) => {
+      const { data, error, response } = await api.POST(
+        "/payments/{id}/assign",
+        {
+          params: { path: { id: input.paymentId } },
+          body: { driverId: input.driverId },
+        },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Assigning failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+    },
+  });
 }
