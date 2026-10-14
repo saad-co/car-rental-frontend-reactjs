@@ -12,7 +12,7 @@ import ConversationCard from "../../components/sms/ConversationCard";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
 import Tabs from "../../components/ui/tabs/Tabs";
-import { formatDateTime } from "../../utils";
+import { formatDateTime, formatUsPhone } from "../../utils";
 import {
   ANSWER_TABS,
   DOCUMENT_FIELDS,
@@ -216,6 +216,16 @@ export default function ApplicationDetail() {
         </p>
       )}
 
+      {application.alertError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700"
+        >
+          The text alert to staff about this new application was not sent:{" "}
+          {application.alertError}
+        </p>
+      )}
+
       {uploadError && (
         <p
           role="alert"
@@ -236,18 +246,17 @@ export default function ApplicationDetail() {
         }}
       >
         This creates a driver with {application.email} and phone{" "}
-        {application.phone}. An approved application cannot be changed.
+        {application.phone}, and texts them their login (email and a temporary
+        password) from the business number. An approved application cannot be
+        changed.
       </ConfirmDialog>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8">
+        <div className="space-y-6 lg:col-span-5">
           <Card>
             <Tabs tabs={tabs} />
           </Card>
-        </div>
 
-        <div className="space-y-6 lg:col-span-4">
-          <ConversationCard kind="applications" id={application.id} />
           <Card title="Review">
             <Rows
               rows={[
@@ -276,6 +285,16 @@ export default function ApplicationDetail() {
               ]}
             />
           </Card>
+        </div>
+
+        {/* The chat gets the space: tall (the screen's height, like TailAdmin's chat page) and wider than the details. */}
+        <div className="h-[75vh] min-h-[32rem] lg:col-span-7 lg:h-[calc(100vh-12rem)]">
+          <ConversationCard
+            kind="applications"
+            id={application.id}
+            name={fullName}
+            phone={formatUsPhone(application.phone)}
+          />
         </div>
       </div>
     </div>

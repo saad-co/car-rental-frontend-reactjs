@@ -149,6 +149,14 @@ export default function ApplicationsList() {
                         >
                           {application.firstName} {application.lastName}
                         </Link>
+                        {application.alertError && (
+                          <span
+                            title={`The text alert to staff was not sent: ${application.alertError}`}
+                            className="ml-2 rounded-full bg-warning-50 px-2 py-0.5 text-theme-xs font-medium text-warning-700"
+                          >
+                            Alert not sent
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className={cellClass}>
                         {application.email}
