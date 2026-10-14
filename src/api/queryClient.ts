@@ -49,6 +49,8 @@ export const queryKeys = {
     list: (params: ApplicationsListParams) =>
       ["applications", "list", params] as const,
     detail: (id: string) => ["applications", "detail", id] as const,
+    /** The uploaded documents of one application (our copies). */
+    documents: (id: string) => ["applications", "documents", id] as const,
   },
   drivers: {
     all: ["drivers"] as const,

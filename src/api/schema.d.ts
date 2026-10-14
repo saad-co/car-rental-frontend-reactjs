@@ -215,6 +215,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApplicationDocumentsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sms/status": {
         parameters: {
             query?: never;
@@ -518,6 +534,33 @@ export interface components {
              * @description When the alert text to staff was really sent; null if it was not (off, dry run, or failed).
              */
             alertedAt: string | null;
+        };
+        ApplicationDocumentDto: {
+            id: string;
+            /**
+             * @description Which upload on the form: licence, rating screenshot or earnings screenshot.
+             * @enum {string}
+             */
+            kind: "license" | "rating" | "earnings";
+            /**
+             * @description `stored`: our copy can be opened; `pending`: still being copied; `failed`: it cannot be copied (see `error`).
+             * @enum {string}
+             */
+            status: "pending" | "stored" | "failed";
+            /** @description MIME type, e.g. `image/png`; null if unknown. */
+            contentType: string | null;
+            sizeBytes: number | null;
+            /** @description Short-lived link (about 10 minutes) to open our copy. Null unless `stored`. */
+            url: string | null;
+            /** @description Why it could not be copied, in plain words. Null if it did not fail. */
+            error: string | null;
+        };
+        ApplicationDocumentListDto: {
+            items: components["schemas"]["ApplicationDocumentDto"][];
+            /** @description Whether the website's document function is connected (`DOCUMENTS_SOURCE_*`); without it nothing can be copied. */
+            sourceConnected: boolean;
+            /** @description Whether our file bucket is connected (`S3_*`); without it nothing can be stored. */
+            storageConnected: boolean;
         };
         SmsStatusDto: {
             /**
@@ -997,6 +1040,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    ApplicationDocumentsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDocumentListDto"];
                 };
             };
         };
