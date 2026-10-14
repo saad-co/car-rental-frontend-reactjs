@@ -304,6 +304,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sms/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /sms/status`: SMS mode and what is connected. */
+        get: operations["SmsController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sms/{kind}/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /sms/:kind/:id/messages`: one page of the chat, newest first. */
+        get: operations["SmsController_list"];
+        put?: never;
+        /**
+         * `POST /sms/:kind/:id/messages`: sends a text, according to SMS_MODE.
+         *     `409` texting is off, `502` Quo refused (the failure is saved and shown in the chat),
+         *     `400` the application's phone is not a US number, `404` unknown record.
+         */
+        post: operations["SmsController_send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sms/{kind}/{id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /sms/:kind/:id/sync`: pulls this contact's history from Quo (texts sent from the Quo app too). */
+        post: operations["SmsController_sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sms/{kind}/{id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /sms/:kind/:id/files`: the files in this contact's conversation, newest first. */
+        get: operations["SmsController_files"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/quo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["QuoWebhookController_receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -561,6 +650,97 @@ export interface components {
              *     moved (one alias, one driver); the admin decides.
              */
             aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
+        };
+        SmsStatusDto: {
+            /**
+             * @description `off`: sending refused. `dry_run`: texts are saved, not sent. `live`: really sent.
+             * @enum {string}
+             */
+            mode: "off" | "dry_run" | "live";
+            /** @description Whether the Quo API key and number are set, which syncing the history needs. */
+            quoConfigured: boolean;
+            /** @description Whether the file bucket is set; without it files stay pending. */
+            filesConfigured: boolean;
+        };
+        SmsAttachmentDto: {
+            id: string;
+            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
+            contentType: string | null;
+            sizeBytes: number | null;
+            /**
+             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
+             * @enum {string}
+             */
+            status: "pending" | "stored" | "failed";
+            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
+            url: string | null;
+        };
+        SmsMessageDto: {
+            id: string;
+            /** @enum {string} */
+            direction: "inbound" | "outbound";
+            /** @description The words; empty for a text that is only a file. */
+            body: string;
+            /**
+             * @description Null for inbound texts. `dry_run` texts were never sent.
+             * @enum {string|null}
+             */
+            mode: "dry_run" | "live" | null;
+            /** @enum {string} */
+            status: "composed" | "queued" | "sent" | "delivered" | "undelivered" | "failed" | "received";
+            /** @description Why it failed, when it did. */
+            error: string | null;
+            /** @description The admin who sent it from this app; null for inbound texts and texts sent from the Quo app. */
+            sentByEmail: string | null;
+            /**
+             * Format: date-time
+             * @description When it happened (Quo's time).
+             */
+            occurredAt: string;
+            attachments: components["schemas"]["SmsAttachmentDto"][];
+        };
+        SmsMessageListDto: {
+            items: components["schemas"]["SmsMessageDto"][];
+            /** @description Pass as `before` to get the next, older page. Null when there is nothing older. */
+            nextCursor: string | null;
+            /** @description The contact's number the chat is with (E.164). */
+            contactPhone: string;
+        };
+        SendSmsDto: {
+            /** @description The words to send, 1 to 1600 characters (Quo's limit). Plain text only: Quo's API cannot send files. */
+            text: string;
+        };
+        SmsSyncResultDto: {
+            /** @description Texts Quo returned. */
+            fetched: number;
+            /** @description Of those, how many were new to us. */
+            added: number;
+        };
+        SmsFileDto: {
+            id: string;
+            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
+            contentType: string | null;
+            sizeBytes: number | null;
+            /**
+             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
+             * @enum {string}
+             */
+            status: "pending" | "stored" | "failed";
+            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
+            url: string | null;
+            /**
+             * @description Who sent it: `inbound` = the contact texted it to us.
+             * @enum {string}
+             */
+            direction: "inbound" | "outbound";
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        SmsFileListDto: {
+            items: components["schemas"]["SmsFileDto"][];
+            total: number;
+            page: number;
+            limit: number;
         };
     };
     responses: never;
@@ -944,6 +1124,144 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AssignPaymentResultDto"];
                 };
+            };
+        };
+    };
+    SmsController_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsStatusDto"];
+                };
+            };
+        };
+    };
+    SmsController_list: {
+        parameters: {
+            query: {
+                /** @description Texts per page (1 to 100), newest first. */
+                limit: number;
+                /** @description The `nextCursor` of the previous page, to get the texts before it. Omit for the newest. */
+                before?: string;
+            };
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsMessageListDto"];
+                };
+            };
+        };
+    };
+    SmsController_send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendSmsDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsMessageDto"];
+                };
+            };
+        };
+    };
+    SmsController_sync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsSyncResultDto"];
+                };
+            };
+        };
+    };
+    SmsController_files: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsFileListDto"];
+                };
+            };
+        };
+    };
+    QuoWebhookController_receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

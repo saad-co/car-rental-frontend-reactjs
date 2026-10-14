@@ -8,6 +8,7 @@ import {
   MATCH_METHOD_LABEL,
   PAYMENT_SOURCE_LABEL,
 } from "../../components/payments/paymentLabels";
+import ConversationCard from "../../components/sms/ConversationCard";
 import Badge from "../../components/ui/badge/Badge";
 import {
   Table,
@@ -225,6 +226,7 @@ export default function DriverDetail() {
         </div>
 
         <div className="space-y-6 lg:col-span-4">
+          <ConversationCard kind="drivers" id={driver.id} />
           <Card title="Contact">
             <Rows
               rows={[
