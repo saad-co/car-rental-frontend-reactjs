@@ -119,7 +119,27 @@ export default function DriverDetail() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="space-y-6 lg:col-span-8">
+        <div className="space-y-6 lg:col-span-5">
+          <Card title="Contact">
+            <Rows
+              rows={[
+                ["Email", driver.email],
+                ["Phone", formatUsPhone(driver.phone)],
+              ]}
+            />
+          </Card>
+          <Card title="Payments">
+            <Rows
+              rows={[
+                [
+                  "Payments received",
+                  driver.paymentCount === 0 ? "None" : driver.paymentCount,
+                ],
+                ["Last payment", formatDateTime(driver.lastPaymentAt)],
+              ]}
+            />
+          </Card>
+
           <Card title="Payment aliases">
             <p className="mb-4 text-sm text-gray-500">
               Names, handles and company names this driver pays from. A payment
@@ -225,34 +245,14 @@ export default function DriverDetail() {
           </Card>
         </div>
 
-        <div className="space-y-6 lg:col-span-4">
-          <div className="h-[36rem]">
-            <ConversationCard
-              kind="drivers"
-              id={driver.id}
-              name={fullName}
-              phone={formatUsPhone(driver.phone)}
-            />
-          </div>
-          <Card title="Contact">
-            <Rows
-              rows={[
-                ["Email", driver.email],
-                ["Phone", formatUsPhone(driver.phone)],
-              ]}
-            />
-          </Card>
-          <Card title="Payments">
-            <Rows
-              rows={[
-                [
-                  "Payments received",
-                  driver.paymentCount === 0 ? "None" : driver.paymentCount,
-                ],
-                ["Last payment", formatDateTime(driver.lastPaymentAt)],
-              ]}
-            />
-          </Card>
+        {/* The chat gets the space, like on the application page: wider than the details and nearly screen-tall. */}
+        <div className="h-[80vh] min-h-[36rem] lg:col-span-7 lg:h-[calc(100vh-9rem)]">
+          <ConversationCard
+            kind="drivers"
+            id={driver.id}
+            name={fullName}
+            phone={formatUsPhone(driver.phone)}
+          />
         </div>
       </div>
     </div>

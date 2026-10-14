@@ -288,7 +288,7 @@ export default function ApplicationDetail() {
         </div>
 
         {/* The chat gets the space: tall (the screen's height, like TailAdmin's chat page) and wider than the details. */}
-        <div className="h-[75vh] min-h-[32rem] lg:col-span-7 lg:h-[calc(100vh-12rem)]">
+        <div className="h-[80vh] min-h-[36rem] lg:col-span-7 lg:h-[calc(100vh-9rem)]">
           <ConversationCard
             kind="applications"
             id={application.id}

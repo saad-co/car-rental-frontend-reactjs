@@ -616,6 +616,8 @@ export interface components {
             nextCursor: string | null;
             /** @description The contact's number the chat is with (E.164). */
             contactPhone: string;
+            /** @description Why no text can be sent to this number (for example it cannot exist in the US); null when it can. */
+            contactPhoneProblem: string | null;
         };
         SendSmsDto: {
             /** @description The words to send, 1 to 1600 characters (Quo's limit). Plain text only: Quo's API cannot send files. */
