@@ -64,4 +64,15 @@ export const queryKeys = {
     list: (params: InboundEmailsListParams) =>
       ["inboundEmails", "list", params] as const,
   },
+  /** Texts with an application's or a driver's phone (the chat card). */
+  sms: {
+    all: ["sms"] as const,
+    status: ["sms", "status"] as const,
+    messages: (kind: string, id: string) =>
+      ["sms", "messages", kind, id] as const,
+    files: (kind: string, id: string, page: number) =>
+      ["sms", "files", kind, id, page] as const,
+    /** Prefix of a contact's files pages, whatever the page. */
+    filesOf: (kind: string, id: string) => ["sms", "files", kind, id] as const,
+  },
 };

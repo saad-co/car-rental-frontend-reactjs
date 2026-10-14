@@ -8,6 +8,7 @@ import {
   type ApplicationDetail as ApplicationDetailData,
 } from "../../api/applications.queries";
 import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
+import ConversationCard from "../../components/sms/ConversationCard";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
 import Tabs from "../../components/ui/tabs/Tabs";
@@ -246,6 +247,7 @@ export default function ApplicationDetail() {
         </div>
 
         <div className="space-y-6 lg:col-span-4">
+          <ConversationCard kind="applications" id={application.id} />
           <Card title="Review">
             <Rows
               rows={[
