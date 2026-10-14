@@ -11,13 +11,20 @@ export interface TabItem {
  * Underlined tabs, adapted from TailAdmin's `TabWithUnderline` (same classes) to take real content.
  * The first tab is selected at the start. Only the selected tab's content is rendered.
  */
-export default function Tabs({ tabs }: { tabs: TabItem[] }) {
+export default function Tabs({
+  tabs,
+  fill = false,
+}: {
+  tabs: TabItem[];
+  /** Fill the parent's height: the selected tab's content gets the space left below the tab bar (chat). */
+  fill?: boolean;
+}) {
   const [activeId, setActiveId] = useState(tabs[0]?.id);
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
 
   return (
-    <div>
-      <div className="border-b border-gray-200">
+    <div className={fill ? "flex h-full min-h-0 flex-col" : undefined}>
+      <div className="shrink-0 border-b border-gray-200">
         <nav role="tablist" className="-mb-px flex space-x-2 overflow-x-auto">
           {tabs.map((tab) => {
             const isActive = tab.id === active?.id;
@@ -40,7 +47,7 @@ export default function Tabs({ tabs }: { tabs: TabItem[] }) {
           })}
         </nav>
       </div>
-      <div role="tabpanel" className="pt-4">
+      <div role="tabpanel" className={fill ? "min-h-0 flex-1 pt-4" : "pt-4"}>
         {active?.content}
       </div>
     </div>

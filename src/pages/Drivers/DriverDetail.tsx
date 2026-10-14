@@ -226,7 +226,14 @@ export default function DriverDetail() {
         </div>
 
         <div className="space-y-6 lg:col-span-4">
-          <ConversationCard kind="drivers" id={driver.id} />
+          <div className="h-[36rem]">
+            <ConversationCard
+              kind="drivers"
+              id={driver.id}
+              name={fullName}
+              phone={formatUsPhone(driver.phone)}
+            />
+          </div>
           <Card title="Contact">
             <Rows
               rows={[

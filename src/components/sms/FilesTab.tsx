@@ -94,8 +94,8 @@ export default function FilesTab({
     );
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+    <div className="h-full space-y-4 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
         {files.data.items.map((file) => (
           <FileCard
             key={file.id}

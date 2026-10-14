@@ -46,7 +46,7 @@ function AttachmentView({
         <img
           src={attachment.url}
           alt="Attached file"
-          className="max-h-48 rounded-lg"
+          className="max-h-72 rounded-lg"
         />
       </a>
     ) : (
@@ -85,7 +85,7 @@ function Bubble({
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[85%] space-y-1.5 rounded-2xl px-3.5 py-2.5 text-sm",
+          "max-w-[85%] space-y-1.5 xl:max-w-[70%] rounded-2xl px-3.5 py-2.5 text-sm",
           outbound
             ? "rounded-br-sm bg-brand-500 text-white"
             : "rounded-bl-sm bg-gray-100 text-gray-800",
@@ -167,10 +167,10 @@ export default function MessagesTab({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="flex h-full min-h-0 flex-col gap-3">
       <div
         ref={listRef}
-        className="h-96 space-y-3 overflow-y-auto rounded-xl bg-gray-50 p-3"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl bg-gray-50 p-3"
       >
         {messagesQuery.isPending && (
           <p className="text-sm text-gray-500">Loading texts…</p>
@@ -204,7 +204,7 @@ export default function MessagesTab({
         ))}
       </div>
 
-      <form onSubmit={submit} className="space-y-2">
+      <form onSubmit={submit} className="shrink-0 space-y-2">
         <textarea
           value={text}
           onChange={(event) => setText(event.target.value)}
@@ -215,7 +215,7 @@ export default function MessagesTab({
             }
           }}
           maxLength={1600}
-          rows={3}
+          rows={2}
           disabled={off}
           placeholder={off ? "Texting is switched off." : "Type a text…"}
           className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden disabled:bg-gray-100"

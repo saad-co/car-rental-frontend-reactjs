@@ -215,95 +215,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/drivers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /drivers`: one page of drivers, newest first. */
-        get: operations["DriversController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/drivers/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /drivers/:id`: one driver. `400` for a malformed id, `404` if unknown. */
-        get: operations["DriversController_findOne"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbound-emails": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /inbound-emails`: one page of processed emails with their outcome, newest first. */
-        get: operations["InboundEmailsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /payments`: one page of payments, most recent first. `?match=review` lists "Needs review". */
-        get: operations["PaymentsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payments/{id}/assign": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * `POST /payments/:id/assign`: assigns or re-assigns a payment to a driver and saves the payer's name as
-         *     that driver's alias (unless another driver already owns it, which the answer reports).
-         *     `404` unknown payment, `400` unknown driver, `409` a rejected or discrepancy payment.
-         */
-        post: operations["PaymentsController_assign"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/sms/status": {
         parameters: {
             query?: never;
@@ -393,6 +304,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers`: one page of drivers, newest first. */
+        get: operations["DriversController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers/:id`: one driver. `400` for a malformed id, `404` if unknown. */
+        get: operations["DriversController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbound-emails": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /inbound-emails`: one page of processed emails with their outcome, newest first. */
+        get: operations["InboundEmailsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /payments`: one page of payments, most recent first. `?match=review` lists "Needs review". */
+        get: operations["PaymentsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /payments/:id/assign`: assigns or re-assigns a payment to a driver and saves the payer's name as
+         *     that driver's alias (unless another driver already owns it, which the answer reports).
+         *     `404` unknown payment, `400` unknown driver, `409` a rejected or discrepancy payment.
+         */
+        post: operations["PaymentsController_assign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -464,6 +464,8 @@ export interface components {
              * @description When our API received it.
              */
             receivedAt: string;
+            /** @description Why the alert text to staff about this application could not be sent; null if it did not fail. */
+            alertError: string | null;
         };
         ApplicationListDto: {
             items: components["schemas"]["ApplicationListItemDto"][];
@@ -492,6 +494,8 @@ export interface components {
              * @description When our API received it.
              */
             receivedAt: string;
+            /** @description Why the alert text to staff about this application could not be sent; null if it did not fail. */
+            alertError: string | null;
             /** @description The website's id for the submission. */
             requestId: string;
             zip: string | null;
@@ -509,6 +513,102 @@ export interface components {
             reviewedAt: string | null;
             /** @description The driver created on approval. Null unless approved. */
             driverId: string | null;
+            /**
+             * Format: date-time
+             * @description When the alert text to staff was really sent; null if it was not (off, dry run, or failed).
+             */
+            alertedAt: string | null;
+        };
+        SmsStatusDto: {
+            /**
+             * @description `off`: sending refused. `dry_run`: texts are saved, not sent. `live`: really sent.
+             * @enum {string}
+             */
+            mode: "off" | "dry_run" | "live";
+            /** @description Whether the Quo API key and number are set, which syncing the history needs. */
+            quoConfigured: boolean;
+            /** @description Whether the file bucket is set; without it files stay pending. */
+            filesConfigured: boolean;
+        };
+        SmsAttachmentDto: {
+            id: string;
+            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
+            contentType: string | null;
+            sizeBytes: number | null;
+            /**
+             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
+             * @enum {string}
+             */
+            status: "pending" | "stored" | "failed";
+            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
+            url: string | null;
+        };
+        SmsMessageDto: {
+            id: string;
+            /** @enum {string} */
+            direction: "inbound" | "outbound";
+            /** @description The words; empty for a text that is only a file. */
+            body: string;
+            /**
+             * @description Null for inbound texts. `dry_run` texts were never sent.
+             * @enum {string|null}
+             */
+            mode: "dry_run" | "live" | null;
+            /** @enum {string} */
+            status: "composed" | "queued" | "sent" | "delivered" | "undelivered" | "failed" | "received";
+            /** @description Why it failed, when it did. */
+            error: string | null;
+            /** @description The admin who sent it from this app; null for inbound texts and texts sent from the Quo app. */
+            sentByEmail: string | null;
+            /**
+             * Format: date-time
+             * @description When it happened (Quo's time).
+             */
+            occurredAt: string;
+            attachments: components["schemas"]["SmsAttachmentDto"][];
+        };
+        SmsMessageListDto: {
+            items: components["schemas"]["SmsMessageDto"][];
+            /** @description Pass as `before` to get the next, older page. Null when there is nothing older. */
+            nextCursor: string | null;
+            /** @description The contact's number the chat is with (E.164). */
+            contactPhone: string;
+        };
+        SendSmsDto: {
+            /** @description The words to send, 1 to 1600 characters (Quo's limit). Plain text only: Quo's API cannot send files. */
+            text: string;
+        };
+        SmsSyncResultDto: {
+            /** @description Texts Quo returned. */
+            fetched: number;
+            /** @description Of those, how many were new to us. */
+            added: number;
+        };
+        SmsFileDto: {
+            id: string;
+            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
+            contentType: string | null;
+            sizeBytes: number | null;
+            /**
+             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
+             * @enum {string}
+             */
+            status: "pending" | "stored" | "failed";
+            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
+            url: string | null;
+            /**
+             * @description Who sent it: `inbound` = the contact texted it to us.
+             * @enum {string}
+             */
+            direction: "inbound" | "outbound";
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        SmsFileListDto: {
+            items: components["schemas"]["SmsFileDto"][];
+            total: number;
+            page: number;
+            limit: number;
         };
         DriverAliasDto: {
             /** @enum {string} */
@@ -650,97 +750,6 @@ export interface components {
              *     moved (one alias, one driver); the admin decides.
              */
             aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
-        };
-        SmsStatusDto: {
-            /**
-             * @description `off`: sending refused. `dry_run`: texts are saved, not sent. `live`: really sent.
-             * @enum {string}
-             */
-            mode: "off" | "dry_run" | "live";
-            /** @description Whether the Quo API key and number are set, which syncing the history needs. */
-            quoConfigured: boolean;
-            /** @description Whether the file bucket is set; without it files stay pending. */
-            filesConfigured: boolean;
-        };
-        SmsAttachmentDto: {
-            id: string;
-            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
-            contentType: string | null;
-            sizeBytes: number | null;
-            /**
-             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
-             * @enum {string}
-             */
-            status: "pending" | "stored" | "failed";
-            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
-            url: string | null;
-        };
-        SmsMessageDto: {
-            id: string;
-            /** @enum {string} */
-            direction: "inbound" | "outbound";
-            /** @description The words; empty for a text that is only a file. */
-            body: string;
-            /**
-             * @description Null for inbound texts. `dry_run` texts were never sent.
-             * @enum {string|null}
-             */
-            mode: "dry_run" | "live" | null;
-            /** @enum {string} */
-            status: "composed" | "queued" | "sent" | "delivered" | "undelivered" | "failed" | "received";
-            /** @description Why it failed, when it did. */
-            error: string | null;
-            /** @description The admin who sent it from this app; null for inbound texts and texts sent from the Quo app. */
-            sentByEmail: string | null;
-            /**
-             * Format: date-time
-             * @description When it happened (Quo's time).
-             */
-            occurredAt: string;
-            attachments: components["schemas"]["SmsAttachmentDto"][];
-        };
-        SmsMessageListDto: {
-            items: components["schemas"]["SmsMessageDto"][];
-            /** @description Pass as `before` to get the next, older page. Null when there is nothing older. */
-            nextCursor: string | null;
-            /** @description The contact's number the chat is with (E.164). */
-            contactPhone: string;
-        };
-        SendSmsDto: {
-            /** @description The words to send, 1 to 1600 characters (Quo's limit). Plain text only: Quo's API cannot send files. */
-            text: string;
-        };
-        SmsSyncResultDto: {
-            /** @description Texts Quo returned. */
-            fetched: number;
-            /** @description Of those, how many were new to us. */
-            added: number;
-        };
-        SmsFileDto: {
-            id: string;
-            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
-            contentType: string | null;
-            sizeBytes: number | null;
-            /**
-             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
-             * @enum {string}
-             */
-            status: "pending" | "stored" | "failed";
-            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
-            url: string | null;
-            /**
-             * @description Who sent it: `inbound` = the contact texted it to us.
-             * @enum {string}
-             */
-            direction: "inbound" | "outbound";
-            /** Format: date-time */
-            occurredAt: string;
-        };
-        SmsFileListDto: {
-            items: components["schemas"]["SmsFileDto"][];
-            total: number;
-            page: number;
-            limit: number;
         };
     };
     responses: never;
@@ -992,141 +1001,6 @@ export interface operations {
             };
         };
     };
-    DriversController_list: {
-        parameters: {
-            query: {
-                /** @description Only drivers with this status. Omit for all. */
-                status?: "active" | "inactive";
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DriverListDto"];
-                };
-            };
-        };
-    };
-    DriversController_findOne: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DriverDto"];
-                };
-            };
-        };
-    };
-    InboundEmailsController_list: {
-        parameters: {
-            query: {
-                /** @description Only emails from this provider. Omit for all. */
-                provider?: components["schemas"]["InboundEmailProvider"];
-                /** @description Only emails with this outcome. Omit for all. */
-                status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InboundEmailListDto"];
-                };
-            };
-        };
-    };
-    PaymentsController_list: {
-        parameters: {
-            query: {
-                /** @description Only payments with this status. Omit for all. */
-                status?: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
-                /** @description Only payments from this source. Omit for all. */
-                source?: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
-                /** @description Only payments assigned to this driver (the driver page). Omit for all. */
-                driverId?: string;
-                /**
-                 * @description `assigned`: has a driver. `review`: matching looked at it and could not place it ("Needs review").
-                 *     Omit for all.
-                 */
-                match?: "assigned" | "review";
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentListDto"];
-                };
-            };
-        };
-    };
-    PaymentsController_assign: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignPaymentDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AssignPaymentResultDto"];
-                };
-            };
-        };
-    };
     SmsController_status: {
         parameters: {
             query?: never;
@@ -1262,6 +1136,141 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    DriversController_list: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+                /** @description Only drivers with this status. Omit for all. */
+                status?: "active" | "inactive";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverListDto"];
+                };
+            };
+        };
+    };
+    DriversController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    InboundEmailsController_list: {
+        parameters: {
+            query: {
+                /** @description Only emails from this provider. Omit for all. */
+                provider?: components["schemas"]["InboundEmailProvider"];
+                /** @description Only emails with this outcome. Omit for all. */
+                status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboundEmailListDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_list: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+                /** @description Only payments with this status. Omit for all. */
+                status?: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
+                /** @description Only payments from this source. Omit for all. */
+                source?: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+                /** @description Only payments assigned to this driver (the driver page). Omit for all. */
+                driverId?: string;
+                /**
+                 * @description `assigned`: has a driver. `review`: matching looked at it and could not place it ("Needs review").
+                 *     Omit for all.
+                 */
+                match?: "assigned" | "review";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentListDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_assign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignPaymentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignPaymentResultDto"];
+                };
             };
         };
     };
