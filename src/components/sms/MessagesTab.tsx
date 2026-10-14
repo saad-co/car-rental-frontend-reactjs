@@ -153,6 +153,10 @@ export default function MessagesTab({
   );
   const newestId = messages.at(-1)?.id;
   const off = status.data?.mode === "off";
+  // Said before the admin types: the number cannot get texts (for example it was registered wrongly).
+  const numberProblem =
+    messagesQuery.data?.pages[0]?.contactPhoneProblem ?? null;
+  const cannotSend = off || numberProblem !== null;
 
   // Jump to the newest text when the chat opens and when a newer one arrives.
   useEffect(() => {
@@ -216,10 +220,24 @@ export default function MessagesTab({
           }}
           maxLength={1600}
           rows={2}
-          disabled={off}
-          placeholder={off ? "Texting is switched off." : "Type a text…"}
+          disabled={cannotSend}
+          placeholder={
+            off
+              ? "Texting is switched off."
+              : numberProblem
+                ? "This number cannot receive texts."
+                : "Type a text…"
+          }
           className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden disabled:bg-gray-100"
         />
+        {numberProblem && (
+          <p
+            role="alert"
+            className="rounded-lg border border-warning-200 bg-warning-50 px-3 py-2 text-sm text-warning-700"
+          >
+            {numberProblem}
+          </p>
+        )}
         {send.isError && (
           <p role="alert" className="text-sm text-error-600">
             {send.error.message}
@@ -231,7 +249,7 @@ export default function MessagesTab({
           </span>
           <button
             type="submit"
-            disabled={off || send.isPending || text.trim() === ""}
+            disabled={cannotSend || send.isPending || text.trim() === ""}
             className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {send.isPending ? "Sending…" : "Send"}
