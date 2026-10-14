@@ -17,6 +17,14 @@ export type ApplicationListItem =
 /** Everything about one application, exactly as the API returns it. */
 export type ApplicationDetail = components["schemas"]["ApplicationDetailDto"];
 
+/** The documents of one application: licence, rating and earnings screenshots (our copies). */
+export type ApplicationDocuments =
+  components["schemas"]["ApplicationDocumentListDto"];
+
+/** One uploaded document. */
+export type ApplicationDocument =
+  components["schemas"]["ApplicationDocumentDto"];
+
 /** `pending` | `approved` | `rejected` | `on_hold`, from the generated types. */
 export type ApplicationStatus = ApplicationListItem["status"];
 
@@ -133,4 +141,38 @@ export function useRejectApplication() {
 /** Puts an application on hold. */
 export function useHoldApplication() {
   return useReviewApplication("hold");
+}
+
+/** Definition of the documents query: its key and how to fetch it. */
+const applicationDocumentsOptions = (id: string) =>
+  queryOptions({
+    queryKey: queryKeys.applications.documents(id),
+    queryFn: async () => {
+      const { data, error, response } = await api.GET(
+        "/applications/{id}/documents",
+        { params: { path: { id } } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Loading documents failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    // Documents are copied in the background right after an application arrives: keep checking while any is
+    // still pending, and stop once they are all done.
+    refetchInterval: (query) =>
+      query.state.data?.items.some((d) => d.status === "pending") &&
+      query.state.data.sourceConnected &&
+      query.state.data.storageConnected
+        ? 5_000
+        : false,
+  });
+
+/** The documents the applicant uploaded, as our own copies, with short-lived links to open them. */
+export function useApplicationDocuments(id: string) {
+  return useQuery(applicationDocumentsOptions(id));
 }

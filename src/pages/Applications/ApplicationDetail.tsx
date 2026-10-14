@@ -8,6 +8,7 @@ import {
   type ApplicationDetail as ApplicationDetailData,
 } from "../../api/applications.queries";
 import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
+import ApplicationDocuments from "../../components/applications/ApplicationDocuments";
 import ConversationCard from "../../components/sms/ConversationCard";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
@@ -136,11 +137,10 @@ export default function ApplicationDetail() {
       label: "Documents",
       content: (
         <>
-          <FieldRows fields={DOCUMENT_FIELDS} payload={payload} />
-          <p className="mt-3 text-theme-xs text-gray-500">
-            Files are stored in the client's Supabase bucket; viewing them needs
-            access to it (B17).
-          </p>
+          <ApplicationDocuments applicationId={application.id} />
+          <div className="mt-6">
+            <FieldRows fields={DOCUMENT_FIELDS} payload={payload} />
+          </div>
         </>
       ),
     },
