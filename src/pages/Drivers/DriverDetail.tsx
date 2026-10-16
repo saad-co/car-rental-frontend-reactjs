@@ -1,7 +1,20 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { useDriver, type DriverAlias } from "../../api/drivers.queries";
+import {
+  useDeactivateDriver,
+  useDriver,
+  useReactivateDriver,
+  useSetOnboardingStep,
+  type Driver,
+  type DriverAlias,
+  type OnboardingStep,
+} from "../../api/drivers.queries";
 import { usePayments } from "../../api/payments.queries";
+import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
+import { ONBOARDING_STEPS } from "../../components/drivers/driverStatus";
+import Checkbox from "../../components/form/input/Checkbox";
+import Button from "../../components/ui/button/Button";
+import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
 import {
   ALIAS_SOURCE_LABEL,
   ALIAS_TYPE_LABEL,
@@ -9,7 +22,6 @@ import {
   PAYMENT_SOURCE_LABEL,
 } from "../../components/payments/paymentLabels";
 import ConversationCard from "../../components/sms/ConversationCard";
-import Badge from "../../components/ui/badge/Badge";
 import {
   Table,
   TableBody,
@@ -66,14 +78,86 @@ function groupAliases(aliases: DriverAlias[]) {
 }
 
 /**
- * Admin page for one driver: contact details, a payment summary, the payment aliases they pay from (grouped by
- * payment method) and their most recent payments. Read-only for now: adding and removing aliases comes with the
- * driver-approval rule (B53).
+ * The Onboarding card (D56): contract, deposit and vehicle, ticked in any order. The driver becomes active when the
+ * third is ticked (the API decides). Locked while the driver is inactive.
+ */
+function OnboardingCard({
+  driver,
+  busy,
+  onChange,
+}: {
+  driver: Driver;
+  busy: boolean;
+  onChange: (step: OnboardingStep, done: boolean) => void;
+}) {
+  const locked = driver.status === "inactive";
+  return (
+    <Card title="Onboarding">
+      <p className="mb-4 text-sm text-gray-500">
+        {locked
+          ? "This driver is inactive. Reactivate them to change these steps."
+          : driver.status === "active"
+            ? "All steps are done: the driver is active."
+            : "The driver becomes active as soon as all three are done, in any order."}
+      </p>
+      <ul className="space-y-3">
+        {ONBOARDING_STEPS.map(({ step, label, field }) => {
+          const doneAt = driver.onboarding[field];
+          return (
+            <li key={step} className="flex items-center justify-between gap-4">
+              <Checkbox
+                label={label}
+                checked={doneAt !== null}
+                disabled={locked || busy}
+                onChange={(checked) => onChange(step, checked)}
+              />
+              <span className="text-theme-xs text-gray-500">
+                {doneAt ? `Done ${formatDateTime(doneAt)}` : "Not done"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
+  );
+}
+
+/**
+ * Admin page for one driver: status and onboarding (D56), contact details, a payment summary, the payment aliases
+ * they pay from (grouped by payment method) and their most recent payments. Aliases are read-only for now: adding
+ * and removing them comes with the driver-approval rule (B53).
  */
 export default function DriverDetail() {
   const { id = "" } = useParams();
   const { data: driver, isPending, isError, error } = useDriver(id);
   const payments = usePayments({ driverId: id, page: 1, limit: 10 });
+
+  const setStep = useSetOnboardingStep(id);
+  const deactivate = useDeactivateDriver(id);
+  const reactivate = useReactivateDriver(id);
+  const mutations = [setStep, deactivate, reactivate];
+  const busy = mutations.some((m) => m.isPending);
+  const actionError = mutations.find((m) => m.isError)?.error;
+
+  /** An un-tick waiting for confirmation (it would take an active driver back to onboarding). */
+  const [confirmingUntick, setConfirmingUntick] =
+    useState<OnboardingStep | null>(null);
+  /** True while the "Deactivate?" dialog is open. */
+  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
+
+  /** Clears the previous action's error, then runs this one. */
+  const run = (action: () => void) => {
+    mutations.forEach((m) => m.reset());
+    action();
+  };
+
+  const changeStep = (step: OnboardingStep, done: boolean) => {
+    if (!done && driver?.status === "active") {
+      setConfirmingUntick(step);
+      return;
+    }
+    run(() => setStep.mutate({ step, done }));
+  };
 
   if (isPending) {
     return <p className="text-sm text-gray-500">Loading...</p>;
@@ -103,23 +187,82 @@ export default function DriverDetail() {
         ← Back to drivers
       </Link>
 
-      <div className="flex flex-col justify-between gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>
-          <Badge
-            size="sm"
-            color={driver.status === "active" ? "success" : "light"}
-          >
-            {driver.status === "active" ? "Active" : "Inactive"}
-          </Badge>
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>
+            <DriverStatusBadge driver={driver} />
+          </div>
+          <p className="text-sm text-gray-500">
+            Driver since {formatDateTime(driver.createdAt)}
+          </p>
         </div>
-        <p className="text-sm text-gray-500">
-          Driver since {formatDateTime(driver.createdAt)}
-        </p>
+        {driver.status === "inactive" ? (
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => run(() => reactivate.mutate(undefined))}
+          >
+            {reactivate.isPending ? "Reactivating..." : "Reactivate"}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => setConfirmingDeactivate(true)}
+          >
+            {deactivate.isPending ? "Deactivating..." : "Deactivate"}
+          </Button>
+        )}
       </div>
+
+      {actionError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-600"
+        >
+          {actionError.message}
+        </p>
+      )}
+
+      <ConfirmDialog
+        isOpen={confirmingDeactivate}
+        title={`Deactivate ${fullName}?`}
+        confirmLabel="Deactivate"
+        confirmVariant="danger"
+        onCancel={() => setConfirmingDeactivate(false)}
+        onConfirm={() => {
+          setConfirmingDeactivate(false);
+          run(() => deactivate.mutate(undefined));
+        }}
+      >
+        Use this when the driver leaves. They can no longer log in to the driver
+        portal, and are signed out at once. Their history and onboarding steps
+        are kept, and you can reactivate them later.
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        isOpen={confirmingUntick !== null}
+        title="Take this driver out of active?"
+        confirmLabel="Un-tick"
+        confirmVariant="danger"
+        onCancel={() => setConfirmingUntick(null)}
+        onConfirm={() => {
+          const step = confirmingUntick;
+          setConfirmingUntick(null);
+          if (step) run(() => setStep.mutate({ step, done: false }));
+        }}
+      >
+        {fullName} is active. Un-ticking "
+        {ONBOARDING_STEPS.find((s) => s.step === confirmingUntick)?.label}" puts
+        them back in onboarding: once billing is running, an onboarding driver
+        is not billed or reminded until the step is ticked again.
+      </ConfirmDialog>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">
+          <OnboardingCard driver={driver} busy={busy} onChange={changeStep} />
           <Card title="Contact">
             <Rows
               rows={[

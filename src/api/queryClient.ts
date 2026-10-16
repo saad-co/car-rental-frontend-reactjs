@@ -54,6 +54,8 @@ export const queryKeys = {
   },
   drivers: {
     all: ["drivers"] as const,
+    /** Prefix of every drivers list (any filter, page or search). */
+    lists: ["drivers", "list"] as const,
     list: (params: DriversListParams) => ["drivers", "list", params] as const,
     detail: (id: string) => ["drivers", "detail", id] as const,
   },

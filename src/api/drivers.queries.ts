@@ -1,7 +1,9 @@
 import {
   keepPreviousData,
   queryOptions,
+  useMutation,
   useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { api } from "./client";
 import { apiErrorMessage } from "./errors";
@@ -14,8 +16,12 @@ export type Driver = components["schemas"]["DriverDto"];
 /** One payment alias of a driver (a name or handle they pay from, per payment method). */
 export type DriverAlias = Driver["aliases"][number];
 
-/** `active` | `inactive`, from the generated types. */
+/** `onboarding` | `active` | `inactive`, from the generated types. */
 export type DriverStatus = Driver["status"];
+
+/** `contract` | `deposit` | `vehicle`, from the generated types. */
+export type OnboardingStep =
+  components["schemas"]["SetOnboardingStepDto"]["step"];
 
 /** Definition of the drivers list query: its key and how to fetch it. */
 const driversListOptions = (params: DriversListParams) =>
@@ -66,4 +72,56 @@ const driverDetailOptions = (id: string) =>
 /** One driver with their payment aliases and payment summary. */
 export function useDriver(id: string) {
   return useQuery(driverDetailOptions(id));
+}
+
+/**
+ * Shared logic of the driver status mutations: each request returns the updated driver. On success the detail cache
+ * is replaced with it (the page updates without a refetch) and every drivers list refetches (status and badge
+ * changed).
+ */
+function useDriverMutation<V>(
+  request: (
+    vars: V,
+  ) => Promise<{ data?: Driver; error?: unknown; response: Response }>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: V) => {
+      const { data, error, response } = await request(vars);
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `The request failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: (driver) => {
+      queryClient.setQueryData(queryKeys.drivers.detail(driver.id), driver);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
+    },
+  });
+}
+
+/** Ticks (`done: true`) or un-ticks one onboarding step; the API sets the status from the steps (D56). */
+export function useSetOnboardingStep(id: string) {
+  return useDriverMutation((vars: { step: OnboardingStep; done: boolean }) =>
+    api.POST("/drivers/{id}/onboarding", {
+      params: { path: { id } },
+      body: vars,
+    }),
+  );
+}
+
+/** Marks the driver inactive; their login stops working (B67). */
+export function useDeactivateDriver(id: string) {
+  return useDriverMutation(() =>
+    api.POST("/drivers/{id}/deactivate", { params: { path: { id } } }),
+  );
+}
+
+/** Brings an inactive driver back (active or onboarding, from their steps). */
+export function useReactivateDriver(id: string) {
+  return useDriverMutation(() =>
+    api.POST("/drivers/{id}/reactivate", { params: { path: { id } } }),
+  );
 }

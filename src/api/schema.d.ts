@@ -379,6 +379,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/onboarding`: ticks or un-ticks one onboarding step (D56). The driver becomes `active` when
+         *     the third step is ticked, and goes back to `onboarding` when one is un-ticked. Returns the updated driver.
+         *     `409` if the driver is inactive.
+         */
+        post: operations["DriversController_setOnboardingStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /drivers/:id/deactivate`: the driver left (B67). Their login stops working at once. */
+        post: operations["DriversController_deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /drivers/:id/reactivate`: back to `active` (all steps done) or `onboarding`; login works again. */
+        post: operations["DriversController_reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbound-emails": {
         parameters: {
             query?: never;
@@ -693,6 +748,14 @@ export interface components {
             page: number;
             limit: number;
         };
+        DriverOnboardingDto: {
+            /** Format: date-time */
+            contractSignedAt: string | null;
+            /** Format: date-time */
+            depositPaidAt: string | null;
+            /** Format: date-time */
+            vehicleAssignedAt: string | null;
+        };
         DriverAliasDto: {
             /** @enum {string} */
             type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
@@ -711,8 +774,12 @@ export interface components {
             email: string;
             /** @description E.164, e.g. `+13125550123`. */
             phone: string;
-            /** @enum {string} */
-            status: "active" | "inactive";
+            /**
+             * @description `onboarding` until all three steps are done, then `active`; `inactive` when the driver left (D56).
+             * @enum {string}
+             */
+            status: "onboarding" | "active" | "inactive";
+            onboarding: components["schemas"]["DriverOnboardingDto"];
             /**
              * Format: date-time
              * @description When the driver was created (the application's approval).
@@ -734,6 +801,12 @@ export interface components {
             total: number;
             page: number;
             limit: number;
+        };
+        SetOnboardingStepDto: {
+            /** @enum {string} */
+            step: "contract" | "deposit" | "vehicle";
+            /** @description `true` marks the step done (now, by the admin); `false` clears it. */
+            done: boolean;
         };
         /** @enum {string} */
         InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
@@ -1276,7 +1349,7 @@ export interface operations {
                 /** @description Items per page (1 to 100). */
                 limit: number;
                 /** @description Only drivers with this status. Omit for all. */
-                status?: "active" | "inactive";
+                status?: "onboarding" | "active" | "inactive";
                 /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
                 search?: string;
             };
@@ -1297,6 +1370,73 @@ export interface operations {
         };
     };
     DriversController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_setOnboardingStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetOnboardingStepDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_deactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_reactivate: {
         parameters: {
             query?: never;
             header?: never;

@@ -12,15 +12,11 @@ import {
   pageCount,
   useListParams,
 } from "../../components/tables/useListParams";
+import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
+import { DRIVER_STATUS_LABEL } from "../../components/drivers/driverStatus";
 import AvatarText from "../../components/ui/avatar/AvatarText";
-import Badge from "../../components/ui/badge/Badge";
 import { formatDateTime, formatUsPhone } from "../../utils";
 
-/** How each driver status is shown. */
-const DRIVER_STATUS_LABEL: Record<DriverStatus, string> = {
-  active: "Active",
-  inactive: "Inactive",
-};
 const STATUSES = Object.keys(DRIVER_STATUS_LABEL) as DriverStatus[];
 
 const columns: Column<Driver>[] = [
@@ -56,11 +52,7 @@ const columns: Column<Driver>[] = [
   {
     key: "status",
     header: "Status",
-    render: (driver) => (
-      <Badge size="sm" color={driver.status === "active" ? "success" : "light"}>
-        {DRIVER_STATUS_LABEL[driver.status]}
-      </Badge>
-    ),
+    render: (driver) => <DriverStatusBadge driver={driver} />,
   },
   {
     key: "since",
