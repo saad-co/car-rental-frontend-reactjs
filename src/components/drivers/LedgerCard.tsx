@@ -6,30 +6,17 @@ import {
   useReverseLedgerEntry,
   type LedgerRow,
 } from "../../api/ledger.queries";
-import {
-  chicagoToday,
-  cn,
-  formatBalance,
-  formatCents,
-  formatDay,
-} from "../../utils";
+import { chicagoToday, formatCents, formatDay } from "../../utils";
 import DataTable, { type Column } from "../tables/DataTable";
 import Badge from "../ui/badge/Badge";
 import Button from "../ui/button/Button";
 import Pagination from "../ui/pagination/Pagination";
 import Tabs from "../ui/tabs/Tabs";
 import AddLedgerEntryDialog from "./AddLedgerEntryDialog";
+import BalanceText from "./BalanceText";
+import LedgerSummaryTab from "./LedgerSummaryTab";
 import { entryTypeLabel } from "./ledgerLabels";
 import ReverseLedgerEntryDialog from "./ReverseLedgerEntryDialog";
-
-/** Red when the driver owes, green when in credit. */
-function balanceClass(cents: number): string {
-  return cents < 0
-    ? "text-error-600"
-    : cents > 0
-      ? "text-success-600"
-      : "text-gray-700";
-}
 
 /** The ledger history: newest first, 8 rows per page, each with the balance after it. */
 function EntriesTab({
@@ -123,11 +110,7 @@ function EntriesTab({
       align: "end",
       className: "whitespace-nowrap",
       render: (row) => (
-        <span
-          className={cn("font-medium", balanceClass(row.runningBalanceCents))}
-        >
-          {formatBalance(row.runningBalanceCents)}
-        </span>
+        <BalanceText cents={row.runningBalanceCents} className="font-medium" />
       ),
     },
     {
@@ -192,13 +175,11 @@ export default function LedgerCard({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-gray-800">Ledger</h2>
-          <p
-            className={cn(
-              "mt-1 text-title-sm font-semibold",
-              balanceClass(balanceCents),
-            )}
-          >
-            {formatBalance(balanceCents)}
+          <p className="mt-1">
+            <BalanceText
+              cents={balanceCents}
+              className="text-title-sm font-semibold"
+            />
           </p>
           <p className="text-theme-xs text-gray-500">
             Balance now: payments and credits minus charges. Rent charges start
@@ -231,6 +212,16 @@ export default function LedgerCard({
                 }}
               />
             ),
+          },
+          {
+            id: "weekly",
+            label: "Weekly",
+            content: <LedgerSummaryTab driverId={driverId} period="week" />,
+          },
+          {
+            id: "monthly",
+            label: "Monthly",
+            content: <LedgerSummaryTab driverId={driverId} period="month" />,
           },
         ]}
       />
