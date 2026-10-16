@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 import UserDropdown from "../components/header/UserDropdown";
+import { BRAND_NAME } from "../brand";
 import { chicagoUtcOffset } from "../utils";
 
 const AppHeader: React.FC = () => {
@@ -67,7 +68,7 @@ const AppHeader: React.FC = () => {
             to="/admin"
             className="text-lg font-semibold text-gray-900 xl:hidden"
           >
-            Car Rental
+            {BRAND_NAME}
           </Link>
 
           <button
