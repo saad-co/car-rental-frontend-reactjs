@@ -51,6 +51,8 @@ export const queryKeys = {
     detail: (id: string) => ["applications", "detail", id] as const,
     /** The uploaded documents of one application (our copies). */
     documents: (id: string) => ["applications", "documents", id] as const,
+    /** The internal notes of one application (B74), all loaded pages. */
+    notes: (id: string) => ["applications", "notes", id] as const,
   },
   drivers: {
     all: ["drivers"] as const,

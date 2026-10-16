@@ -1,6 +1,8 @@
 import {
+  infiniteQueryOptions,
   keepPreviousData,
   queryOptions,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -241,4 +243,97 @@ const applicationDocumentsOptions = (id: string) =>
 /** The documents the applicant uploaded, as our own copies, with short-lived links to open them. */
 export function useApplicationDocuments(id: string) {
   return useQuery(applicationDocumentsOptions(id));
+}
+
+/** One internal note on an application (B74), exactly as the API returns it. */
+export type ApplicationNote = components["schemas"]["ApplicationNoteDto"];
+
+/** Notes per "page" of the notes card: the newest 10, then 10 more per "Show older notes". */
+const NOTES_PAGE_SIZE = 10;
+
+/**
+ * Definition of the notes query. An infinite query: TanStack Query's "load more" pattern. It fetches page 1, then the
+ * next page each time `fetchNextPage()` is called, and keeps every loaded page under the one key.
+ */
+const applicationNotesOptions = (id: string) =>
+  infiniteQueryOptions({
+    queryKey: queryKeys.applications.notes(id),
+    queryFn: async ({ pageParam }) => {
+      const { data, error, response } = await api.GET(
+        "/applications/{id}/notes",
+        {
+          params: {
+            path: { id },
+            query: { page: pageParam, limit: NOTES_PAGE_SIZE },
+          },
+        },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Loading notes failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    initialPageParam: 1,
+    // Another page exists while fewer notes are loaded than the total.
+    getNextPageParam: (last) =>
+      last.page * last.limit < last.total ? last.page + 1 : undefined,
+  });
+
+/** The internal notes of an application, newest first; `fetchNextPage()` loads older ones. */
+export function useApplicationNotes(id: string) {
+  return useInfiniteQuery(applicationNotesOptions(id));
+}
+
+/** Adds a note by the logged-in admin; the notes list refetches. */
+export function useAddApplicationNote(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: string) => {
+      const { data, error, response } = await api.POST(
+        "/applications/{id}/notes",
+        { params: { path: { id } }, body: { body } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Saving the note failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.notes(id),
+      }),
+  });
+}
+
+/** Deletes one of your own notes (the API refuses anyone else's); the notes list refetches. */
+export function useDeleteApplicationNote(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (noteId: string) => {
+      const { error, response } = await api.DELETE(
+        "/applications/{id}/notes/{noteId}",
+        { params: { path: { id, noteId } } },
+      );
+      // 204 has no body, so success is read from the status, not from `data`.
+      if (!response.ok) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Deleting the note failed (${response.status}).`,
+          ),
+        );
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.notes(id),
+      }),
+  });
 }

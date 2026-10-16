@@ -12,6 +12,7 @@ import {
 import type { ApplicationsListState } from "./ApplicationsList";
 import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
 import ApplicationDocuments from "../../components/applications/ApplicationDocuments";
+import ApplicationNotesCard from "../../components/applications/ApplicationNotesCard";
 import ConversationCard from "../../components/sms/ConversationCard";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
@@ -322,6 +323,8 @@ export default function ApplicationDetail() {
               ]}
             />
           </Card>
+
+          <ApplicationNotesCard applicationId={application.id} />
 
           <Card title="Submission">
             <Rows

@@ -256,6 +256,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /applications/:id/notes`: one page of notes, newest first. `404` unknown application. */
+        get: operations["ApplicationNotesController_list"];
+        put?: never;
+        /** `POST /applications/:id/notes`: adds a note by the logged-in admin. `400` empty or too long. */
+        post: operations["ApplicationNotesController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * `DELETE /applications/:id/notes/:noteId`: deletes one of your own notes. `204` with no body; `403` someone
+         *     else's note; `404` unknown note.
+         */
+        delete: operations["ApplicationNotesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sms/status": {
         parameters: {
             query?: never;
@@ -654,6 +692,30 @@ export interface components {
             sourceConnected: boolean;
             /** @description Whether our file bucket is connected (`S3_*`); without it nothing can be stored. */
             storageConnected: boolean;
+        };
+        ApplicationNoteDto: {
+            id: string;
+            body: string;
+            /** @description The admin who wrote it; null if that account was removed since. */
+            authorId: string | null;
+            /** @description The author's email, shown as their name (admins have no name field). Null if the account was removed. */
+            authorEmail: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ApplicationNoteListDto: {
+            items: components["schemas"]["ApplicationNoteDto"][];
+            /** @description All notes of the application, across pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        CreateApplicationNoteDto: {
+            /**
+             * @description The note, 1 to 2000 characters after trimming; line breaks are kept. `@Transform` trims it before the checks, so
+             *     a note of only spaces is refused (400) instead of saved empty.
+             */
+            body: string;
         };
         SmsStatusDto: {
             /**
@@ -1200,6 +1262,77 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApplicationDocumentListDto"];
                 };
+            };
+        };
+    };
+    ApplicationNotesController_list: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationNoteListDto"];
+                };
+            };
+        };
+    };
+    ApplicationNotesController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApplicationNoteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationNoteDto"];
+                };
+            };
+        };
+    };
+    ApplicationNotesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
