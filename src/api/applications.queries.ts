@@ -1,6 +1,8 @@
 import {
+  infiniteQueryOptions,
   keepPreviousData,
   queryOptions,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -143,6 +145,72 @@ export function useHoldApplication() {
   return useReviewApplication("hold");
 }
 
+/** What a delete removed: `{ deleted, filesNotRemoved }`. */
+export type DeleteApplicationsResult =
+  components["schemas"]["DeleteApplicationsResultDto"];
+
+/**
+ * Deletes applications for good (B66). Takes their ids; one id deletes one. The API refuses the whole request
+ * (409, nothing deleted) if any is approved.
+ *
+ * On success: every applications list refetches; cached details and documents of deleted applications that no
+ * screen shows any more are dropped (one still on screen is left alone, so it does not refetch into a 404 while
+ * the page leaves); chats are marked stale, because a deleted application's text history may be gone too.
+ */
+export function useDeleteApplications() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data, error, response } = await api.POST(
+        "/applications/bulk-delete",
+        { body: { ids } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Deleting failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: (_result, ids) => {
+      for (const id of ids) {
+        queryClient.removeQueries({
+          queryKey: queryKeys.applications.detail(id),
+          type: "inactive",
+        });
+        queryClient.removeQueries({
+          queryKey: queryKeys.applications.documents(id),
+          type: "inactive",
+        });
+      }
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.lists,
+      });
+      // Marked stale but not refetched now: the deleted application's chat may still be on screen while its page
+      // leaves, and refetching it would ask for a conversation that no longer exists (404). Chats refetch when
+      // next shown.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.sms.all,
+        refetchType: "none",
+      });
+    },
+  });
+}
+
+/**
+ * One sentence for the admin after a delete. Mentions copied files the bucket could not remove, so that is never
+ * silent (the reasons are in the server log).
+ */
+export function deleteResultMessage(result: DeleteApplicationsResult): string {
+  const what =
+    result.deleted === 1
+      ? "1 application was deleted."
+      : `${result.deleted} applications were deleted.`;
+  return result.filesNotRemoved > 0
+    ? `${what} ${result.filesNotRemoved} copied file(s) could not be removed from storage; the reason is in the server log.`
+    : what;
+}
+
 /** Definition of the documents query: its key and how to fetch it. */
 const applicationDocumentsOptions = (id: string) =>
   queryOptions({
@@ -175,4 +243,97 @@ const applicationDocumentsOptions = (id: string) =>
 /** The documents the applicant uploaded, as our own copies, with short-lived links to open them. */
 export function useApplicationDocuments(id: string) {
   return useQuery(applicationDocumentsOptions(id));
+}
+
+/** One internal note on an application (B74), exactly as the API returns it. */
+export type ApplicationNote = components["schemas"]["ApplicationNoteDto"];
+
+/** Notes per "page" of the notes card: the newest 10, then 10 more per "Show older notes". */
+const NOTES_PAGE_SIZE = 10;
+
+/**
+ * Definition of the notes query. An infinite query: TanStack Query's "load more" pattern. It fetches page 1, then the
+ * next page each time `fetchNextPage()` is called, and keeps every loaded page under the one key.
+ */
+const applicationNotesOptions = (id: string) =>
+  infiniteQueryOptions({
+    queryKey: queryKeys.applications.notes(id),
+    queryFn: async ({ pageParam }) => {
+      const { data, error, response } = await api.GET(
+        "/applications/{id}/notes",
+        {
+          params: {
+            path: { id },
+            query: { page: pageParam, limit: NOTES_PAGE_SIZE },
+          },
+        },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Loading notes failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    initialPageParam: 1,
+    // Another page exists while fewer notes are loaded than the total.
+    getNextPageParam: (last) =>
+      last.page * last.limit < last.total ? last.page + 1 : undefined,
+  });
+
+/** The internal notes of an application, newest first; `fetchNextPage()` loads older ones. */
+export function useApplicationNotes(id: string) {
+  return useInfiniteQuery(applicationNotesOptions(id));
+}
+
+/** Adds a note by the logged-in admin; the notes list refetches. */
+export function useAddApplicationNote(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: string) => {
+      const { data, error, response } = await api.POST(
+        "/applications/{id}/notes",
+        { params: { path: { id } }, body: { body } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Saving the note failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.notes(id),
+      }),
+  });
+}
+
+/** Deletes one of your own notes (the API refuses anyone else's); the notes list refetches. */
+export function useDeleteApplicationNote(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (noteId: string) => {
+      const { error, response } = await api.DELETE(
+        "/applications/{id}/notes/{noteId}",
+        { params: { path: { id, noteId } } },
+      );
+      // 204 has no body, so success is read from the status, not from `data`.
+      if (!response.ok) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Deleting the note failed (${response.status}).`,
+          ),
+        );
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.notes(id),
+      }),
+  });
 }

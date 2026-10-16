@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useDrivers } from "../../api/drivers.queries";
+import DriverStatusBadge from "../drivers/DriverStatusBadge";
 import type { Payment } from "../../api/payments.queries";
 import { cn, formatCents } from "../../utils";
 import Input from "../form/input/InputField";
@@ -103,9 +104,7 @@ export default function AssignDriverDialog({
                           </span>
                         )}
                       </span>
-                      <span className="text-theme-xs text-gray-500">
-                        {driver.status === "active" ? "Active" : "Inactive"}
-                      </span>
+                      <DriverStatusBadge driver={driver} />
                     </button>
                   </li>
                 ))}

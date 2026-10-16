@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 
 // Copied from TailAdmin (components/ui/button/Button.tsx). Changes: dark-mode classes removed
-// (D20); `type` prop added so a button only submits a form when asked to.
+// (D20); `type` prop added so a button only submits a form when asked to; `danger` variant added (red, for
+// actions that destroy data, B66).
 
 interface ButtonProps {
   children: ReactNode;
   size?: "sm" | "md";
-  variant?: "primary" | "outline";
+  variant?: "primary" | "outline" | "danger";
   /** Icon before the text. */
   startIcon?: ReactNode;
   /** Icon after the text. */
@@ -43,6 +44,8 @@ const Button: React.FC<ButtonProps> = ({
       "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
     outline:
       "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50",
+    danger:
+      "bg-error-500 text-white shadow-theme-xs hover:bg-error-600 disabled:bg-error-300",
   };
 
   return (

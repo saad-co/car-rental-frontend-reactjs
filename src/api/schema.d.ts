@@ -137,6 +137,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/bulk-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /applications/bulk-delete`: deletes applications for good, with their documents and (when no one else
+         *     uses the phone) their text history (B66). All or nothing: `409` if any is approved, and then nothing is
+         *     deleted. Unknown ids are ignored.
+         *
+         *     POST with a body rather than DELETE: a DELETE request with a body is poorly supported by proxies and HTTP
+         *     clients. Declared before `:id` routes so "bulk-delete" is never read as an id (it is also a POST, so it
+         *     could not clash with `GET :id` anyway).
+         */
+        post: operations["ApplicationsController_bulkDelete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{id}": {
         parameters: {
             query?: never;
@@ -226,6 +251,44 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /applications/:id/notes`: one page of notes, newest first. `404` unknown application. */
+        get: operations["ApplicationNotesController_list"];
+        put?: never;
+        /** `POST /applications/:id/notes`: adds a note by the logged-in admin. `400` empty or too long. */
+        post: operations["ApplicationNotesController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * `DELETE /applications/:id/notes/:noteId`: deletes one of your own notes. `204` with no body; `403` someone
+         *     else's note; `404` unknown note.
+         */
+        delete: operations["ApplicationNotesController_remove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -348,6 +411,61 @@ export interface paths {
         get: operations["DriversController_findOne"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/onboarding`: ticks or un-ticks one onboarding step (D56). The driver becomes `active` when
+         *     the third step is ticked, and goes back to `onboarding` when one is un-ticked. Returns the updated driver.
+         *     `409` if the driver is inactive.
+         */
+        post: operations["DriversController_setOnboardingStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /drivers/:id/deactivate`: the driver left (B67). Their login stops working at once. */
+        post: operations["DriversController_deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /drivers/:id/reactivate`: back to `active` (all steps done) or `onboarding`; login works again. */
+        post: operations["DriversController_reactivate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -490,6 +608,19 @@ export interface components {
             page: number;
             limit: number;
         };
+        DeleteApplicationsDto: {
+            /** @description The applications to delete. Ids that no longer exist are ignored. */
+            ids: string[];
+        };
+        DeleteApplicationsResultDto: {
+            /** @description Applications removed from the database. */
+            deleted: number;
+            /**
+             * @description Copied files (documents, texted-in files) that could not be removed from the bucket. The database rows are
+             *     gone either way; the reason for each is in the server log. 0 when everything was removed.
+             */
+            filesNotRemoved: number;
+        };
         ApplicationDetailDto: {
             id: string;
             /** @enum {string} */
@@ -561,6 +692,30 @@ export interface components {
             sourceConnected: boolean;
             /** @description Whether our file bucket is connected (`S3_*`); without it nothing can be stored. */
             storageConnected: boolean;
+        };
+        ApplicationNoteDto: {
+            id: string;
+            body: string;
+            /** @description The admin who wrote it; null if that account was removed since. */
+            authorId: string | null;
+            /** @description The author's email, shown as their name (admins have no name field). Null if the account was removed. */
+            authorEmail: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ApplicationNoteListDto: {
+            items: components["schemas"]["ApplicationNoteDto"][];
+            /** @description All notes of the application, across pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        CreateApplicationNoteDto: {
+            /**
+             * @description The note, 1 to 2000 characters after trimming; line breaks are kept. `@Transform` trims it before the checks, so
+             *     a note of only spaces is refused (400) instead of saved empty.
+             */
+            body: string;
         };
         SmsStatusDto: {
             /**
@@ -655,6 +810,14 @@ export interface components {
             page: number;
             limit: number;
         };
+        DriverOnboardingDto: {
+            /** Format: date-time */
+            contractSignedAt: string | null;
+            /** Format: date-time */
+            depositPaidAt: string | null;
+            /** Format: date-time */
+            vehicleAssignedAt: string | null;
+        };
         DriverAliasDto: {
             /** @enum {string} */
             type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
@@ -673,8 +836,12 @@ export interface components {
             email: string;
             /** @description E.164, e.g. `+13125550123`. */
             phone: string;
-            /** @enum {string} */
-            status: "active" | "inactive";
+            /**
+             * @description `onboarding` until all three steps are done, then `active`; `inactive` when the driver left (D56).
+             * @enum {string}
+             */
+            status: "onboarding" | "active" | "inactive";
+            onboarding: components["schemas"]["DriverOnboardingDto"];
             /**
              * Format: date-time
              * @description When the driver was created (the application's approval).
@@ -696,6 +863,12 @@ export interface components {
             total: number;
             page: number;
             limit: number;
+        };
+        SetOnboardingStepDto: {
+            /** @enum {string} */
+            step: "contract" | "deposit" | "vehicle";
+            /** @description `true` marks the step done (now, by the admin); `false` clears it. */
+            done: boolean;
         };
         /** @enum {string} */
         InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
@@ -915,6 +1088,8 @@ export interface operations {
             query: {
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
                 /** @description Page number, starting at 1. */
                 page: number;
                 /** @description Items per page (1 to 100). */
@@ -958,6 +1133,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplicationReceivedDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_bulkDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteApplicationsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteApplicationsResultDto"];
                 };
             };
         };
@@ -1064,6 +1262,77 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApplicationDocumentListDto"];
                 };
+            };
+        };
+    };
+    ApplicationNotesController_list: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationNoteListDto"];
+                };
+            };
+        };
+    };
+    ApplicationNotesController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApplicationNoteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationNoteDto"];
+                };
+            };
+        };
+    };
+    ApplicationNotesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1213,7 +1482,9 @@ export interface operations {
                 /** @description Items per page (1 to 100). */
                 limit: number;
                 /** @description Only drivers with this status. Omit for all. */
-                status?: "active" | "inactive";
+                status?: "onboarding" | "active" | "inactive";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
             };
             header?: never;
             path?: never;
@@ -1252,6 +1523,73 @@ export interface operations {
             };
         };
     };
+    DriversController_setOnboardingStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetOnboardingStepDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_deactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_reactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
     InboundEmailsController_list: {
         parameters: {
             query: {
@@ -1259,6 +1597,8 @@ export interface operations {
                 provider?: components["schemas"]["InboundEmailProvider"];
                 /** @description Only emails with this outcome. Omit for all. */
                 status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
                 /** @description Page number, starting at 1. */
                 page: number;
                 /** @description Items per page (1 to 100). */
@@ -1298,6 +1638,8 @@ export interface operations {
                  *     Omit for all.
                  */
                 match?: "assigned" | "review";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
             };
             header?: never;
             path?: never;

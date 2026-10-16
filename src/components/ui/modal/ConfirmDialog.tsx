@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
   children: ReactNode;
   /** Text of the confirm button, e.g. "Approve". */
   confirmLabel: string;
+  /** `danger` makes the confirm button red, for actions that destroy data. Default `primary`. */
+  confirmVariant?: "primary" | "danger";
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -22,6 +24,7 @@ export default function ConfirmDialog({
   title,
   children,
   confirmLabel,
+  confirmVariant = "primary",
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -38,7 +41,7 @@ export default function ConfirmDialog({
         <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
         </Button>
-        <Button size="sm" onClick={onConfirm}>
+        <Button size="sm" variant={confirmVariant} onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>

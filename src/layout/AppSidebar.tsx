@@ -8,6 +8,7 @@ import {
   MailIcon,
   UserIcon,
 } from "../icons";
+import { BRAND_INITIALS, BRAND_NAME } from "../brand";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -60,7 +61,7 @@ const AppSidebar: React.FC = () => {
       >
         {/* Text logo placeholder until the client provides a real one. */}
         <Link to="/admin" className="text-xl font-semibold text-gray-900">
-          {showLabels ? "Car Rental" : "CR"}
+          {showLabels ? BRAND_NAME : BRAND_INITIALS}
         </Link>
       </div>
 
