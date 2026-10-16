@@ -13,6 +13,11 @@ interface ConfirmDialogProps {
   confirmVariant?: "primary" | "danger";
   onConfirm: () => void;
   onCancel: () => void;
+  /**
+   * An optional second way to go ahead, shown between Cancel and the confirm button (an outline button), e.g.
+   * "Decline without text" next to "Decline and send text" (B72).
+   */
+  secondary?: { label: string; onClick: () => void };
 }
 
 /**
@@ -27,20 +32,27 @@ export default function ConfirmDialog({
   confirmVariant = "primary",
   onConfirm,
   onCancel,
+  secondary,
 }: ConfirmDialogProps) {
   return (
     <Modal
       isOpen={isOpen}
       onClose={onCancel}
       showCloseButton={false}
-      className="max-w-md p-6 sm:p-8"
+      // Wider with a second action, so the three buttons fit on one row.
+      className={`${secondary ? "max-w-lg" : "max-w-md"} p-6 sm:p-8`}
     >
       <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
       <div className="mt-2 text-sm text-gray-500">{children}</div>
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-6 flex flex-wrap justify-end gap-3">
         <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
         </Button>
+        {secondary && (
+          <Button variant="outline" size="sm" onClick={secondary.onClick}>
+            {secondary.label}
+          </Button>
+        )}
         <Button size="sm" variant={confirmVariant} onClick={onConfirm}>
           {confirmLabel}
         </Button>

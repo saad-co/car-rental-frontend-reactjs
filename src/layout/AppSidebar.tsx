@@ -6,6 +6,7 @@ import {
   GridIcon,
   HorizontaLDots,
   MailIcon,
+  PlugInIcon,
   UserIcon,
 } from "../icons";
 import { BRAND_INITIALS, BRAND_NAME } from "../brand";
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
   { name: "Drivers", icon: <UserIcon />, path: "/admin/drivers" },
   { name: "Payments", icon: <DollarIcon />, path: "/admin/payments" },
   { name: "Email log", icon: <MailIcon />, path: "/admin/email-log" },
+  { name: "Settings", icon: <PlugInIcon />, path: "/admin/settings" },
 ];
 
 const AppSidebar: React.FC = () => {
