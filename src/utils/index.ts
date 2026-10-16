@@ -1,5 +1,21 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/**
+ * tailwind-merge, told about the theme's own font sizes (`--text-theme-*`, `--text-title-*` in index.css).
+ * Without this it cannot tell `text-theme-sm` (a size) from `text-gray-700` (a colour), treats both as colours,
+ * and silently drops the size whenever a colour comes after it (found 2026-10-17, B75).
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [
+        { text: ["theme-xs", "theme-sm", "theme-xl"] },
+        { text: ["title-sm", "title-md", "title-lg", "title-xl", "title-2xl"] },
+      ],
+    },
+  },
+});
 
 // Joins class names and resolves Tailwind conflicts (e.g. "p-2 p-4" keeps only "p-4").
 export function cn(...inputs: ClassValue[]) {
