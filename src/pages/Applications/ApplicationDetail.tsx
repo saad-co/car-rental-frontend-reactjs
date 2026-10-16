@@ -225,7 +225,8 @@ export default function ApplicationDetail() {
               disabled={busy}
               onClick={() => run(reject)}
             >
-              Reject
+              {/* "Decline" is the client's word (B69); the API action is still `reject`. */}
+              Decline
             </Button>
           )}
           {actions.approve && (
