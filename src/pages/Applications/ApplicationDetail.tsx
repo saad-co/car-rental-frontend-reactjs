@@ -1,12 +1,15 @@
 import { useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
+  deleteResultMessage,
   useApplication,
   useApproveApplication,
+  useDeleteApplications,
   useHoldApplication,
   useRejectApplication,
   type ApplicationDetail as ApplicationDetailData,
 } from "../../api/applications.queries";
+import type { ApplicationsListState } from "./ApplicationsList";
 import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
 import ApplicationDocuments from "../../components/applications/ApplicationDocuments";
 import ConversationCard from "../../components/sms/ConversationCard";
@@ -69,12 +72,13 @@ function FieldRows({
   return <Rows rows={rows} />;
 }
 
-/** Which review buttons make sense in each status. Approved is final (API rule). */
+/** Which review buttons make sense in each status. Approved is final, and cannot be deleted (API rules). */
 function availableActions(status: ApplicationDetailData["status"]) {
   return {
     approve: status !== "approved",
     hold: status === "pending" || status === "rejected",
     reject: status === "pending" || status === "on_hold",
+    delete: status !== "approved",
   };
 }
 
@@ -82,19 +86,23 @@ function availableActions(status: ApplicationDetailData["status"]) {
  * Admin page for one application: a header with the review buttons, the answers in tabs
  * (Contact, Driving, Rental, Documents, and Other only when the website sent fields we don't place),
  * and a side column with the review state and where the submission came from.
- * Approve asks for confirmation because it creates a driver and cannot be undone.
+ * Approve and Delete ask for confirmation because they cannot be undone.
  */
 export default function ApplicationDetail() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const { data: application, isPending, isError, error } = useApplication(id);
 
   /** True while the "Approve?" dialog is open. */
   const [confirmingApprove, setConfirmingApprove] = useState(false);
+  /** True while the "Delete?" dialog is open. */
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const approve = useApproveApplication();
   const reject = useRejectApplication();
   const hold = useHoldApplication();
-  const mutations = [approve, reject, hold];
+  const remove = useDeleteApplications();
+  const mutations = [approve, reject, hold, remove];
   const busy = mutations.some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
 
@@ -102,6 +110,21 @@ export default function ApplicationDetail() {
   const run = (mutation: typeof approve) => {
     mutations.forEach((m) => m.reset());
     mutation.mutate(id);
+  };
+
+  /** Deletes this application, then goes back to the list, which shows what was removed. */
+  const runDelete = () => {
+    setConfirmingDelete(false);
+    mutations.forEach((m) => m.reset());
+    remove.mutate([id], {
+      onSuccess: (result) => {
+        const state: ApplicationsListState = {
+          deletedNotice: deleteResultMessage(result),
+        };
+        // `replace`: the back button must not return to a page that no longer exists.
+        void navigate("/admin/applications", { replace: true, state });
+      },
+    });
   };
 
   if (isPending) {
@@ -175,6 +198,16 @@ export default function ApplicationDetail() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {actions.delete && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => setConfirmingDelete(true)}
+            >
+              {remove.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          )}
           {actions.hold && (
             <Button
               variant="outline"
@@ -249,6 +282,19 @@ export default function ApplicationDetail() {
         {application.phone}, and texts them their login (email and a temporary
         password) from the business number. An approved application cannot be
         changed.
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        isOpen={confirmingDelete}
+        title={`Delete ${fullName}'s application?`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={runDelete}
+      >
+        The application and its documents are removed for good, and its text
+        history too, unless another application or a driver has the same phone.
+        This cannot be undone.
       </ConfirmDialog>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">

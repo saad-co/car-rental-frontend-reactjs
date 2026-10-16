@@ -137,6 +137,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/bulk-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /applications/bulk-delete`: deletes applications for good, with their documents and (when no one else
+         *     uses the phone) their text history (B66). All or nothing: `409` if any is approved, and then nothing is
+         *     deleted. Unknown ids are ignored.
+         *
+         *     POST with a body rather than DELETE: a DELETE request with a body is poorly supported by proxies and HTTP
+         *     clients. Declared before `:id` routes so "bulk-delete" is never read as an id (it is also a POST, so it
+         *     could not clash with `GET :id` anyway).
+         */
+        post: operations["ApplicationsController_bulkDelete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{id}": {
         parameters: {
             query?: never;
@@ -489,6 +514,19 @@ export interface components {
             total: number;
             page: number;
             limit: number;
+        };
+        DeleteApplicationsDto: {
+            /** @description The applications to delete. Ids that no longer exist are ignored. */
+            ids: string[];
+        };
+        DeleteApplicationsResultDto: {
+            /** @description Applications removed from the database. */
+            deleted: number;
+            /**
+             * @description Copied files (documents, texted-in files) that could not be removed from the bucket. The database rows are
+             *     gone either way; the reason for each is in the server log. 0 when everything was removed.
+             */
+            filesNotRemoved: number;
         };
         ApplicationDetailDto: {
             id: string;
@@ -958,6 +996,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplicationReceivedDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_bulkDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteApplicationsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteApplicationsResultDto"];
                 };
             };
         };

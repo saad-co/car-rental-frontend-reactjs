@@ -143,6 +143,66 @@ export function useHoldApplication() {
   return useReviewApplication("hold");
 }
 
+/** What a delete removed: `{ deleted, filesNotRemoved }`. */
+export type DeleteApplicationsResult =
+  components["schemas"]["DeleteApplicationsResultDto"];
+
+/**
+ * Deletes applications for good (B66). Takes their ids; one id deletes one. The API refuses the whole request
+ * (409, nothing deleted) if any is approved.
+ *
+ * On success: every applications list refetches; cached details and documents of deleted applications that no
+ * screen shows any more are dropped (one still on screen is left alone, so it does not refetch into a 404 while
+ * the page leaves); chats refetch, because a deleted application's text history may be gone too.
+ */
+export function useDeleteApplications() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data, error, response } = await api.POST(
+        "/applications/bulk-delete",
+        { body: { ids } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Deleting failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: (_result, ids) => {
+      for (const id of ids) {
+        queryClient.removeQueries({
+          queryKey: queryKeys.applications.detail(id),
+          type: "inactive",
+        });
+        queryClient.removeQueries({
+          queryKey: queryKeys.applications.documents(id),
+          type: "inactive",
+        });
+      }
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.lists,
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.sms.all });
+    },
+  });
+}
+
+/**
+ * One sentence for the admin after a delete. Mentions copied files the bucket could not remove, so that is never
+ * silent (the reasons are in the server log).
+ */
+export function deleteResultMessage(result: DeleteApplicationsResult): string {
+  const what =
+    result.deleted === 1
+      ? "1 application was deleted."
+      : `${result.deleted} applications were deleted.`;
+  return result.filesNotRemoved > 0
+    ? `${what} ${result.filesNotRemoved} copied file(s) could not be removed from storage; the reason is in the server log.`
+    : what;
+}
+
 /** Definition of the documents query: its key and how to fetch it. */
 const applicationDocumentsOptions = (id: string) =>
   queryOptions({
