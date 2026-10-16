@@ -1277,6 +1277,8 @@ export interface operations {
                 limit: number;
                 /** @description Only drivers with this status. Omit for all. */
                 status?: "active" | "inactive";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
             };
             header?: never;
             path?: never;
@@ -1322,6 +1324,8 @@ export interface operations {
                 provider?: components["schemas"]["InboundEmailProvider"];
                 /** @description Only emails with this outcome. Omit for all. */
                 status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
                 /** @description Page number, starting at 1. */
                 page: number;
                 /** @description Items per page (1 to 100). */
@@ -1361,6 +1365,8 @@ export interface operations {
                  *     Omit for all.
                  */
                 match?: "assigned" | "review";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
             };
             header?: never;
             path?: never;

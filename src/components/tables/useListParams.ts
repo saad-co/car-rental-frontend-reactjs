@@ -66,6 +66,21 @@ export function useListParams<K extends string>(
   };
 }
 
+/**
+ * The choices of a filter group from a label map, "All" first: `{ active: "Active", inactive: "Inactive" }` gives
+ * All / Active / Inactive. Kept here (a .ts file) rather than in FilterDropdown.tsx: React's fast refresh only works
+ * when a .tsx file exports nothing but components.
+ */
+export function filterOptions(
+  labels: Record<string, string>,
+  allLabel = "All",
+): { label: string; value: string | undefined }[] {
+  return [
+    { label: allLabel, value: undefined },
+    ...Object.entries(labels).map(([value, label]) => ({ label, value })),
+  ];
+}
+
 /** Number of pages for `total` rows (at least 1, so an empty list still shows "page 1 of 1"). */
 export function pageCount(total: number): number {
   return Math.max(1, Math.ceil(total / LIST_PAGE_SIZE));
