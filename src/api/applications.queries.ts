@@ -153,7 +153,7 @@ export type DeleteApplicationsResult =
  *
  * On success: every applications list refetches; cached details and documents of deleted applications that no
  * screen shows any more are dropped (one still on screen is left alone, so it does not refetch into a 404 while
- * the page leaves); chats refetch, because a deleted application's text history may be gone too.
+ * the page leaves); chats are marked stale, because a deleted application's text history may be gone too.
  */
 export function useDeleteApplications() {
   const queryClient = useQueryClient();
@@ -184,7 +184,13 @@ export function useDeleteApplications() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.applications.lists,
       });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.sms.all });
+      // Marked stale but not refetched now: the deleted application's chat may still be on screen while its page
+      // leaves, and refetching it would ask for a conversation that no longer exists (404). Chats refetch when
+      // next shown.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.sms.all,
+        refetchType: "none",
+      });
     },
   });
 }
