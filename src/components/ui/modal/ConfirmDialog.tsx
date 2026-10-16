@@ -39,7 +39,8 @@ export default function ConfirmDialog({
       isOpen={isOpen}
       onClose={onCancel}
       showCloseButton={false}
-      className="max-w-md p-6 sm:p-8"
+      // Wider with a second action, so the three buttons fit on one row.
+      className={`${secondary ? "max-w-lg" : "max-w-md"} p-6 sm:p-8`}
     >
       <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
       <div className="mt-2 text-sm text-gray-500">{children}</div>

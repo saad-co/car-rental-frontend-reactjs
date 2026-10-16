@@ -112,6 +112,7 @@ type ReviewAction = keyof typeof reviewRequests;
  * - the detail cache is replaced with the response, so the page updates without a refetch;
  * - every applications list is marked stale (by the `lists` key prefix) and refetches,
  *   because the application's status changed;
+ * - the chats refetch, because approve and decline may have sent texts;
  * - after an approval, driver queries are marked stale too: a new driver exists.
  */
 function useReviewApplication(action: ReviewAction) {
@@ -134,6 +135,8 @@ function useReviewApplication(action: ReviewAction) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.applications.lists,
       });
+      // Approve and decline may have texted the applicant (B71, B72): the chat on the page shows it right away.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.sms.all });
       if (action === "approve") {
         void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
       }
