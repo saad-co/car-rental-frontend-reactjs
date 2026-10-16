@@ -18,9 +18,17 @@ export interface Column<T> {
   key: string;
   header: ReactNode;
   render: (row: T) => ReactNode;
-  /** Extra classes for this column's cells, e.g. `w-16 text-end`. */
+  /** Alignment of the header and the cells (default start), e.g. `end` for amounts. */
+  align?: "start" | "center" | "end";
+  /** Extra classes for this column's body cells only (the header keeps the common look), e.g. `whitespace-nowrap`. */
   className?: string;
 }
+
+const ALIGN_CLASS = {
+  start: "text-start",
+  center: "text-center",
+  end: "text-end",
+} as const;
 
 /** Row checkboxes: which rows are ticked, and which may be. */
 export interface RowSelection<T> {
@@ -100,7 +108,10 @@ export default function DataTable<T>({
               <TableCell
                 key={column.key}
                 isHeader
-                className={cn(headerCellClass, column.className)}
+                className={cn(
+                  headerCellClass,
+                  column.align && ALIGN_CLASS[column.align],
+                )}
               >
                 {column.header}
               </TableCell>
@@ -136,7 +147,11 @@ export default function DataTable<T>({
                 {columns.map((column) => (
                   <TableCell
                     key={column.key}
-                    className={cn(cellClass, column.className)}
+                    className={cn(
+                      cellClass,
+                      column.align && ALIGN_CLASS[column.align],
+                      column.className,
+                    )}
                   >
                     {column.render(row)}
                   </TableCell>

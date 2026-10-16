@@ -168,7 +168,8 @@ export default function PaymentsList() {
     {
       key: "amount",
       header: "Amount",
-      className: "text-end font-medium whitespace-nowrap text-gray-800",
+      align: "end",
+      className: "font-medium whitespace-nowrap text-gray-800",
       render: (payment) => formatCents(payment.amountCents),
     },
     {

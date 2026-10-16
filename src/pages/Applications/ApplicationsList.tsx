@@ -144,7 +144,8 @@ export default function ApplicationsList() {
     {
       key: "action",
       header: "Action",
-      className: "w-px text-center",
+      align: "center",
+      className: "w-px",
       render: (application) =>
         isDeletable(application) && (
           <button
