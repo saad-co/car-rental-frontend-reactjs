@@ -54,7 +54,8 @@ export default function TableCard({
   children,
 }: TableCardProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white pt-4">
+    // No `overflow-hidden` on the card: it would cut off the Filter panel when the list is short.
+    <div className="rounded-2xl border border-gray-200 bg-white pt-4">
       <div className="mb-4 flex flex-col gap-4 px-6 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -88,7 +89,9 @@ export default function TableCard({
           {emptyText}
         </p>
       ) : (
-        <>
+        // Clipped here, not on the whole card: a row's hover colour must stay inside the rounded corners, but the
+        // Filter panel above must be free to hang below the card when the list is short (one row).
+        <div className="overflow-hidden rounded-b-2xl">
           {children}
           {totalPages > 1 && (
             <div className="border-t border-gray-100">
@@ -99,7 +102,7 @@ export default function TableCard({
               />
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
