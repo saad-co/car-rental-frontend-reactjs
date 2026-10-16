@@ -60,6 +60,12 @@ export const queryKeys = {
     lists: ["drivers", "list"] as const,
     list: (params: DriversListParams) => ["drivers", "list", params] as const,
     detail: (id: string) => ["drivers", "detail", id] as const,
+    /** Everything of one driver's ledger (entries pages and summaries): invalidated after any ledger change. */
+    ledger: (id: string) => ["drivers", "ledger", id] as const,
+    ledgerEntries: (id: string, page: number) =>
+      ["drivers", "ledger", id, "entries", page] as const,
+    ledgerSummary: (id: string, period: string) =>
+      ["drivers", "ledger", id, "summary", period] as const,
   },
   payments: {
     all: ["payments"] as const,

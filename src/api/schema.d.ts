@@ -527,6 +527,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /drivers/:id/ledger`: one page of entries, newest first, each with the balance after it, plus the
+         *     balance now. `404` unknown driver.
+         */
+        get: operations["LedgerController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/ledger/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /drivers/:id/ledger/summary?period=week|month`: totals per week (Monday to Sunday) or month, newest
+         *     first, empty periods included. `400` bad dates or more than 104 periods; `404` unknown driver.
+         */
+        get: operations["LedgerController_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/ledger/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/ledger/entries`: adds a manual charge or credit (late fee, flat tire, discount, …).
+         *     `201` the entry (also when the same `requestKey` is sent again); `400` invalid amount, date or direction;
+         *     `404` unknown driver; `409` a second opening balance, or the key reused for a different entry.
+         */
+        post: operations["LedgerController_addEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/ledger/entries/{entryId}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/ledger/entries/:entryId/reverse`: cancels an entry with a reversal. `201` the reversal;
+         *     `404` no such entry on this driver; `409` a payment credit, a reversal, or reversed already.
+         */
+        post: operations["LedgerController_reverse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -856,6 +937,8 @@ export interface components {
              * @description When the driver's most recent payment happened; null if none.
              */
             lastPaymentAt: string | null;
+            /** @description Ledger balance in cents: credits minus debits (D58). Negative = the driver owes money; 0 with no entries. */
+            balanceCents: number;
         };
         DriverListDto: {
             items: components["schemas"]["DriverDto"][];
@@ -968,6 +1051,127 @@ export interface components {
              *     moved (one alias, one driver); the admin decides.
              */
             aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
+        };
+        /** @enum {string} */
+        LedgerDirection: "debit" | "credit";
+        /** @enum {string} */
+        LedgerEntryKind: "rent" | "payment" | "adjustment" | "reversal";
+        /** @enum {string} */
+        LedgerCategory: "late_fee" | "repair" | "damage" | "toll" | "ticket" | "cleaning" | "other_charge" | "discount" | "goodwill" | "other_credit" | "opening_balance";
+        LedgerRowDto: {
+            direction: components["schemas"]["LedgerDirection"];
+            kind: components["schemas"]["LedgerEntryKind"];
+            category: components["schemas"]["LedgerCategory"] | null;
+            /** @description Balance after this entry, in date order (credits minus debits; negative = owes). */
+            runningBalanceCents: number;
+            id: string;
+            driverId: string;
+            /** @description Always positive; `direction` says which way. */
+            amountCents: number;
+            description: string;
+            /** @description The Chicago day it belongs to, `YYYY-MM-DD`. */
+            effectiveDate: string;
+            paymentId: string | null;
+            /** @description The entry this one cancels (reversals only). */
+            reversalOfId: string | null;
+            /** @description The reversal that cancelled this entry, if any. */
+            reversedById: string | null;
+            /** @description True when an admin may reverse it here: not a reversal, not a payment credit, not reversed already. */
+            canReverse: boolean;
+            /** @description Null for entries made by the system (payment credits from matching). */
+            createdById: string | null;
+            createdByEmail: string | null;
+            /**
+             * Format: date-time
+             * @description When it was recorded (may be later than `effectiveDate`).
+             */
+            createdAt: string;
+        };
+        LedgerPageDto: {
+            items: components["schemas"]["LedgerRowDto"][];
+            /** @description All entries of the driver, across pages. */
+            total: number;
+            page: number;
+            limit: number;
+            /** @description The driver's balance now (credits minus debits; negative = owes). */
+            balanceCents: number;
+        };
+        /** @enum {string} */
+        LedgerPeriod: "week" | "month";
+        LedgerPeriodDto: {
+            /** @description First day, `YYYY-MM-DD` (a Monday for weeks, the 1st for months). */
+            start: string;
+            /** @description Last day, `YYYY-MM-DD` (a Sunday for weeks). */
+            end: string;
+            /** @description Balance before the period. */
+            openingCents: number;
+            /** @description Charges (rent and manual charges, incl. a debit opening balance). */
+            chargesCents: number;
+            /** @description Payments credited. */
+            paymentsCents: number;
+            /** @description Manual credits (discounts, goodwill, a credit opening balance). */
+            creditsCents: number;
+            /** @description Net effect of reversals made in the period: positive gives money back to the driver, negative takes it. */
+            reversalsCents: number;
+            /** @description Balance at the end of the period. */
+            closingCents: number;
+            entryCount: number;
+        };
+        LedgerSummaryDto: {
+            period: components["schemas"]["LedgerPeriod"];
+            items: components["schemas"]["LedgerPeriodDto"][];
+        };
+        CreateLedgerEntryDto: {
+            /** @description What it is. The direction follows from it, except for `opening_balance`. */
+            category: components["schemas"]["LedgerCategory"];
+            /**
+             * @description Only for `opening_balance`: `debit` when the driver owed money when the ledger started, `credit` when they were
+             *     in credit. Must be left out for every other category.
+             */
+            direction?: components["schemas"]["LedgerDirection"];
+            /** @description Whole cents, 1 to 1,000,000 ($10,000). Always positive: the category says which way it goes. */
+            amountCents: number;
+            /** @description The day the charge or credit belongs to, `YYYY-MM-DD` in Chicago: today or up to 90 days back. */
+            effectiveDate: string;
+            /** @description Why, e.g. "Flat tire, rear left, replaced at Discount Tire". 1 to 500 characters after trimming. */
+            reason: string;
+            /**
+             * Format: uuid
+             * @description A UUID the form makes once per entry. Sending the same request again (a double click, a retry after a timeout)
+             *     returns the entry already made instead of making a second one.
+             */
+            requestKey: string;
+        };
+        LedgerEntryDto: {
+            direction: components["schemas"]["LedgerDirection"];
+            kind: components["schemas"]["LedgerEntryKind"];
+            category: components["schemas"]["LedgerCategory"] | null;
+            id: string;
+            driverId: string;
+            /** @description Always positive; `direction` says which way. */
+            amountCents: number;
+            description: string;
+            /** @description The Chicago day it belongs to, `YYYY-MM-DD`. */
+            effectiveDate: string;
+            paymentId: string | null;
+            /** @description The entry this one cancels (reversals only). */
+            reversalOfId: string | null;
+            /** @description The reversal that cancelled this entry, if any. */
+            reversedById: string | null;
+            /** @description True when an admin may reverse it here: not a reversal, not a payment credit, not reversed already. */
+            canReverse: boolean;
+            /** @description Null for entries made by the system (payment credits from matching). */
+            createdById: string | null;
+            createdByEmail: string | null;
+            /**
+             * Format: date-time
+             * @description When it was recorded (may be later than `effectiveDate`).
+             */
+            createdAt: string;
+        };
+        ReverseLedgerEntryDto: {
+            /** @description Why the entry is cancelled, e.g. "Late fee waived by the owner". 1 to 400 characters after trimming. */
+            reason: string;
         };
     };
     responses: never;
@@ -1678,6 +1882,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssignPaymentResultDto"];
+                };
+            };
+        };
+    };
+    LedgerController_list: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPageDto"];
+                };
+            };
+        };
+    };
+    LedgerController_summary: {
+        parameters: {
+            query: {
+                period: components["schemas"]["LedgerPeriod"];
+                /** @description First day to cover, `YYYY-MM-DD` (its whole week or month is included). Default: 11 periods before `to`. */
+                from?: string;
+                /** @description Last day to cover, `YYYY-MM-DD` (its whole week or month is included). Default: today in Chicago. */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerSummaryDto"];
+                };
+            };
+        };
+    };
+    LedgerController_addEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLedgerEntryDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerEntryDto"];
+                };
+            };
+        };
+    };
+    LedgerController_reverse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                entryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReverseLedgerEntryDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerEntryDto"];
                 };
             };
         };
