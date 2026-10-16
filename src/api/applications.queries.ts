@@ -82,20 +82,31 @@ export function useApplication(id: string) {
   return useQuery(applicationDetailOptions(id));
 }
 
+/** What a review mutation takes: the application, and for a decline whether to text the applicant (B72). */
+export interface ReviewVars {
+  id: string;
+  /** Decline only: also send the "declined" text from Settings. */
+  sendText?: boolean;
+}
+
 /** The three review requests. Each returns the updated application. */
 const reviewRequests = {
-  approve: (id: string) =>
+  approve: ({ id }: ReviewVars) =>
     api.POST("/applications/{id}/approve", { params: { path: { id } } }),
-  reject: (id: string) =>
-    api.POST("/applications/{id}/reject", { params: { path: { id } } }),
-  hold: (id: string) =>
+  // Shown as "Decline" (B69); the API action is still `reject`.
+  reject: ({ id, sendText }: ReviewVars) =>
+    api.POST("/applications/{id}/reject", {
+      params: { path: { id } },
+      body: { sendText: sendText ?? false },
+    }),
+  hold: ({ id }: ReviewVars) =>
     api.POST("/applications/{id}/hold", { params: { path: { id } } }),
 };
 
 type ReviewAction = keyof typeof reviewRequests;
 
 /**
- * Shared logic of the three review mutations. Takes the application id.
+ * Shared logic of the three review mutations. Takes `{ id }` (and `sendText` for a decline).
  *
  * On success:
  * - the detail cache is replaced with the response, so the page updates without a refetch;
@@ -106,8 +117,8 @@ type ReviewAction = keyof typeof reviewRequests;
 function useReviewApplication(action: ReviewAction) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data, error, response } = await reviewRequests[action](id);
+    mutationFn: async (vars: ReviewVars) => {
+      const { data, error, response } = await reviewRequests[action](vars);
       if (!data) {
         throw new Error(
           apiErrorMessage(error, `The request failed (${response.status}).`),
@@ -135,7 +146,7 @@ export function useApproveApplication() {
   return useReviewApplication("approve");
 }
 
-/** Rejects an application. */
+/** Declines an application (stored as `rejected`); `sendText` also texts the applicant (B72). */
 export function useRejectApplication() {
   return useReviewApplication("reject");
 }
