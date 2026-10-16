@@ -953,6 +953,8 @@ export interface operations {
             query: {
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
                 /** @description Page number, starting at 1. */
                 page: number;
                 /** @description Items per page (1 to 100). */

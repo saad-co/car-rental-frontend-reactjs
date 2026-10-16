@@ -1,162 +1,174 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import {
   deleteResultMessage,
   useApplications,
   useDeleteApplications,
+  type ApplicationListItem,
   type ApplicationStatus,
 } from "../../api/applications.queries";
-import Checkbox from "../../components/form/input/Checkbox";
-import Button from "../../components/ui/button/Button";
-import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
-import Pagination from "../../components/ui/pagination/Pagination";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
-import { cn, formatDateTime } from "../../utils";
 import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
 import { APPLICATION_STATUS } from "../../components/applications/applicationStatus";
+import DataTable, { type Column } from "../../components/tables/DataTable";
+import TableCard from "../../components/tables/TableCard";
+import {
+  LIST_PAGE_SIZE,
+  pageCount,
+  useListParams,
+} from "../../components/tables/useListParams";
+import AvatarText from "../../components/ui/avatar/AvatarText";
+import Button from "../../components/ui/button/Button";
+import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
+import { TrashBinIcon } from "../../icons";
+import { formatDateTime } from "../../utils";
 
-/** Applications per page. */
-const PAGE_SIZE = 20;
+/** Every status, in display order. */
+const STATUSES = Object.keys(APPLICATION_STATUS) as ApplicationStatus[];
 
-/** The filter buttons, in display order. `undefined` means all statuses. */
-const STATUS_FILTERS: {
-  label: string;
-  value: ApplicationStatus | undefined;
-}[] = [
+/** The Status choices of the filter dropdown. */
+const STATUS_OPTIONS = [
   { label: "All", value: undefined },
-  ...(Object.keys(APPLICATION_STATUS) as ApplicationStatus[]).map((value) => ({
+  ...STATUSES.map((value) => ({
     label: APPLICATION_STATUS[value].label,
     value,
   })),
 ];
-
-/** Reads `?status=` from the URL, ignoring anything that is not a real status. */
-function parseStatus(value: string | null): ApplicationStatus | undefined {
-  return value && value in APPLICATION_STATUS
-    ? (value as ApplicationStatus)
-    : undefined;
-}
-
-const headerCellClass =
-  "px-5 py-3 font-medium text-gray-500 text-start text-theme-xs";
-const cellClass = "px-5 py-4 text-gray-500 text-start text-theme-sm";
 
 /** Message the detail page leaves for this page after deleting (`navigate(..., { state })`). */
 export interface ApplicationsListState {
   deletedNotice?: string;
 }
 
+const isDeletable = (application: ApplicationListItem) =>
+  application.status !== "approved";
+
 /**
- * Admin list of driver applications, newest first, with a status filter and pagination.
+ * Admin list of driver applications, newest first, built on the shared table components (B75): search, a Status
+ * filter, 8 rows per page. The view lives in the URL (`?q=pat&status=pending&page=2`).
  *
- * The filter and page live in the URL (`?status=pending&page=2`), not in React state, so a
- * refresh, the back button or a shared link shows the same view.
- *
- * Rows can be ticked and deleted together (B66). Approved applications cannot be ticked: the API refuses to
- * delete them. The selection holds only rows of the page on screen and is cleared when the filter or page
- * changes, so nothing out of sight is ever deleted.
+ * Rows can be ticked and deleted together, or one by one with the trash icon (B66). Approved applications can be
+ * neither: the API refuses to delete them. The selection holds only rows of the page on screen and is cleared
+ * whenever the view changes (search, filter, page, back button), so nothing out of sight is ever deleted.
  */
 export default function ApplicationsList() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const status = parseStatus(searchParams.get("status"));
-  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const view = useListParams({ status: STATUSES });
+  const status = view.filters.status as ApplicationStatus | undefined;
 
   const { data, isPending, isError, error, isPlaceholderData } =
-    useApplications({ status, page, limit: PAGE_SIZE });
+    useApplications({
+      status,
+      search: view.search || undefined,
+      page: view.page,
+      limit: LIST_PAGE_SIZE,
+    });
 
   /** Ids of the ticked rows. */
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  /** True while the "Delete?" dialog is open. */
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  /** The view the selection belongs to; when the view changes, the selection is dropped. */
+  const viewKey = `${view.search}|${status ?? ""}|${view.page}`;
+  const [selectionView, setSelectionView] = useState(viewKey);
+  if (viewKey !== selectionView) {
+    setSelectionView(viewKey);
+    setSelected(new Set());
+  }
+
+  /** The applications the "Delete?" dialog is asking about; null when it is closed. */
+  const [toDelete, setToDelete] = useState<ApplicationListItem[] | null>(null);
   /** What the last delete did, shown above the table. Starts with the detail page's message, if any. */
   const [notice, setNotice] = useState<string | null>(
     (location.state as ApplicationsListState | null)?.deletedNotice ?? null,
   );
   const deleteApplications = useDeleteApplications();
 
-  /** Writes the filter and page to the URL; changing the filter goes back to page 1. */
-  const show = (next: { status?: ApplicationStatus; page?: number }) => {
-    const params = new URLSearchParams();
-    if (next.status) params.set("status", next.status);
-    if (next.page && next.page > 1) params.set("page", String(next.page));
-    setSelected(new Set());
-    setSearchParams(params);
-  };
-
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
-
-  /** Rows on this page that may be deleted (not approved). */
-  const deletable = (data?.items ?? []).filter((a) => a.status !== "approved");
-  const allTicked =
-    deletable.length > 0 && deletable.every((a) => selected.has(a.id));
-
-  const toggle = (id: string, checked: boolean) =>
-    setSelected((current) => {
-      const next = new Set(current);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-
-  const toggleAll = (checked: boolean) =>
-    setSelected(checked ? new Set(deletable.map((a) => a.id)) : new Set());
-
   const runDelete = () => {
-    setConfirmingDelete(false);
+    if (!toDelete) return;
+    const ids = toDelete.map((a) => a.id);
+    setToDelete(null);
     setNotice(null);
-    deleteApplications.mutate([...selected], {
+    deleteApplications.mutate(ids, {
       onSuccess: (result) => {
-        setSelected(new Set());
+        setSelected(
+          (current) => new Set([...current].filter((id) => !ids.includes(id))),
+        );
         setNotice(deleteResultMessage(result));
       },
     });
   };
 
+  const columns: Column<ApplicationListItem>[] = [
+    {
+      key: "applicant",
+      header: "Applicant",
+      render: (application) => {
+        const name = `${application.firstName} ${application.lastName}`;
+        return (
+          <div className="flex items-center gap-3">
+            <AvatarText name={name} />
+            <div className="min-w-0">
+              {/* A real link too, so the row works with the keyboard and middle-click. */}
+              <Link
+                to={`/admin/applications/${application.id}`}
+                onClick={(event) => event.stopPropagation()}
+                className="block font-medium text-gray-800 hover:text-brand-500"
+              >
+                {name}
+              </Link>
+              <span className="block text-gray-500">{application.email}</span>
+            </div>
+            {application.alertError && (
+              <span
+                title={`The text alert to staff was not sent: ${application.alertError}`}
+                className="rounded-full bg-warning-50 px-2 py-0.5 text-theme-xs font-medium whitespace-nowrap text-warning-700"
+              >
+                Alert not sent
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    { key: "phone", header: "Phone", render: (a) => a.phone },
+    { key: "city", header: "City", render: (a) => a.city ?? "—" },
+    {
+      key: "status",
+      header: "Status",
+      render: (a) => <ApplicationStatusBadge status={a.status} />,
+    },
+    {
+      key: "received",
+      header: "Received",
+      render: (a) => formatDateTime(a.receivedAt),
+    },
+    {
+      key: "action",
+      header: "Action",
+      className: "w-px text-center",
+      render: (application) =>
+        isDeletable(application) && (
+          <button
+            type="button"
+            aria-label={`Delete ${application.firstName} ${application.lastName}`}
+            title="Delete"
+            disabled={deleteApplications.isPending}
+            onClick={(event) => {
+              event.stopPropagation(); // not also open the row
+              setToDelete([application]);
+            }}
+            className="text-gray-700 hover:text-error-500 disabled:opacity-50"
+          >
+            <TrashBinIcon />
+          </button>
+        ),
+    },
+  ];
+
+  const ticked = (data?.items ?? []).filter((a) => selected.has(a.id));
+  const deleteCount = toDelete?.length ?? 0;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold text-gray-800">Applications</h1>
-          {selected.size > 0 && (
-            <Button
-              size="sm"
-              variant="danger"
-              disabled={deleteApplications.isPending}
-              onClick={() => setConfirmingDelete(true)}
-            >
-              {deleteApplications.isPending
-                ? "Deleting..."
-                : `Delete (${selected.size})`}
-            </Button>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((filter) => (
-            <button
-              key={filter.label}
-              type="button"
-              onClick={() => show({ status: filter.value })}
-              className={cn(
-                "rounded-lg px-3 py-2 text-sm font-medium",
-                filter.value === status
-                  ? "bg-brand-500 text-white"
-                  : "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50",
-              )}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {notice && (
         <p
           role="status"
@@ -176,150 +188,83 @@ export default function ApplicationsList() {
       )}
 
       <ConfirmDialog
-        isOpen={confirmingDelete}
+        isOpen={toDelete !== null}
         title={
-          selected.size === 1
-            ? "Delete 1 application?"
-            : `Delete ${selected.size} applications?`
+          deleteCount === 1
+            ? `Delete ${toDelete![0].firstName} ${toDelete![0].lastName}'s application?`
+            : `Delete ${deleteCount} applications?`
         }
         confirmLabel="Delete"
         confirmVariant="danger"
-        onCancel={() => setConfirmingDelete(false)}
+        onCancel={() => setToDelete(null)}
         onConfirm={runDelete}
       >
-        Their documents are removed too, and their text history unless another
-        application or a driver has the same phone. This cannot be undone.
+        {deleteCount === 1 ? "Its documents are" : "Their documents are"}{" "}
+        removed too, and the text history unless another application or a driver
+        has the same phone. This cannot be undone.
       </ConfirmDialog>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {isPending ? (
-          <p className="p-6 text-sm text-gray-500">Loading...</p>
-        ) : isError ? (
-          <p role="alert" className="p-6 text-sm text-error-600">
-            {error.message}
-          </p>
-        ) : data.items.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500">No applications.</p>
-        ) : (
-          <>
-            <div
-              className={cn(
-                "max-w-full overflow-x-auto",
-                isPlaceholderData && "opacity-60",
-              )}
+      <TableCard
+        title="Applications"
+        search={{
+          value: view.search,
+          onSearch: view.setSearch,
+          placeholder: "Search name, email, phone, city...",
+        }}
+        filters={{
+          groups: [
+            {
+              key: "status",
+              label: "Status",
+              options: STATUS_OPTIONS,
+              value: status,
+            },
+          ],
+          onApply: (values) => view.setFilters({ status: values.status }),
+        }}
+        actions={
+          ticked.length > 0 && (
+            <Button
+              size="sm"
+              variant="danger"
+              disabled={deleteApplications.isPending}
+              onClick={() => setToDelete(ticked)}
             >
-              <Table>
-                <TableHeader className="border-b border-gray-100">
-                  <TableRow>
-                    <TableCell isHeader className="w-12 py-3 pl-5">
-                      <Checkbox
-                        ariaLabel="Select all deletable applications on this page"
-                        checked={allTicked}
-                        disabled={deletable.length === 0}
-                        onChange={toggleAll}
-                      />
-                    </TableCell>
-                    <TableCell isHeader className={headerCellClass}>
-                      Name
-                    </TableCell>
-                    <TableCell isHeader className={headerCellClass}>
-                      Email
-                    </TableCell>
-                    <TableCell isHeader className={headerCellClass}>
-                      Phone
-                    </TableCell>
-                    <TableCell isHeader className={headerCellClass}>
-                      City
-                    </TableCell>
-                    <TableCell isHeader className={headerCellClass}>
-                      Status
-                    </TableCell>
-                    <TableCell isHeader className={headerCellClass}>
-                      Received
-                    </TableCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-gray-100">
-                  {data.items.map((application) => (
-                    <TableRow
-                      key={application.id}
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() =>
-                        navigate(`/admin/applications/${application.id}`)
-                      }
-                    >
-                      <TableCell className="w-12 py-4 pl-5">
-                        {/* Ticking must not also open the row. */}
-                        <div
-                          onClick={(event) => event.stopPropagation()}
-                          title={
-                            application.status === "approved"
-                              ? "Approved applications cannot be deleted"
-                              : undefined
-                          }
-                        >
-                          <Checkbox
-                            ariaLabel={`Select ${application.firstName} ${application.lastName}`}
-                            checked={selected.has(application.id)}
-                            disabled={application.status === "approved"}
-                            onChange={(checked) =>
-                              toggle(application.id, checked)
-                            }
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell
-                        className={cn(cellClass, "font-medium text-gray-800")}
-                      >
-                        {/* A real link too, so the row works with the keyboard and middle-click. */}
-                        <Link
-                          to={`/admin/applications/${application.id}`}
-                          onClick={(event) => event.stopPropagation()}
-                          className="hover:text-brand-500"
-                        >
-                          {application.firstName} {application.lastName}
-                        </Link>
-                        {application.alertError && (
-                          <span
-                            title={`The text alert to staff was not sent: ${application.alertError}`}
-                            className="ml-2 rounded-full bg-warning-50 px-2 py-0.5 text-theme-xs font-medium text-warning-700"
-                          >
-                            Alert not sent
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        {application.email}
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        {application.phone}
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        {application.city ?? "—"}
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        <ApplicationStatusBadge status={application.status} />
-                      </TableCell>
-                      <TableCell className={cellClass}>
-                        {formatDateTime(application.receivedAt)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            {totalPages > 1 && (
-              <div className="border-t border-gray-100">
-                <Pagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  onPageChange={(next) => show({ status, page: next })}
-                />
-              </div>
-            )}
-          </>
+              {deleteApplications.isPending
+                ? "Deleting..."
+                : `Delete (${ticked.length})`}
+            </Button>
+          )
+        }
+        isPending={isPending}
+        error={isError ? error : null}
+        isEmpty={data?.items.length === 0}
+        emptyText={
+          view.search || status
+            ? "No applications match this search or filter."
+            : "No applications."
+        }
+        page={view.page}
+        totalPages={data ? pageCount(data.total) : 1}
+        onPageChange={view.setPage}
+      >
+        {data && (
+          <DataTable
+            columns={columns}
+            rows={data.items}
+            rowKey={(a) => a.id}
+            onRowClick={(a) => void navigate(`/admin/applications/${a.id}`)}
+            selection={{
+              selected,
+              onChange: setSelected,
+              canSelect: isDeletable,
+              disabledReason: "Approved applications cannot be deleted",
+              label: (a) => `${a.firstName} ${a.lastName}`,
+            }}
+            dimmed={isPlaceholderData}
+          />
         )}
-      </div>
+      </TableCard>
     </div>
   );
 }
