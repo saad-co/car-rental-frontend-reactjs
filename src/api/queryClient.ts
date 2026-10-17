@@ -54,6 +54,10 @@ export const queryKeys = {
     /** The internal notes of one application (B74), all loaded pages. */
     notes: (id: string) => ["applications", "notes", id] as const,
   },
+  /** The approve / decline text templates (B73). */
+  templates: {
+    all: ["templates"] as const,
+  },
   drivers: {
     all: ["drivers"] as const,
     /** Prefix of every drivers list (any filter, page or search). */

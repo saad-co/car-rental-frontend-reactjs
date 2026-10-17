@@ -12,6 +12,7 @@ import DriversList from "./pages/Drivers/DriversList";
 import DriverDetail from "./pages/Drivers/DriverDetail";
 import PaymentsList from "./pages/Payments/PaymentsList";
 import EmailLogList from "./pages/EmailLog/EmailLogList";
+import Settings from "./pages/Settings/Settings";
 
 /**
  * Routing table: two areas in one app.
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="drivers/:id" element={<DriverDetail />} />
             <Route path="payments" element={<PaymentsList />} />
             <Route path="email-log" element={<EmailLogList />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Route>
 

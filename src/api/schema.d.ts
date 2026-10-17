@@ -215,7 +215,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** `POST /applications/:id/reject`: rejects the application. No driver is created. */
+        /**
+         * `POST /applications/:id/reject`: declines the application (shown as "Declined", B69). No driver is created.
+         *     Optional body `{ "sendText": true }` also texts the applicant the "declined" template (B72); without a body
+         *     nothing is sent. `503` if the text could not be sent (then nothing is declined).
+         */
         post: operations["ApplicationsController_reject"];
         delete?: never;
         options?: never;
@@ -377,6 +381,43 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["QuoWebhookController_receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/message-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /message-templates`: every template with its placeholders and last edit. */
+        get: operations["MessageTemplatesController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/message-templates/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * `PUT /message-templates/:key`: replaces a template's text. PUT because the whole text is replaced. `400` empty,
+         *     too long, unknown placeholder, or a key that is not a template (`ParseEnumPipe`).
+         */
+        put: operations["MessageTemplatesController_update"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -747,6 +788,10 @@ export interface components {
              */
             alertedAt: string | null;
         };
+        DeclineApplicationDto: {
+            /** @description `true` also texts the applicant the "declined" template from Settings. Default false. */
+            sendText?: boolean;
+        };
         ApplicationDocumentDto: {
             id: string;
             /**
@@ -890,6 +935,22 @@ export interface components {
             total: number;
             page: number;
             limit: number;
+        };
+        MessageTemplateDto: {
+            /** @enum {string} */
+            key: "application_approved" | "application_declined";
+            /** @description The text with its placeholders, e.g. `Hi {firstName}, ...`. */
+            body: string;
+            /** @description The placeholders this template may use, e.g. `["firstName", "lastName"]`. */
+            placeholders: string[];
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Email of the admin who last edited it; null for the default text (or a removed account). */
+            updatedByEmail: string | null;
+        };
+        UpdateMessageTemplateDto: {
+            /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
+            body: string;
         };
         DriverOnboardingDto: {
             /** Format: date-time */
@@ -1415,7 +1476,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclineApplicationDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -1675,6 +1740,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    MessageTemplatesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplateDto"][];
+                };
+            };
+        };
+    };
+    MessageTemplatesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMessageTemplateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplateDto"];
+                };
             };
         };
     };
