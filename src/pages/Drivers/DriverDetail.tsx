@@ -11,6 +11,7 @@ import {
 } from "../../api/drivers.queries";
 import { usePayments } from "../../api/payments.queries";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
+import LedgerCard from "../../components/drivers/LedgerCard";
 import { ONBOARDING_STEPS } from "../../components/drivers/driverStatus";
 import Checkbox from "../../components/form/input/Checkbox";
 import Button from "../../components/ui/button/Button";
@@ -259,6 +260,14 @@ export default function DriverDetail() {
         them back in onboarding: once billing is running, an onboarding driver
         is not billed or reminded until the step is ticked again.
       </ConfirmDialog>
+
+      <div className="mb-6">
+        <LedgerCard
+          driverId={driver.id}
+          driverName={fullName}
+          balanceCents={driver.balanceCents}
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">

@@ -70,3 +70,56 @@ export function formatCents(cents: number): string {
   const rest = String(abs % 100).padStart(2, "0");
   return `${sign}$${dollars}.${rest}`;
 }
+
+/**
+ * A ledger balance in words, so nobody has to remember what a minus sign means: credits minus debits, negative =
+ * the driver owes. E.g. -12000 → "Owes $120.00", 4000 → "In credit $40.00", 0 → "Settled".
+ */
+export function formatBalance(cents: number): string {
+  if (cents < 0) return `Owes ${formatCents(-cents)}`;
+  if (cents > 0) return `In credit ${formatCents(cents)}`;
+  return "Settled";
+}
+
+/**
+ * Reads a dollar amount typed by an admin ("25", "25.5", "$1,250.00") into integer cents, by splitting the text,
+ * never through a float. Null when it is not a positive amount with at most 2 decimals.
+ */
+export function parseDollarsToCents(text: string): number | null {
+  const match = /^\$?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$/.exec(
+    text.trim(),
+  );
+  if (!match) return null;
+  const dollars = Number(match[1].replaceAll(",", ""));
+  const cents = Number((match[2] ?? "").padEnd(2, "0"));
+  const total = dollars * 100 + cents;
+  return total > 0 && Number.isSafeInteger(total) ? total : null;
+}
+
+/** Today's date in Chicago as `YYYY-MM-DD` (the ledger's calendar). */
+export function chicagoToday(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+/** Adds whole days to a `YYYY-MM-DD` day (calendar arithmetic in UTC, so daylight saving cannot skip a day). */
+export function addDays(day: string, days: number): string {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/**
+ * Shows a calendar day (`YYYY-MM-DD`, no time) as e.g. "Oct 17, 2026". Formatted in UTC on purpose: the day has no
+ * time zone, and formatting it in the viewer's zone could show the day before.
+ */
+export function formatDay(day: string): string {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  });
+}

@@ -1,3 +1,4 @@
+import BalanceText from "../../components/drivers/BalanceText";
 import { Link, useNavigate } from "react-router";
 import {
   useDrivers,
@@ -53,6 +54,13 @@ const columns: Column<Driver>[] = [
     key: "status",
     header: "Status",
     render: (driver) => <DriverStatusBadge driver={driver} />,
+  },
+  {
+    key: "balance",
+    header: "Balance",
+    align: "end",
+    className: "whitespace-nowrap",
+    render: (driver) => <BalanceText cents={driver.balanceCents} />,
   },
   {
     key: "since",

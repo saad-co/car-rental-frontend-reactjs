@@ -74,6 +74,8 @@ export function useAssignPayment() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+      // Assigning credits the driver's ledger (and a reassignment moves the credit): balances and ledgers change.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
     },
   });
 }
