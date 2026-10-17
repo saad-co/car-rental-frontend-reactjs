@@ -1117,12 +1117,9 @@ export interface components {
         LedgerDirection: "debit" | "credit";
         /** @enum {string} */
         LedgerEntryKind: "rent" | "payment" | "adjustment" | "reversal";
-        /** @enum {string} */
-        LedgerCategory: "late_fee" | "repair" | "damage" | "toll" | "ticket" | "cleaning" | "other_charge" | "discount" | "goodwill" | "other_credit" | "opening_balance";
         LedgerRowDto: {
             direction: components["schemas"]["LedgerDirection"];
             kind: components["schemas"]["LedgerEntryKind"];
-            category: components["schemas"]["LedgerCategory"] | null;
             /** @description Balance after this entry, in date order (credits minus debits; negative = owes). */
             runningBalanceCents: number;
             id: string;
@@ -1183,14 +1180,12 @@ export interface components {
             items: components["schemas"]["LedgerPeriodDto"][];
         };
         CreateLedgerEntryDto: {
-            /** @description What it is. The direction follows from it, except for `opening_balance`. */
-            category: components["schemas"]["LedgerCategory"];
             /**
-             * @description Only for `opening_balance`: `debit` when the driver owed money when the ledger started, `credit` when they were
-             *     in credit. Must be left out for every other category.
+             * @description `debit`: a charge, the driver owes more (late fee, flat tire, damage, toll…). `credit`: the driver owes less
+             *     (a discount, money handed back…). What it was for goes in `reason` (D61).
              */
-            direction?: components["schemas"]["LedgerDirection"];
-            /** @description Whole cents, 1 to 1,000,000 ($10,000). Always positive: the category says which way it goes. */
+            direction: components["schemas"]["LedgerDirection"];
+            /** @description Whole cents, 1 to 1,000,000 ($10,000). Always positive: `direction` says which way it goes. */
             amountCents: number;
             /** @description The day the charge or credit belongs to, `YYYY-MM-DD` in Chicago: today or up to 90 days back. */
             effectiveDate: string;
@@ -1206,7 +1201,6 @@ export interface components {
         LedgerEntryDto: {
             direction: components["schemas"]["LedgerDirection"];
             kind: components["schemas"]["LedgerEntryKind"];
-            category: components["schemas"]["LedgerCategory"] | null;
             id: string;
             driverId: string;
             /** @description Always positive; `direction` says which way. */

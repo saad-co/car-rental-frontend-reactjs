@@ -16,9 +16,6 @@ export type LedgerRow = components["schemas"]["LedgerRowDto"];
 /** One week or month of the ledger summary. */
 export type LedgerPeriodTotals = components["schemas"]["LedgerPeriodDto"];
 
-/** `late_fee` | `repair` | … | `opening_balance`, from the generated types. */
-export type LedgerCategory = components["schemas"]["LedgerCategory"];
-
 /** `debit` | `credit`. */
 export type LedgerDirection = components["schemas"]["LedgerDirection"];
 

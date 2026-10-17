@@ -1,12 +1,9 @@
 import { useState } from "react";
-import type {
-  LedgerCategory,
-  LedgerDirection,
-  NewLedgerEntry,
-} from "../../api/ledger.queries";
+import type { LedgerDirection, NewLedgerEntry } from "../../api/ledger.queries";
 import {
   addDays,
   chicagoToday,
+  cn,
   formatCents,
   formatDay,
   parseDollarsToCents,
@@ -14,19 +11,19 @@ import {
 import Input from "../form/input/InputField";
 import TextArea from "../form/input/TextArea";
 import Label from "../form/Label";
-import Select from "../form/Select";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal";
-import {
-  CATEGORY_GROUPS,
-  CATEGORY_LABEL,
-  isChargeCategory,
-} from "./ledgerLabels";
 
-/** Same limits as the API (D58), checked here too so the admin sees the problem before saving. */
+/** Same limits as the API (D60), checked here too so the admin sees the problem before saving. */
 const MAX_CENTS = 1_000_000;
 const MAX_BACKDATE_DAYS = 90;
 const MAX_REASON = 500;
+
+/** The two kinds of manual entry (D61). */
+const DIRECTIONS: { value: LedgerDirection; label: string; hint: string }[] = [
+  { value: "debit", label: "Charge", hint: "Driver owes more" },
+  { value: "credit", label: "Credit", hint: "Driver owes less" },
+];
 
 interface AddLedgerEntryDialogProps {
   isOpen: boolean;
@@ -39,9 +36,9 @@ interface AddLedgerEntryDialogProps {
 }
 
 /**
- * Adds a manual charge or credit (late fee, flat tire, discount, …). The amount is read from text into whole cents
- * (never a float). A request key is made once per opening of the dialog, so a double click or a retry after an error
- * sends the same key and the API makes only one entry.
+ * Adds a manual charge or credit: an amount, the date it belongs to and a reason (D61), e.g. a late fee or a flat
+ * tire. The amount is read from text into whole cents (never a float). A request key is made once per opening of the
+ * dialog, so a double click or a retry after an error sends the same key and the API makes only one entry.
  */
 export default function AddLedgerEntryDialog({
   isOpen,
@@ -52,8 +49,7 @@ export default function AddLedgerEntryDialog({
   onCancel,
 }: AddLedgerEntryDialogProps) {
   const today = chicagoToday();
-  const [category, setCategory] = useState<LedgerCategory | "">("");
-  const [direction, setDirection] = useState<LedgerDirection | "">("");
+  const [direction, setDirection] = useState<LedgerDirection>("debit");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today);
   const [reason, setReason] = useState("");
@@ -61,15 +57,10 @@ export default function AddLedgerEntryDialog({
   const [touched, setTouched] = useState(false);
 
   const cents = parseDollarsToCents(amount);
-  const opening = category === "opening_balance";
   const minDate = addDays(today, -MAX_BACKDATE_DAYS);
+  const isCharge = direction === "debit";
 
   const problems = {
-    category: category === "" ? "Pick a type." : null,
-    direction:
-      opening && direction === ""
-        ? "Say whether it is owed or in credit."
-        : null,
     amount:
       cents === null
         ? "Enter an amount like 25 or 25.50."
@@ -82,14 +73,13 @@ export default function AddLedgerEntryDialog({
         : date < minDate
           ? `At most ${MAX_BACKDATE_DAYS} days back.`
           : null,
-    reason: reason.trim() === "" ? "Say why." : null,
+    reason: reason.trim() === "" ? "Say what it is for." : null,
   };
   const valid = Object.values(problems).every((p) => p === null);
 
   /** Resets the form (and makes a new request key) for the next entry, then closes. */
   const close = () => {
-    setCategory("");
-    setDirection("");
+    setDirection("debit");
     setAmount("");
     setDate(chicagoToday());
     setReason("");
@@ -100,10 +90,9 @@ export default function AddLedgerEntryDialog({
 
   const save = () => {
     setTouched(true);
-    if (!valid || category === "" || cents === null) return;
+    if (!valid || cents === null) return;
     onSave({
-      category,
-      ...(opening && direction !== "" ? { direction } : {}),
+      direction,
       amountCents: cents,
       effectiveDate: date,
       reason: reason.trim(),
@@ -111,9 +100,6 @@ export default function AddLedgerEntryDialog({
     });
   };
 
-  const isCharge =
-    category !== "" &&
-    (opening ? direction === "debit" : isChargeCategory(category));
   const show = (problem: string | null) => (touched ? problem : null);
 
   return (
@@ -132,49 +118,38 @@ export default function AddLedgerEntryDialog({
       </p>
 
       <div className="mt-5 space-y-4">
-        <div>
-          <Label htmlFor="ledger-category">Type</Label>
-          <Select
-            id="ledger-category"
-            value={category}
-            onChange={(value) => setCategory(value as LedgerCategory)}
-            groups={CATEGORY_GROUPS}
-            placeholder="Choose a type"
-            error={show(problems.category) !== null}
-          />
-        </div>
-
-        {opening && (
-          <div>
-            <Label>When the ledger started, the driver</Label>
-            <div className="flex gap-6 text-sm text-gray-700">
-              {(
-                [
-                  ["debit", "owed this amount"],
-                  ["credit", "was in credit by this amount"],
-                ] as const
-              ).map(([value, label]) => (
-                <label key={value} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="ledger-direction"
-                    checked={direction === value}
-                    onChange={() => setDirection(value)}
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            {show(problems.direction) && (
-              <p className="mt-1 text-theme-xs text-error-500">
-                {problems.direction}
-              </p>
-            )}
-            <p className="mt-1 text-theme-xs text-gray-500">
-              A driver can have one opening balance.
-            </p>
+        <div role="radiogroup" aria-label="Charge or credit">
+          <div className="grid grid-cols-2 gap-3">
+            {DIRECTIONS.map((d) => (
+              <button
+                key={d.value}
+                type="button"
+                role="radio"
+                aria-label={`${d.label}: ${d.hint.toLowerCase()}`}
+                aria-checked={direction === d.value}
+                onClick={() => setDirection(d.value)}
+                className={cn(
+                  "rounded-lg border px-4 py-3 text-start",
+                  direction === d.value
+                    ? "border-brand-500 bg-brand-50"
+                    : "border-gray-300 hover:bg-gray-50",
+                )}
+              >
+                <span
+                  className={cn(
+                    "block text-sm font-medium",
+                    direction === d.value ? "text-brand-600" : "text-gray-800",
+                  )}
+                >
+                  {d.label}
+                </span>
+                <span className="block text-theme-xs text-gray-500">
+                  {d.hint}
+                </span>
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -208,7 +183,11 @@ export default function AddLedgerEntryDialog({
           <TextArea
             ariaLabel="Reason"
             rows={3}
-            placeholder="e.g. Flat tire, rear left, replaced at Discount Tire"
+            placeholder={
+              isCharge
+                ? "e.g. Late fee, 3 days late / Flat tire, rear left"
+                : "e.g. Discount for referring a driver"
+            }
             value={reason}
             onChange={setReason}
             maxLength={MAX_REASON}
@@ -217,12 +196,11 @@ export default function AddLedgerEntryDialog({
           />
         </div>
 
-        {valid && category !== "" && cents !== null && (
+        {valid && cents !== null && (
           <p className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-700">
             {isCharge ? "Charge" : "Credit"} of{" "}
-            <span className="font-semibold">{formatCents(cents)}</span> (
-            {CATEGORY_LABEL[category]}) on {formatDay(date)}: the driver will
-            owe {isCharge ? "more" : "less"}.
+            <span className="font-semibold">{formatCents(cents)}</span> on{" "}
+            {formatDay(date)}: the driver will owe {isCharge ? "more" : "less"}.
           </p>
         )}
 
