@@ -9,14 +9,12 @@ import Tabs from "../ui/tabs/Tabs";
 import FilesTab from "./FilesTab";
 import MessagesTab from "./MessagesTab";
 
-/** The setup in one badge, so nobody mistakes a dry run for a sent text. */
+/**
+ * A warning badge when texts are not really sent, so nobody mistakes a dry run for a sent text. Live is the normal
+ * state and shows nothing (client revision, 2026-10-19).
+ */
 function ModeBadge({ mode }: { mode: "off" | "dry_run" | "live" }) {
-  if (mode === "live")
-    return (
-      <Badge size="sm" color="success">
-        Live
-      </Badge>
-    );
+  if (mode === "live") return null;
   if (mode === "dry_run")
     return (
       <Badge size="sm" color="warning">
