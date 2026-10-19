@@ -6,6 +6,7 @@ import {
   type DriverStatus,
 } from "../../api/drivers.queries";
 import DataTable, { type Column } from "../../components/tables/DataTable";
+import RowActionsMenu from "../../components/tables/RowActionsMenu";
 import TableCard from "../../components/tables/TableCard";
 import {
   LIST_PAGE_SIZE,
@@ -66,6 +67,21 @@ const columns: Column<Driver>[] = [
     key: "since",
     header: "Since",
     render: (driver) => formatDateTime(driver.createdAt),
+  },
+  {
+    key: "actions",
+    header: "",
+    align: "end",
+    className: "w-px",
+    render: (driver) => (
+      <RowActionsMenu
+        label={`Actions for ${driver.firstName} ${driver.lastName}`}
+        actions={[
+          { label: "View ledger", to: `/admin/drivers/${driver.id}/ledger` },
+          { label: "View driver", to: `/admin/drivers/${driver.id}` },
+        ]}
+      />
+    ),
   },
 ];
 

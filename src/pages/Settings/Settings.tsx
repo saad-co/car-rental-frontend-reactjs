@@ -7,6 +7,7 @@ import {
   MessageTemplateEditor,
   NewTemplateForm,
 } from "../../components/settings/MessageTemplateEditor";
+import LedgerPresetsSettings from "../../components/settings/LedgerPresetsSettings";
 import Button from "../../components/ui/button/Button";
 
 /** What each kind of text is for, as the Settings page explains it, in the order shown. */
@@ -25,7 +26,8 @@ const KINDS: { kind: TemplateKind; title: string; when: string }[] = [
 
 /**
  * Settings (spec section 10). For now: the text templates sent when an application is approved or declined (B73,
- * B81): several per kind, each with a name. Later: SMS mode, automation switches, reminder tiers and the other
+ * B81): several per kind, each with a name; and the ledger presets, the quick-pick cards of the New ledger entry window
+ * (D66). Later: SMS mode, automation switches, reminder tiers and the other
  * settings of the spec.
  */
 export default function Settings() {
@@ -95,6 +97,8 @@ export default function Settings() {
           </div>
         )}
       </div>
+
+      <LedgerPresetsSettings />
     </div>
   );
 }
