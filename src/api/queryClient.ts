@@ -72,12 +72,8 @@ export const queryKeys = {
     lists: ["drivers", "list"] as const,
     list: (params: DriversListParams) => ["drivers", "list", params] as const,
     detail: (id: string) => ["drivers", "detail", id] as const,
-    /** Everything of one driver's ledger (entries pages and summaries): invalidated after any ledger change. */
+    /** Everything of one driver's ledger (the page, its overview and entry details): invalidated after any ledger change. */
     ledger: (id: string) => ["drivers", "ledger", id] as const,
-    ledgerEntries: (id: string, page: number) =>
-      ["drivers", "ledger", id, "entries", page] as const,
-    ledgerSummary: (id: string, period: string) =>
-      ["drivers", "ledger", id, "summary", period] as const,
     /** One page of the ledger page's table with its filters. */
     ledgerPage: (id: string, params: LedgerPageParams) =>
       ["drivers", "ledger", id, "page", params] as const,

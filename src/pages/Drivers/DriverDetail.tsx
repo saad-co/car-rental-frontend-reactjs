@@ -11,7 +11,6 @@ import {
 } from "../../api/drivers.queries";
 import { usePayments } from "../../api/payments.queries";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
-import LedgerCard from "../../components/drivers/LedgerCard";
 import { ONBOARDING_STEPS } from "../../components/drivers/driverStatus";
 import Checkbox from "../../components/form/input/Checkbox";
 import Button from "../../components/ui/button/Button";
@@ -198,24 +197,33 @@ export default function DriverDetail() {
             Driver since {formatDateTime(driver.createdAt)}
           </p>
         </div>
-        {driver.status === "inactive" ? (
-          <Button
-            size="sm"
-            disabled={busy}
-            onClick={() => run(() => reactivate.mutate(undefined))}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* The one ledger lives on its own page (B86); this page only links to it. */}
+          <Link
+            to={`/admin/drivers/${driver.id}/ledger`}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
           >
-            {reactivate.isPending ? "Reactivating..." : "Reactivate"}
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            onClick={() => setConfirmingDeactivate(true)}
-          >
-            {deactivate.isPending ? "Deactivating..." : "Deactivate"}
-          </Button>
-        )}
+            View ledger
+          </Link>
+          {driver.status === "inactive" ? (
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={() => run(() => reactivate.mutate(undefined))}
+            >
+              {reactivate.isPending ? "Reactivating..." : "Reactivate"}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setConfirmingDeactivate(true)}
+            >
+              {deactivate.isPending ? "Deactivating..." : "Deactivate"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {actionError && (
@@ -260,14 +268,6 @@ export default function DriverDetail() {
         them back in onboarding: once billing is running, an onboarding driver
         is not billed or reminded until the step is ticked again.
       </ConfirmDialog>
-
-      <div className="mb-6">
-        <LedgerCard
-          driverId={driver.id}
-          driverName={fullName}
-          balanceCents={driver.balanceCents}
-        />
-      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">
