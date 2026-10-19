@@ -13,7 +13,7 @@ import type { components } from "./schema";
 export type MessageTemplate = components["schemas"]["MessageTemplateDto"];
 
 /** `application_approved` | `application_declined`, from the generated types. */
-export type TemplateKey = MessageTemplate["key"];
+export type TemplateKind = MessageTemplate["kind"];
 
 /** Definition of the templates query. */
 const templatesOptions = () =>
@@ -33,19 +33,52 @@ const templatesOptions = () =>
     },
   });
 
-/** Every text template, for the Settings page and the decline dialog's preview. */
+/** Every text template, for the Settings page and the Approve / Decline dialogs. */
 export function useMessageTemplates() {
   return useQuery(templatesOptions());
 }
 
-/** Saves a template's new text; the templates refetch. */
-export function useUpdateMessageTemplate() {
+/** Refetches the templates after any change to the list. */
+function useRefreshTemplates() {
   const queryClient = useQueryClient();
+  return () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.templates.all });
+}
+
+/** Adds a template of a kind (B81); the templates refetch. */
+export function useCreateMessageTemplate() {
+  const refresh = useRefreshTemplates();
   return useMutation({
-    mutationFn: async (vars: { key: TemplateKey; body: string }) => {
+    mutationFn: async (vars: {
+      kind: TemplateKind;
+      name: string;
+      body: string;
+    }) => {
+      const { data, error, response } = await api.POST("/message-templates", {
+        body: vars,
+      });
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Adding failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: refresh,
+  });
+}
+
+/** Saves a template's new name and text; the templates refetch. */
+export function useUpdateMessageTemplate() {
+  const refresh = useRefreshTemplates();
+  return useMutation({
+    mutationFn: async (vars: { id: string; name: string; body: string }) => {
       const { data, error, response } = await api.PUT(
-        "/message-templates/{key}",
-        { params: { path: { key: vars.key } }, body: { body: vars.body } },
+        "/message-templates/{id}",
+        {
+          params: { path: { id: vars.id } },
+          body: { name: vars.name, body: vars.body },
+        },
       );
       if (!data) {
         throw new Error(
@@ -54,8 +87,25 @@ export function useUpdateMessageTemplate() {
       }
       return data;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.templates.all }),
+    onSuccess: refresh,
+  });
+}
+
+/** Deletes a template (the API refuses the last one of a kind); the templates refetch. */
+export function useDeleteMessageTemplate() {
+  const refresh = useRefreshTemplates();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error, response } = await api.DELETE("/message-templates/{id}", {
+        params: { path: { id } },
+      });
+      if (!response.ok) {
+        throw new Error(
+          apiErrorMessage(error, `Deleting failed (${response.status}).`),
+        );
+      }
+    },
+    onSuccess: refresh,
   });
 }
 

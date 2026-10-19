@@ -119,6 +119,8 @@ export default function PaymentsList() {
     match,
     source,
     search: view.search || undefined,
+    from: view.from,
+    to: view.to,
     page: view.page,
     limit: LIST_PAGE_SIZE,
   });
@@ -261,13 +263,23 @@ export default function PaymentsList() {
           onApply: (values) =>
             view.setFilters({ match: values.match, source: values.source }),
         }}
+        dateRange={{
+          label: "Paid",
+          value: { from: view.from, to: view.to },
+          onChange: view.setDateRange,
+        }}
+        onClearAll={view.clearAll}
         isPending={isPending}
         error={isError ? error : null}
         isEmpty={data?.items.length === 0}
         emptyText={
-          match === "review" && !view.search && !source
+          match === "review" &&
+          !view.search &&
+          !source &&
+          !view.from &&
+          !view.to
             ? "Nothing needs review."
-            : view.search || match || source
+            : view.search || match || source || view.from || view.to
               ? "No payments match this search or these filters."
               : "No payments yet. They appear here as payment emails are read."
         }

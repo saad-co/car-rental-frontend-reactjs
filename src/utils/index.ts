@@ -53,6 +53,15 @@ export function chicagoUtcOffset(now = new Date()): string {
   return offset ? offset.replace("GMT", "UTC") : "UTC";
 }
 
+/**
+ * Rough number of SMS a text is split into: 160 characters fit in one; longer texts go in parts of 153 (each part
+ * carries a small header). Texts with emoji or some accented letters fit fewer characters per part, so this is a
+ * guide, not an exact count.
+ */
+export function smsParts(text: string): number {
+  return text.length <= 160 ? 1 : Math.ceil(text.length / 153);
+}
+
 /** Shows a stored US phone (`+13125550123`) as `(312) 555-0123`. Anything else is shown as-is. */
 export function formatUsPhone(e164: string): string {
   const match = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(e164);

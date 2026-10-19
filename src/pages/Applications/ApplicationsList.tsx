@@ -60,6 +60,8 @@ export default function ApplicationsList() {
     useApplications({
       status,
       search: view.search || undefined,
+      from: view.from,
+      to: view.to,
       page: view.page,
       limit: LIST_PAGE_SIZE,
     });
@@ -67,7 +69,7 @@ export default function ApplicationsList() {
   /** Ids of the ticked rows. */
   const [selected, setSelected] = useState<Set<string>>(new Set());
   /** The view the selection belongs to; when the view changes, the selection is dropped. */
-  const viewKey = `${view.search}|${status ?? ""}|${view.page}`;
+  const viewKey = `${view.search}|${status ?? ""}|${view.from ?? ""}|${view.to ?? ""}|${view.page}`;
   const [selectionView, setSelectionView] = useState(viewKey);
   if (viewKey !== selectionView) {
     setSelectionView(viewKey);
@@ -223,6 +225,12 @@ export default function ApplicationsList() {
           ],
           onApply: (values) => view.setFilters({ status: values.status }),
         }}
+        dateRange={{
+          label: "Received",
+          value: { from: view.from, to: view.to },
+          onChange: view.setDateRange,
+        }}
+        onClearAll={view.clearAll}
         actions={
           ticked.length > 0 && (
             <Button
@@ -241,7 +249,7 @@ export default function ApplicationsList() {
         error={isError ? error : null}
         isEmpty={data?.items.length === 0}
         emptyText={
-          view.search || status
+          view.search || status || view.from || view.to
             ? "No applications match this search or filter."
             : "No applications."
         }

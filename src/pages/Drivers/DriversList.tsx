@@ -81,6 +81,8 @@ export default function DriversList() {
   const { data, isPending, isError, error, isPlaceholderData } = useDrivers({
     status,
     search: view.search || undefined,
+    from: view.from,
+    to: view.to,
     page: view.page,
     limit: LIST_PAGE_SIZE,
   });
@@ -104,11 +106,17 @@ export default function DriversList() {
         ],
         onApply: (values) => view.setFilters({ status: values.status }),
       }}
+      dateRange={{
+        label: "Since",
+        value: { from: view.from, to: view.to },
+        onChange: view.setDateRange,
+      }}
+      onClearAll={view.clearAll}
       isPending={isPending}
       error={isError ? error : null}
       isEmpty={data?.items.length === 0}
       emptyText={
-        view.search || status
+        view.search || status || view.from || view.to
           ? "No drivers match this search or filter."
           : "No drivers. Drivers are created by approving an application."
       }

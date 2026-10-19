@@ -194,7 +194,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /applications/:id/approve`: creates the driver and marks the application approved.
+         * `POST /applications/:id/approve`: creates the driver and marks the application approved, and texts the
+         *     applicant. Optional body `{ "message": "..." }` is the approval text the admin picked and edited (B81); without
+         *     it the first approved template is sent. `400` for an unknown placeholder in it.
          *
          *     POST because it is an action with side effects, not an edit of a field. `@HttpCode(200)`
          *     because it returns the updated application rather than creating a resource at this URL.
@@ -217,8 +219,8 @@ export interface paths {
         put?: never;
         /**
          * `POST /applications/:id/reject`: declines the application (shown as "Declined", B69). No driver is created.
-         *     Optional body `{ "sendText": true }` also texts the applicant the "declined" template (B72); without a body
-         *     nothing is sent. `503` if the text could not be sent (then nothing is declined).
+         *     Optional body `{ "message": "..." }` texts the applicant that declined text, as the admin picked and edited
+         *     it (B72, B81); without a message nothing is sent. `503` if the text could not be sent (then nothing is declined).
          */
         post: operations["ApplicationsController_reject"];
         delete?: never;
@@ -394,17 +396,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** `GET /message-templates`: every template with its placeholders and last edit. */
+        /** `GET /message-templates`: every template, grouped by kind, with its placeholders and last edit. */
         get: operations["MessageTemplatesController_list"];
         put?: never;
-        post?: never;
+        /** `POST /message-templates`: adds a template. `400` empty, too long or unknown placeholder; `409` name taken. */
+        post: operations["MessageTemplatesController_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/message-templates/{key}": {
+    "/message-templates/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -413,12 +416,13 @@ export interface paths {
         };
         get?: never;
         /**
-         * `PUT /message-templates/:key`: replaces a template's text. PUT because the whole text is replaced. `400` empty,
-         *     too long, unknown placeholder, or a key that is not a template (`ParseEnumPipe`).
+         * `PUT /message-templates/:id`: replaces a template's name and text. PUT because both are replaced. `400` empty,
+         *     too long or unknown placeholder; `404` unknown id; `409` name taken.
          */
         put: operations["MessageTemplatesController_update"];
         post?: never;
-        delete?: never;
+        /** `DELETE /message-templates/:id`: `404` unknown id; `409` if it is the last template of its kind. */
+        delete: operations["MessageTemplatesController_remove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -788,9 +792,13 @@ export interface components {
              */
             alertedAt: string | null;
         };
-        DeclineApplicationDto: {
-            /** @description `true` also texts the applicant the "declined" template from Settings. Default false. */
-            sendText?: boolean;
+        ReviewMessageDto: {
+            /**
+             * @description The text, with `{firstName}` / `{lastName}` placeholders (filled in by the API; unknown ones are refused, 400).
+             *     1 to 1000 characters after trimming. Approve without it sends the first approved template; decline without it
+             *     sends no text.
+             */
+            message?: string;
         };
         ApplicationDocumentDto: {
             id: string;
@@ -937,8 +945,11 @@ export interface components {
             limit: number;
         };
         MessageTemplateDto: {
+            id: string;
             /** @enum {string} */
-            key: "application_approved" | "application_declined";
+            kind: "application_approved" | "application_declined";
+            /** @description The label in the dropdown, e.g. "No valid licence". */
+            name: string;
             /** @description The text with its placeholders, e.g. `Hi {firstName}, ...`. */
             body: string;
             /** @description The placeholders this template may use, e.g. `["firstName", "lastName"]`. */
@@ -948,7 +959,17 @@ export interface components {
             /** @description Email of the admin who last edited it; null for the default text (or a removed account). */
             updatedByEmail: string | null;
         };
+        CreateMessageTemplateDto: {
+            /** @enum {string} */
+            kind: "application_approved" | "application_declined";
+            /** @description 1 to 60 characters after trimming. Two templates of a kind cannot share a name (409). */
+            name: string;
+            /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
+            body: string;
+        };
         UpdateMessageTemplateDto: {
+            /** @description 1 to 60 characters after trimming. Two templates of a kind cannot share a name (409). */
+            name: string;
             /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
             body: string;
         };
@@ -1347,6 +1368,10 @@ export interface operations {
             query: {
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
                 /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
                 search?: string;
                 /** @description Page number, starting at 1. */
@@ -1449,7 +1474,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewMessageDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -1472,7 +1501,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["DeclineApplicationDto"];
+                "application/json": components["schemas"]["ReviewMessageDto"];
             };
         };
         responses: {
@@ -1756,12 +1785,35 @@ export interface operations {
             };
         };
     };
+    MessageTemplatesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMessageTemplateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplateDto"];
+                };
+            };
+        };
+    };
     MessageTemplatesController_update: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                key: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -1781,6 +1833,25 @@ export interface operations {
             };
         };
     };
+    MessageTemplatesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     DriversController_list: {
         parameters: {
             query: {
@@ -1790,6 +1861,10 @@ export interface operations {
                 limit: number;
                 /** @description Only drivers with this status. Omit for all. */
                 status?: "onboarding" | "active" | "inactive";
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
                 /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
                 search?: string;
             };
@@ -1904,6 +1979,10 @@ export interface operations {
                 provider?: components["schemas"]["InboundEmailProvider"];
                 /** @description Only emails with this outcome. Omit for all. */
                 status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
                 /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
                 search?: string;
                 /** @description Page number, starting at 1. */
@@ -1945,6 +2024,10 @@ export interface operations {
                  *     Omit for all.
                  */
                 match?: "assigned" | "review";
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
                 /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
                 search?: string;
             };

@@ -82,22 +82,27 @@ export function useApplication(id: string) {
   return useQuery(applicationDetailOptions(id));
 }
 
-/** What a review mutation takes: the application, and for a decline whether to text the applicant (B72). */
+/**
+ * What a review mutation takes: the application, and the text to send the applicant (B72, B81): picked from a
+ * template and maybe edited. Approve without it sends the first approved template; decline without it sends no text.
+ */
 export interface ReviewVars {
   id: string;
-  /** Decline only: also send the "declined" text from Settings. */
-  sendText?: boolean;
+  message?: string;
 }
 
 /** The three review requests. Each returns the updated application. */
 const reviewRequests = {
-  approve: ({ id }: ReviewVars) =>
-    api.POST("/applications/{id}/approve", { params: { path: { id } } }),
+  approve: ({ id, message }: ReviewVars) =>
+    api.POST("/applications/{id}/approve", {
+      params: { path: { id } },
+      body: { message },
+    }),
   // Shown as "Decline" (B69); the API action is still `reject`.
-  reject: ({ id, sendText }: ReviewVars) =>
+  reject: ({ id, message }: ReviewVars) =>
     api.POST("/applications/{id}/reject", {
       params: { path: { id } },
-      body: { sendText: sendText ?? false },
+      body: { message },
     }),
   hold: ({ id }: ReviewVars) =>
     api.POST("/applications/{id}/hold", { params: { path: { id } } }),
@@ -106,7 +111,7 @@ const reviewRequests = {
 type ReviewAction = keyof typeof reviewRequests;
 
 /**
- * Shared logic of the three review mutations. Takes `{ id }` (and `sendText` for a decline).
+ * Shared logic of the three review mutations. Takes `{ id }` and the optional `message`.
  *
  * On success:
  * - the detail cache is replaced with the response, so the page updates without a refetch;
@@ -149,7 +154,7 @@ export function useApproveApplication() {
   return useReviewApplication("approve");
 }
 
-/** Declines an application (stored as `rejected`); `sendText` also texts the applicant (B72). */
+/** Declines an application (stored as `rejected`); a `message` also texts the applicant (B72). */
 export function useRejectApplication() {
   return useReviewApplication("reject");
 }

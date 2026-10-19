@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 // Copied from TailAdmin (components/ui/button/Button.tsx). Changes: dark-mode classes removed
 // (D20); `type` prop added so a button only submits a form when asked to; `danger` variant added (red, for
-// actions that destroy data, B66).
+// actions that destroy data, B66); `title` added (a hover hint, B81).
 
 interface ButtonProps {
   children: ReactNode;
@@ -20,6 +20,8 @@ interface ButtonProps {
    * because a plain HTML <button> inside a form submits it by default, which is easy to trip over.
    */
   type?: "button" | "submit";
+  /** Hover hint, e.g. why the button is disabled. */
+  title?: string;
 }
 
 /** The theme's button: primary (filled) or outline, in two sizes. */
@@ -33,6 +35,7 @@ const Button: React.FC<ButtonProps> = ({
   className = "",
   disabled = false,
   type = "button",
+  title,
 }) => {
   const sizeClasses = {
     sm: "px-4 py-3 text-sm",
@@ -51,6 +54,7 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       type={type}
+      title={title}
       className={`inline-flex items-center justify-center gap-2 rounded-lg transition ${className} ${
         sizeClasses[size]
       } ${variantClasses[variant]} ${
