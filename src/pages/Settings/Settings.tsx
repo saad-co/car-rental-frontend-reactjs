@@ -1,12 +1,37 @@
-import { useMessageTemplates } from "../../api/templates.queries";
-import MessageTemplateEditor from "../../components/settings/MessageTemplateEditor";
+import { useState } from "react";
+import {
+  useMessageTemplates,
+  type TemplateKind,
+} from "../../api/templates.queries";
+import {
+  MessageTemplateEditor,
+  NewTemplateForm,
+} from "../../components/settings/MessageTemplateEditor";
+import Button from "../../components/ui/button/Button";
+
+/** What each kind of text is for, as the Settings page explains it, in the order shown. */
+const KINDS: { kind: TemplateKind; title: string; when: string }[] = [
+  {
+    kind: "application_approved",
+    title: "Approved texts",
+    when: "One of these is sent when you approve an application: you pick it in the Approve dialog and can edit it first. The driver's login (email and temporary password) follows in a second text, which is not editable. The first text in the list is the one offered first.",
+  },
+  {
+    kind: "application_declined",
+    title: "Declined texts",
+    when: 'One of these is sent when you decline an application and choose "Decline and send text": you pick it in the Decline dialog and can edit it first.',
+  },
+];
 
 /**
- * Settings (spec section 10). For now: the text templates sent when an application is approved or declined (B73).
- * Later: SMS mode, automation switches, reminder tiers and the other settings of the spec.
+ * Settings (spec section 10). For now: the text templates sent when an application is approved or declined (B73,
+ * B81): several per kind, each with a name. Later: SMS mode, automation switches, reminder tiers and the other
+ * settings of the spec.
  */
 export default function Settings() {
   const templates = useMessageTemplates();
+  /** The kind whose "add a text" form is open, if any. */
+  const [adding, setAdding] = useState<TemplateKind | null>(null);
 
   return (
     <div className="space-y-6">
@@ -32,13 +57,41 @@ export default function Settings() {
           </p>
         ) : (
           <div className="space-y-8 divide-y divide-gray-100 [&>*:not(:first-child)]:pt-8">
-            {templates.data.map((template) => (
-              // Keyed by the saved time: after a save the editor restarts from the saved text.
-              <MessageTemplateEditor
-                key={`${template.key}-${template.updatedAt}`}
-                template={template}
-              />
-            ))}
+            {KINDS.map(({ kind, title, when }) => {
+              const ofKind = templates.data.filter((t) => t.kind === kind);
+              return (
+                <section key={kind} className="space-y-4">
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-800">
+                      {title}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">{when}</p>
+                  </div>
+                  {ofKind.map((template) => (
+                    // Keyed by the saved time: after a save the editor restarts from the saved text.
+                    <MessageTemplateEditor
+                      key={`${template.id}-${template.updatedAt}`}
+                      template={template}
+                      isLastOfKind={ofKind.length <= 1}
+                    />
+                  ))}
+                  {adding === kind ? (
+                    <NewTemplateForm
+                      kind={kind}
+                      onDone={() => setAdding(null)}
+                    />
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAdding(kind)}
+                    >
+                      Add a text
+                    </Button>
+                  )}
+                </section>
+              );
+            })}
           </div>
         )}
       </div>

@@ -11,6 +11,8 @@ interface ConfirmDialogProps {
   confirmLabel: string;
   /** `danger` makes the confirm button red, for actions that destroy data. Default `primary`. */
   confirmVariant?: "primary" | "danger";
+  /** Greys out the confirm button, e.g. while a required field is empty. */
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   /**
@@ -18,6 +20,8 @@ interface ConfirmDialogProps {
    * "Decline without text" next to "Decline and send text" (B72).
    */
   secondary?: { label: string; onClick: () => void };
+  /** A wider dialog, for content such as a text box (also used whenever there is a `secondary` button). */
+  wide?: boolean;
 }
 
 /**
@@ -30,9 +34,11 @@ export default function ConfirmDialog({
   children,
   confirmLabel,
   confirmVariant = "primary",
+  confirmDisabled = false,
   onConfirm,
   onCancel,
   secondary,
+  wide = secondary !== undefined,
 }: ConfirmDialogProps) {
   return (
     <Modal
@@ -40,7 +46,7 @@ export default function ConfirmDialog({
       onClose={onCancel}
       showCloseButton={false}
       // Wider with a second action, so the three buttons fit on one row.
-      className={`${secondary ? "max-w-lg" : "max-w-md"} p-6 sm:p-8`}
+      className={`${wide ? "max-w-lg" : "max-w-md"} p-6 sm:p-8`}
     >
       <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
       <div className="mt-2 text-sm text-gray-500">{children}</div>
@@ -53,7 +59,12 @@ export default function ConfirmDialog({
             {secondary.label}
           </Button>
         )}
-        <Button size="sm" variant={confirmVariant} onClick={onConfirm}>
+        <Button
+          size="sm"
+          variant={confirmVariant}
+          disabled={confirmDisabled}
+          onClick={onConfirm}
+        >
           {confirmLabel}
         </Button>
       </div>

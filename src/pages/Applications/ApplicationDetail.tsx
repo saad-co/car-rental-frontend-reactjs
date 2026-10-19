@@ -16,7 +16,7 @@ import ApplicationNotesCard from "../../components/applications/ApplicationNotes
 import ConversationCard from "../../components/sms/ConversationCard";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
-import { fillTemplate, useMessageTemplates } from "../../api/templates.queries";
+import ReviewTextDialog from "../../components/applications/ReviewTextDialog";
 import Tabs from "../../components/ui/tabs/Tabs";
 import { formatDateTime, formatUsPhone } from "../../utils";
 import {
@@ -95,14 +95,12 @@ export default function ApplicationDetail() {
   const navigate = useNavigate();
   const { data: application, isPending, isError, error } = useApplication(id);
 
-  /** True while the "Approve?" dialog is open. */
+  /** True while the Approve dialog is open (B81: pick and edit the text). */
   const [confirmingApprove, setConfirmingApprove] = useState(false);
   /** True while the "Delete?" dialog is open. */
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  /** True while the "Decline?" dialog is open (B72: with or without a text). */
+  /** True while the Decline dialog is open (B72, B81: with or without a text). */
   const [confirmingDecline, setConfirmingDecline] = useState(false);
-  /** The decline text from Settings, for the dialog's preview. */
-  const templates = useMessageTemplates();
 
   const approve = useApproveApplication();
   const reject = useRejectApplication();
@@ -112,10 +110,10 @@ export default function ApplicationDetail() {
   const busy = mutations.some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
 
-  /** Clears the previous action's error, then runs this one. `sendText` matters only for a decline. */
-  const run = (mutation: typeof approve, sendText?: boolean) => {
+  /** Clears the previous action's error, then runs this one. `message` is the text to send (approve, decline). */
+  const run = (mutation: typeof approve, message?: string) => {
     mutations.forEach((m) => m.reset());
-    mutation.mutate({ id, sendText });
+    mutation.mutate({ id, message });
   };
 
   /** Deletes this application, then goes back to the list, which shows what was removed. */
@@ -150,16 +148,6 @@ export default function ApplicationDetail() {
   }
 
   const actions = availableActions(application.status);
-  /** The decline text as this applicant would read it (the API fills in the real one when sending). */
-  const declineBody = templates.data?.find(
-    (t) => t.key === "application_declined",
-  )?.body;
-  const declinePreview =
-    declineBody &&
-    fillTemplate(declineBody, {
-      firstName: application.firstName,
-      lastName: application.lastName,
-    });
   const fullName = `${application.firstName} ${application.lastName}`;
   const payload = application.payload;
   const uploadError = textOf(payload.license_upload_error);
@@ -285,51 +273,49 @@ export default function ApplicationDetail() {
         </p>
       )}
 
-      <ConfirmDialog
-        isOpen={confirmingApprove}
-        title={`Approve ${fullName}?`}
-        confirmLabel="Approve"
-        onCancel={() => setConfirmingApprove(false)}
-        onConfirm={() => {
-          setConfirmingApprove(false);
-          run(approve);
-        }}
-      >
-        This creates a driver with {application.email} and phone{" "}
-        {application.phone}, and sends two texts from the business number: the
-        "approved" message from Settings, then their login (email and a
-        temporary password). An approved application cannot be changed.
-      </ConfirmDialog>
+      {confirmingApprove && (
+        <ReviewTextDialog
+          kind="application_approved"
+          applicant={application}
+          title={`Approve ${fullName}?`}
+          confirmLabel="Approve and send text"
+          onCancel={() => setConfirmingApprove(false)}
+          onConfirm={(message) => {
+            setConfirmingApprove(false);
+            run(approve, message);
+          }}
+        >
+          This creates a driver with {application.email} and phone{" "}
+          {application.phone}, and sends two texts from the business number: the
+          text below, then their login (email and a temporary password). An
+          approved application cannot be changed.
+        </ReviewTextDialog>
+      )}
 
-      <ConfirmDialog
-        isOpen={confirmingDecline}
-        title={`Decline ${fullName}?`}
-        confirmLabel="Decline and send text"
-        confirmVariant="danger"
-        onCancel={() => setConfirmingDecline(false)}
-        onConfirm={() => {
-          setConfirmingDecline(false);
-          run(reject, true);
-        }}
-        secondary={{
-          label: "Decline without text",
-          onClick: () => {
+      {confirmingDecline && (
+        <ReviewTextDialog
+          kind="application_declined"
+          applicant={application}
+          title={`Decline ${fullName}?`}
+          confirmLabel="Decline and send text"
+          confirmVariant="danger"
+          onCancel={() => setConfirmingDecline(false)}
+          onConfirm={(message) => {
             setConfirmingDecline(false);
-            run(reject, false);
-          },
-        }}
-      >
-        <p>
-          Send {application.firstName} the decline text? You can also decline
-          without texting them.
-        </p>
-        <p className="mt-3 rounded-lg bg-gray-50 p-3 whitespace-pre-line text-gray-700">
-          {declinePreview ?? "Loading the text..."}
-        </p>
-        <p className="mt-2 text-theme-xs">
-          Edit this text under Settings → Message templates.
-        </p>
-      </ConfirmDialog>
+            run(reject, message);
+          }}
+          secondary={{
+            label: "Decline without text",
+            onClick: () => {
+              setConfirmingDecline(false);
+              run(reject);
+            },
+          }}
+        >
+          Send {application.firstName} this text? You can also decline without
+          texting them.
+        </ReviewTextDialog>
+      )}
 
       <ConfirmDialog
         isOpen={confirmingDelete}
