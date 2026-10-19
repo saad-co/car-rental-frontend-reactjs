@@ -93,6 +93,8 @@ export default function EmailLogList() {
       status,
       provider,
       search: view.search || undefined,
+      from: view.from,
+      to: view.to,
       page: view.page,
       limit: LIST_PAGE_SIZE,
     });
@@ -123,11 +125,17 @@ export default function EmailLogList() {
         onApply: (values) =>
           view.setFilters({ status: values.status, provider: values.provider }),
       }}
+      dateRange={{
+        label: "Received",
+        value: { from: view.from, to: view.to },
+        onChange: view.setDateRange,
+      }}
+      onClearAll={view.clearAll}
       isPending={isPending}
       error={isError ? error : null}
       isEmpty={data?.items.length === 0}
       emptyText={
-        view.search || status || provider
+        view.search || status || provider || view.from || view.to
           ? "No emails match this search or these filters."
           : "No emails read yet. They appear here as the payment mailbox is read."
       }
