@@ -9,7 +9,6 @@ import {
   type LedgerRow,
 } from "../../api/ledger.queries";
 import { useRecordPayment, useVoidPayment } from "../../api/payments.queries";
-import LedgerSummaryTab from "../../components/drivers/LedgerSummaryTab";
 import ReverseLedgerEntryDialog from "../../components/drivers/ReverseLedgerEntryDialog";
 import AgingTiles from "../../components/ledger/AgingTiles";
 import EntryDetailsDialog from "../../components/ledger/EntryDetailsDialog";
@@ -23,7 +22,6 @@ import NewEntryDialog, {
 import VoidPaymentDialog from "../../components/ledger/VoidPaymentDialog";
 import { useListParams } from "../../components/tables/useListParams";
 import Button from "../../components/ui/button/Button";
-import Tabs from "../../components/ui/tabs/Tabs";
 
 /** An opening of the "New ledger entry" dialog: the tab it starts on, and the charge it credits (if any). */
 interface AddRequest {
@@ -33,8 +31,7 @@ interface AddRequest {
 
 /**
  * A driver's ledger on its own page (B86, `/admin/drivers/:id/ledger`): the balance, what is owed by age, and the
- * register of every entry with filters, a search, sorting and totals; weekly and monthly summaries; a details window
- * per entry; and the manual actions (charge, credit, credit against a charge, reverse, record a payment, void it).
+ * register of every entry with filters, a search, sorting and totals; a details window per entry; and the manual actions (charge, credit, credit against a charge, reverse, record a payment, void it).
  * Nothing is ever edited or deleted: a mistake is a reversal.
  */
 export default function DriverLedger() {
@@ -139,32 +136,12 @@ export default function DriverLedger() {
         </Link>
       </div>
 
-      <Tabs
-        tabs={[
-          {
-            id: "entries",
-            label: "Entries",
-            content: (
-              <LedgerRegister
-                driverId={id}
-                view={view}
-                onOpen={(row) => setOpenId(row.id)}
-                onCredit={creditRow}
-                onReverse={openReverse}
-              />
-            ),
-          },
-          {
-            id: "weekly",
-            label: "Weekly",
-            content: <LedgerSummaryTab driverId={id} period="week" />,
-          },
-          {
-            id: "monthly",
-            label: "Monthly",
-            content: <LedgerSummaryTab driverId={id} period="month" />,
-          },
-        ]}
+      <LedgerRegister
+        driverId={id}
+        view={view}
+        onOpen={(row) => setOpenId(row.id)}
+        onCredit={creditRow}
+        onReverse={openReverse}
       />
 
       <EntryDetailsDialog

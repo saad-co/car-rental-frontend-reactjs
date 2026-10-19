@@ -218,7 +218,7 @@ export default function LedgerRegister({
       search={{
         value: view.search,
         onSearch: view.setSearch,
-        placeholder: "Search entries or CH-1042",
+        placeholder: "Search text, amount ($85) or CH-1042",
       }}
       filters={{
         groups: [
