@@ -2,7 +2,7 @@ import type React from "react";
 import type { FC } from "react";
 
 // Copied from TailAdmin (components/form/input/InputField.tsx). Changes: dark-mode classes
-// removed (D20); `autoComplete` and `required` props added for the login form.
+// removed (D20); `autoComplete` and `required` props added for the login form; `maxLength` added (B86).
 
 interface InputProps {
   type?: "text" | "number" | "email" | "password" | "date" | "time" | string;
@@ -26,6 +26,8 @@ interface InputProps {
   autoComplete?: string;
   /** The browser blocks the form submit while this field is empty. */
   required?: boolean;
+  /** Most characters the box accepts. */
+  maxLength?: number;
 }
 
 /** A styled text input with optional success/error state and a hint line. */
@@ -46,6 +48,7 @@ const Input: FC<InputProps> = ({
   hint,
   autoComplete,
   required = false,
+  maxLength,
 }) => {
   let inputClasses = ` h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 ${className}`;
 
@@ -74,6 +77,7 @@ const Input: FC<InputProps> = ({
         disabled={disabled}
         autoComplete={autoComplete}
         required={required}
+        maxLength={maxLength}
         className={inputClasses}
       />
 

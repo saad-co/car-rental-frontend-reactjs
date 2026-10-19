@@ -428,6 +428,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ledger-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /ledger-presets`: every preset, charges first, each kind in the order of its cards. */
+        get: operations["LedgerPresetsController_list"];
+        put?: never;
+        /** `POST /ledger-presets`: adds a preset at the end of its kind. `400` bad amount or text; `409` name taken. */
+        post: operations["LedgerPresetsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ledger-presets/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * `PUT /ledger-presets/order`: sets the order of one kind's cards (`kind`, `ids` = all that kind's ids). `400` the ids
+         *     are not exactly that kind's presets. Declared before `:id` so "order" is never read as an id.
+         */
+        put: operations["LedgerPresetsController_reorder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ledger-presets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * `PUT /ledger-presets/:id`: replaces a preset's name, amount and description (PUT because all three are replaced; the
+         *     amount may be null). `400` bad amount or text; `404` unknown id; `409` name taken.
+         */
+        put: operations["LedgerPresetsController_update"];
+        post?: never;
+        /** `DELETE /ledger-presets/:id`: `404` unknown id. Entries made from it keep their text and amount. */
+        delete: operations["LedgerPresetsController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers": {
         parameters: {
             query?: never;
@@ -551,6 +610,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payments/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /payments/manual`: records a payment an admin received by hand (cash, check, card, or any method) and
+         *     credits the driver's ledger. `201` the payment (also when the same `requestKey` is sent again); `400` bad
+         *     amount or date, unknown driver; `409` a possible duplicate (body has `code: "possible_duplicate"` and the
+         *     payment found; send `confirmDuplicate: true` to record anyway), the key reused, or the reference used before.
+         */
+        post: operations["PaymentsController_recordManual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /payments/:id/void`: voids a payment recorded by hand and reverses its ledger credit. `201` the payment;
+         *     `404` unknown payment; `409` not a manual payment, or already voided.
+         */
+        post: operations["PaymentsController_voidManual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/payments/{id}/assign": {
         parameters: {
             query?: never;
@@ -580,10 +681,31 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * `GET /drivers/:id/ledger`: one page of entries, newest first, each with the balance after it, plus the
-         *     balance now. `404` unknown driver.
+         * `GET /drivers/:id/ledger`: one page of entries, each with the balance after it, plus the balance now and the
+         *     totals of the filtered entries. Filters: `type`, `from`, `to`, `search` (text or a reference like `CH-1042`);
+         *     `order=asc|desc` (default newest first). `400` bad dates or `from` after `to`; `404` unknown driver.
          */
         get: operations["LedgerController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/ledger/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /drivers/:id/ledger/overview`: the balance, what is owed by age of the charges (0–6, 7–13, 14–29, 30+ days)
+         *     and the newest confirmed payment. `404` unknown driver.
+         */
+        get: operations["LedgerController_overview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -612,6 +734,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/ledger/entries/{entryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /drivers/:id/ledger/entries/:entryId`: one entry with what it reverses or was reversed by, the charge it
+         *     is applied against, the credits applied against it and its payment. `404` no such entry on this driver.
+         */
+        get: operations["LedgerController_details"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{id}/ledger/entries": {
         parameters: {
             query?: never;
@@ -622,9 +764,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /drivers/:id/ledger/entries`: adds a manual charge or credit (late fee, flat tire, discount, …).
-         *     `201` the entry (also when the same `requestKey` is sent again); `400` invalid amount, date or direction;
-         *     `404` unknown driver; `409` a second opening balance, or the key reused for a different entry.
+         * `POST /drivers/:id/ledger/entries`: adds a manual charge or credit (late fee, flat tire, discount, …), or a
+         *     credit applied against a charge (`appliesToId`). `201` the entry (also when the same `requestKey` is sent
+         *     again); `400` invalid amount, date or direction, or more than is left on the charge; `404` unknown driver or
+         *     charge; `409` the key reused for a different entry.
          */
         post: operations["LedgerController_addEntry"];
         delete?: never;
@@ -644,7 +787,8 @@ export interface paths {
         put?: never;
         /**
          * `POST /drivers/:id/ledger/entries/:entryId/reverse`: cancels an entry with a reversal. `201` the reversal;
-         *     `404` no such entry on this driver; `409` a payment credit, a reversal, or reversed already.
+         *     `404` no such entry on this driver; `409` a payment credit, a reversal, reversed already, or a charge that
+         *     still has credits applied.
          */
         post: operations["LedgerController_reverse"];
         delete?: never;
@@ -973,6 +1117,44 @@ export interface components {
             /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
             body: string;
         };
+        /** @enum {string} */
+        LedgerPresetKind: "charge" | "credit";
+        LedgerPresetDto: {
+            kind: components["schemas"]["LedgerPresetKind"];
+            id: string;
+            /** @description The card's title, e.g. "Late fee". */
+            name: string;
+            /** @description The default amount in whole cents, or null for "enter amount". */
+            amountCents: number | null;
+            /** @description What the Description box is filled with. */
+            description: string;
+            /** @description The order of the cards within a kind, from 1. */
+            position: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateLedgerPresetDto: {
+            kind: components["schemas"]["LedgerPresetKind"];
+            /** @description 1 to 60 characters after trimming. Two presets of a kind cannot share a name (409). */
+            name: string;
+            /** @description Whole cents, 1 to 1,000,000 ($10,000), or left out / null for "enter amount". */
+            amountCents?: number | null;
+            /** @description What the Description box is filled with: 1 to 500 characters after trimming. */
+            description: string;
+        };
+        ReorderLedgerPresetsDto: {
+            kind: components["schemas"]["LedgerPresetKind"];
+            /** @description Exactly the ids of that kind's presets, each once (400 otherwise). */
+            ids: string[];
+        };
+        UpdateLedgerPresetDto: {
+            /** @description 1 to 60 characters after trimming. Two presets of a kind cannot share a name (409). */
+            name: string;
+            /** @description Whole cents, 1 to 1,000,000 ($10,000), or left out / null for "enter amount". */
+            amountCents?: number | null;
+            /** @description What the Description box is filled with: 1 to 500 characters after trimming. */
+            description: string;
+        };
         DriverOnboardingDto: {
             /** Format: date-time */
             contractSignedAt: string | null;
@@ -1067,17 +1249,28 @@ export interface components {
             page: number;
             limit: number;
         };
+        /**
+         * @description For a payment an admin recorded by hand: how it was paid (cash, check, ...). Null for every other source.
+         * @enum {string}
+         */
+        PaymentManualMethod: "zelle" | "cash_app" | "venmo" | "stripe" | "chime" | "cash" | "check" | "card" | "money_order" | "other";
         PaymentDriverDto: {
             id: string;
             firstName: string;
             lastName: string;
         };
         PaymentDto: {
+            /** @description For a payment an admin recorded by hand: how it was paid (cash, check, ...). Null for every other source. */
+            manualMethod: components["schemas"]["PaymentManualMethod"] | null;
             id: string;
             /** @enum {string} */
             source: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
             /** @enum {string} */
             status: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
+            /** @description For a payment an admin recorded by hand: the text they gave for the driver's statement. */
+            description: string | null;
+            /** @description For a payment an admin recorded by hand: their staff-only note. */
+            internalNote: string | null;
             /** @description Integer cents. The frontend formats it; never a float. */
             amountCents: number;
             /** @description The payer's name exactly as the provider wrote it. */
@@ -1117,6 +1310,46 @@ export interface components {
             page: number;
             limit: number;
         };
+        RecordPaymentDto: {
+            /** @description How it was paid. Zelle, Cash App, Venmo, Stripe and Chime payments normally arrive by email by themselves. */
+            method: components["schemas"]["PaymentManualMethod"];
+            /**
+             * Format: uuid
+             * @description The driver who paid.
+             */
+            driverId: string;
+            /** @description Whole cents, 1 to 1,000,000 ($10,000). */
+            amountCents: number;
+            /** @description The day it was paid, `YYYY-MM-DD` in Chicago: today or up to 90 days back. */
+            paidOn: string;
+            /**
+             * @description A receipt number, check number or confirmation code, if there is one. Two manual payments cannot share the same
+             *     reference (a check recorded twice is refused).
+             */
+            reference?: string;
+            /**
+             * Format: uuid
+             * @description A UUID the form makes once per payment. Sending the same request again (a double click, a retry) returns the
+             *     payment already recorded instead of recording a second one.
+             */
+            requestKey: string;
+            /**
+             * @description Set to true to record it although the driver already has a confirmed payment of the same amount within three
+             *     days (the answer to the "possible duplicate" warning).
+             */
+            confirmDuplicate?: boolean;
+            /**
+             * @description The text for the driver's statement. Empty: the ledger writes its own ("Cash payment · ref 17"). Up to 500
+             *     characters.
+             */
+            description?: string;
+            /** @description A note for staff only (optional, up to 500 characters). Typed once; copied to the ledger credit; never on a statement. */
+            internalNote?: string;
+        };
+        VoidPaymentDto: {
+            /** @description Why the payment is voided, e.g. "Check bounced". 1 to 400 characters after trimming. */
+            reason: string;
+        };
         AssignPaymentDto: {
             /**
              * Format: uuid
@@ -1135,15 +1368,45 @@ export interface components {
             aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
         };
         /** @enum {string} */
+        LedgerTypeFilter: "charges" | "credits" | "payments" | "reversals";
+        /** @enum {string} */
+        LedgerOrder: "asc" | "desc";
+        /** @enum {string} */
         LedgerDirection: "debit" | "credit";
         /** @enum {string} */
         LedgerEntryKind: "rent" | "payment" | "adjustment" | "reversal";
+        /**
+         * @description For a payment row: where the payment came from.
+         * @enum {string}
+         */
+        PaymentSource: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
         LedgerRowDto: {
             direction: components["schemas"]["LedgerDirection"];
             kind: components["schemas"]["LedgerEntryKind"];
+            /** @description For a payment row: where the payment came from. */
+            paymentSource: components["schemas"]["PaymentSource"] | null;
+            /** @description For a payment row recorded by hand: how it was paid. */
+            paymentManualMethod: components["schemas"]["PaymentManualMethod"] | null;
             /** @description Balance after this entry, in date order (credits minus debits; negative = owes). */
             runningBalanceCents: number;
+            /** @description The reference of the charge this credit is applied against. */
+            appliesToRef: string | null;
+            /** @description The reference of the entry this reversal cancels. */
+            reversalOfRef: string | null;
+            /** @description The reference of the reversal that cancelled this entry. */
+            reversedByRef: string | null;
+            /** @description For a payment row recorded by hand and still confirmed: it can be voided. */
+            canVoidPayment: boolean;
+            /**
+             * @description For a charge that can still be credited against: how much of it is left (its amount minus the active credits
+             *     applied to it). Null when it cannot (not a charge, reversed, or already fully credited).
+             */
+            creditableCents: number | null;
             id: string;
+            /** @description The short number people use, e.g. 1042 in "CH-1042". */
+            entryNo: number;
+            /** @description The reference shown on screen: `CH-1042` (charge), `CR-…` (credit), `PM-…` (payment), `RV-…` (reversal). */
+            ref: string;
             driverId: string;
             /** @description Always positive; `direction` says which way. */
             amountCents: number;
@@ -1153,6 +1416,10 @@ export interface components {
             paymentId: string | null;
             /** @description The entry this one cancels (reversals only). */
             reversalOfId: string | null;
+            /** @description The charge this credit is applied against, if any. */
+            appliesToId: string | null;
+            /** @description The staff-only note typed with the entry, if any. */
+            internalNote: string | null;
             /** @description The reversal that cancelled this entry, if any. */
             reversedById: string | null;
             /** @description True when an admin may reverse it here: not a reversal, not a payment credit, not reversed already. */
@@ -1166,14 +1433,53 @@ export interface components {
              */
             createdAt: string;
         };
+        LedgerTotalsDto: {
+            /** @description Sum of the debits (charges) among them. */
+            debitCents: number;
+            /** @description Sum of the credits among them (payments, credits, and reversals of charges). */
+            creditCents: number;
+        };
         LedgerPageDto: {
             items: components["schemas"]["LedgerRowDto"][];
-            /** @description All entries of the driver, across pages. */
+            /** @description Entries that match the filters, across pages. */
             total: number;
             page: number;
             limit: number;
-            /** @description The driver's balance now (credits minus debits; negative = owes). */
+            /** @description The driver's balance now (credits minus debits; negative = owes), whatever the filters. */
             balanceCents: number;
+            totals: components["schemas"]["LedgerTotalsDto"];
+            /**
+             * @description Balance at the start of the `from` day: every entry dated before it. Null when no `from` was given. A statement
+             *     starts from it.
+             */
+            balanceBeforeCents: number | null;
+        };
+        LedgerAgingDto: {
+            /** @description Charges 0 to 6 days old. */
+            currentCents: number;
+            /** @description Charges 7 to 13 days old. */
+            days7to13Cents: number;
+            /** @description Charges 14 to 29 days old. */
+            days14to29Cents: number;
+            /** @description Charges 30 or more days old. */
+            days30PlusCents: number;
+            /** @description Everything 7 days old or more (the three numbers above it). */
+            pastDueCents: number;
+        };
+        LedgerLastPaymentDto: {
+            source: components["schemas"]["PaymentSource"];
+            manualMethod: components["schemas"]["PaymentManualMethod"] | null;
+            amountCents: number;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        LedgerOverviewDto: {
+            /** @description Credits minus debits; negative = the driver owes. */
+            balanceCents: number;
+            aging: components["schemas"]["LedgerAgingDto"];
+            lastPayment: components["schemas"]["LedgerLastPaymentDto"] | null;
+            /** @description The Chicago day the ages are counted to, `YYYY-MM-DD`. */
+            asOf: string;
         };
         /** @enum {string} */
         LedgerPeriod: "week" | "month";
@@ -1200,6 +1506,90 @@ export interface components {
             period: components["schemas"]["LedgerPeriod"];
             items: components["schemas"]["LedgerPeriodDto"][];
         };
+        LedgerEntryDto: {
+            direction: components["schemas"]["LedgerDirection"];
+            kind: components["schemas"]["LedgerEntryKind"];
+            id: string;
+            /** @description The short number people use, e.g. 1042 in "CH-1042". */
+            entryNo: number;
+            /** @description The reference shown on screen: `CH-1042` (charge), `CR-…` (credit), `PM-…` (payment), `RV-…` (reversal). */
+            ref: string;
+            driverId: string;
+            /** @description Always positive; `direction` says which way. */
+            amountCents: number;
+            description: string;
+            /** @description The Chicago day it belongs to, `YYYY-MM-DD`. */
+            effectiveDate: string;
+            paymentId: string | null;
+            /** @description The entry this one cancels (reversals only). */
+            reversalOfId: string | null;
+            /** @description The charge this credit is applied against, if any. */
+            appliesToId: string | null;
+            /** @description The staff-only note typed with the entry, if any. */
+            internalNote: string | null;
+            /** @description The reversal that cancelled this entry, if any. */
+            reversedById: string | null;
+            /** @description True when an admin may reverse it here: not a reversal, not a payment credit, not reversed already. */
+            canReverse: boolean;
+            /** @description Null for entries made by the system (payment credits from matching). */
+            createdById: string | null;
+            createdByEmail: string | null;
+            /**
+             * Format: date-time
+             * @description When it was recorded (may be later than `effectiveDate`).
+             */
+            createdAt: string;
+        };
+        LedgerEntryLinkDto: {
+            id: string;
+            ref: string;
+            description: string;
+            effectiveDate: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdByEmail: string | null;
+        };
+        LedgerAppliedCreditDto: {
+            id: string;
+            ref: string;
+            description: string;
+            effectiveDate: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdByEmail: string | null;
+            amountCents: number;
+            reversed: boolean;
+        };
+        /** @enum {string} */
+        PaymentStatus: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
+        LedgerPaymentInfoDto: {
+            source: components["schemas"]["PaymentSource"];
+            manualMethod: components["schemas"]["PaymentManualMethod"] | null;
+            status: components["schemas"]["PaymentStatus"];
+            id: string;
+            senderName: string;
+            /** @description The provider's transaction id, or the reference typed for a manual payment. */
+            transactionId: string | null;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        LedgerEntryDetailsDto: {
+            entry: components["schemas"]["LedgerEntryDto"];
+            /** @description For a reversal: the entry it cancels. */
+            reversalOf: components["schemas"]["LedgerEntryLinkDto"] | null;
+            /** @description The reversal that cancelled this entry. */
+            reversedBy: components["schemas"]["LedgerEntryLinkDto"] | null;
+            /** @description For a credit: the charge it is applied against. */
+            appliesTo: components["schemas"]["LedgerEntryLinkDto"] | null;
+            /** @description For a charge: the credits applied against it, oldest first. */
+            appliedCredits: components["schemas"]["LedgerAppliedCreditDto"][];
+            /** @description For a payment entry: the payment. */
+            payment: components["schemas"]["LedgerPaymentInfoDto"] | null;
+            /** @description For a charge: how much of it can still be credited, or null. */
+            creditableCents: number | null;
+            /** @description For a payment entry recorded by hand and still confirmed: it can be voided. */
+            canVoidPayment: boolean;
+        };
         CreateLedgerEntryDto: {
             /**
              * @description `debit`: a charge, the driver owes more (late fee, flat tire, damage, toll…). `credit`: the driver owes less
@@ -1218,32 +1608,14 @@ export interface components {
              *     returns the entry already made instead of making a second one.
              */
             requestKey: string;
-        };
-        LedgerEntryDto: {
-            direction: components["schemas"]["LedgerDirection"];
-            kind: components["schemas"]["LedgerEntryKind"];
-            id: string;
-            driverId: string;
-            /** @description Always positive; `direction` says which way. */
-            amountCents: number;
-            description: string;
-            /** @description The Chicago day it belongs to, `YYYY-MM-DD`. */
-            effectiveDate: string;
-            paymentId: string | null;
-            /** @description The entry this one cancels (reversals only). */
-            reversalOfId: string | null;
-            /** @description The reversal that cancelled this entry, if any. */
-            reversedById: string | null;
-            /** @description True when an admin may reverse it here: not a reversal, not a payment credit, not reversed already. */
-            canReverse: boolean;
-            /** @description Null for entries made by the system (payment credits from matching). */
-            createdById: string | null;
-            createdByEmail: string | null;
             /**
-             * Format: date-time
-             * @description When it was recorded (may be later than `effectiveDate`).
+             * Format: uuid
+             * @description "Credit against this charge": the charge this credit reduces (e.g. a waived late fee). Only a credit can name
+             *     one, the charge must be on this driver and not reversed, and the amount can be at most what is left on it.
              */
-            createdAt: string;
+            appliesToId?: string;
+            /** @description A note for staff only (optional, up to 500 characters). Typed once, never changed, never printed on a statement. */
+            internalNote?: string;
         };
         ReverseLedgerEntryDto: {
             /** @description Why the entry is cancelled, e.g. "Late fee waived by the owner". 1 to 400 characters after trimming. */
@@ -1852,6 +2224,113 @@ export interface operations {
             };
         };
     };
+    LedgerPresetsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPresetDto"][];
+                };
+            };
+        };
+    };
+    LedgerPresetsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLedgerPresetDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPresetDto"];
+                };
+            };
+        };
+    };
+    LedgerPresetsController_reorder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderLedgerPresetsDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LedgerPresetsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLedgerPresetDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPresetDto"];
+                };
+            };
+        };
+    };
+    LedgerPresetsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     DriversController_list: {
         parameters: {
             query: {
@@ -2047,6 +2526,54 @@ export interface operations {
             };
         };
     };
+    PaymentsController_recordManual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordPaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_voidManual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidPaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDto"];
+                };
+            };
+        };
+    };
     PaymentsController_assign: {
         parameters: {
             query?: never;
@@ -2075,6 +2602,16 @@ export interface operations {
     LedgerController_list: {
         parameters: {
             query: {
+                /** @description Only this type of entry. Omit for all. */
+                type?: components["schemas"]["LedgerTypeFilter"];
+                /** @description `desc`: newest first (the default). `asc`: oldest first. */
+                order?: components["schemas"]["LedgerOrder"];
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
                 /** @description Page number, starting at 1. */
                 page: number;
                 /** @description Items per page (1 to 100). */
@@ -2094,6 +2631,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerPageDto"];
+                };
+            };
+        };
+    };
+    LedgerController_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerOverviewDto"];
                 };
             };
         };
@@ -2121,6 +2679,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerSummaryDto"];
+                };
+            };
+        };
+    };
+    LedgerController_details: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                entryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerEntryDetailsDto"];
                 };
             };
         };

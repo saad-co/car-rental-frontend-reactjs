@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import {
   LEDGER_PAGE_SIZE,
   useAddLedgerEntry,
@@ -6,13 +7,14 @@ import {
   useReverseLedgerEntry,
   type LedgerRow,
 } from "../../api/ledger.queries";
+import { useRecordPayment } from "../../api/payments.queries";
 import { chicagoToday, formatCents, formatDay } from "../../utils";
+import NewEntryDialog from "../ledger/NewEntryDialog";
 import DataTable, { type Column } from "../tables/DataTable";
 import Badge from "../ui/badge/Badge";
 import Button from "../ui/button/Button";
 import Pagination from "../ui/pagination/Pagination";
 import Tabs from "../ui/tabs/Tabs";
-import AddLedgerEntryDialog from "./AddLedgerEntryDialog";
 import BalanceText from "./BalanceText";
 import LedgerSummaryTab from "./LedgerSummaryTab";
 import { entryTypeLabel } from "./ledgerLabels";
@@ -164,6 +166,7 @@ export default function LedgerCard({
   balanceCents: number;
 }) {
   const add = useAddLedgerEntry(driverId);
+  const record = useRecordPayment();
   const reverse = useReverseLedgerEntry(driverId);
   const [adding, setAdding] = useState(false);
   /** Bumped on every opening, so the dialog starts empty with a new request key. */
@@ -186,16 +189,25 @@ export default function LedgerCard({
             with billing.
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            add.reset();
-            setAddRound((n) => n + 1);
-            setAdding(true);
-          }}
-        >
-          Add entry
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to={`/admin/drivers/${driverId}/ledger`}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
+          >
+            Open full ledger
+          </Link>
+          <Button
+            size="sm"
+            onClick={() => {
+              add.reset();
+              record.reset();
+              setAddRound((n) => n + 1);
+              setAdding(true);
+            }}
+          >
+            Add entry
+          </Button>
+        </div>
       </div>
 
       <Tabs
@@ -226,14 +238,21 @@ export default function LedgerCard({
         ]}
       />
 
-      <AddLedgerEntryDialog
+      <NewEntryDialog
         key={addRound}
         isOpen={adding}
+        driverId={driverId}
         driverName={driverName}
-        busy={add.isPending}
-        error={add.error?.message ?? null}
-        onSave={(entry) =>
+        balanceCents={balanceCents}
+        initialMode="debit"
+        busy={add.isPending || record.isPending}
+        entryError={add.error}
+        paymentError={record.error}
+        onSaveEntry={(entry) =>
           add.mutate(entry, { onSuccess: () => setAdding(false) })
+        }
+        onSavePayment={(payment) =>
+          record.mutate(payment, { onSuccess: () => setAdding(false) })
         }
         onCancel={() => setAdding(false)}
       />

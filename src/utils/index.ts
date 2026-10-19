@@ -132,3 +132,11 @@ export function formatDay(day: string): string {
     timeZone: "UTC",
   });
 }
+
+/**
+ * Integer cents as the text of an amount box: `2550` is `"25.50"`, `2500` is `"25.00"`. Whole-number maths, so no float
+ * can show a wrong cent. (Not for display: use `formatCents` for that.)
+ */
+export function centsToDollars(cents: number): string {
+  return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
+}

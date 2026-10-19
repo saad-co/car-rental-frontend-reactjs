@@ -7,8 +7,11 @@ import {
 } from "@tanstack/react-query";
 import { api } from "./client";
 import { apiErrorMessage } from "./errors";
-import { queryKeys } from "./queryClient";
+import { queryKeys, type LedgerPageParams } from "./queryClient";
 import type { components } from "./schema";
+
+/** One ledger entry, as an add or a reverse answers with it. */
+export type LedgerEntry = components["schemas"]["LedgerEntryDto"];
 
 /** One row of a driver's ledger, with the balance right after it. */
 export type LedgerRow = components["schemas"]["LedgerRowDto"];
@@ -150,5 +153,147 @@ export function useReverseLedgerEntry(driverId: string) {
       return data;
     },
     onSuccess: invalidate,
+  });
+}
+
+/** One page of the ledger page's table: rows, totals of the filtered entries, the balance now. */
+export type LedgerPage = components["schemas"]["LedgerPageDto"];
+
+/** The balance, the aging tiles and the last payment. */
+export type LedgerOverview = components["schemas"]["LedgerOverviewDto"];
+
+/** What is owed by how old the charges are. */
+export type LedgerAging = components["schemas"]["LedgerAgingDto"];
+
+/** One entry with everything that links to it (reversal, credits applied, payment). */
+export type LedgerEntryDetails = components["schemas"]["LedgerEntryDetailsDto"];
+
+/** `charges` | `credits` | `payments` | `reversals`. */
+export type LedgerTypeFilter = components["schemas"]["LedgerTypeFilter"];
+
+/** Definition of one page of the ledger table with its filters. */
+const ledgerPageOptions = (driverId: string, params: LedgerPageParams) =>
+  queryOptions({
+    queryKey: queryKeys.drivers.ledgerPage(driverId, params),
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/drivers/{id}/ledger", {
+        params: { path: { id: driverId }, query: params },
+      });
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Loading the ledger failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    // While the next page or a new filter loads, keep showing the current rows.
+    placeholderData: keepPreviousData,
+  });
+
+/** One page of a driver's ledger with the type, date, search and order filters applied by the API. */
+export function useLedgerPage(driverId: string, params: LedgerPageParams) {
+  return useQuery(ledgerPageOptions(driverId, params));
+}
+
+/** Definition of the overview query. */
+const ledgerOverviewOptions = (driverId: string) =>
+  queryOptions({
+    queryKey: queryKeys.drivers.ledgerOverview(driverId),
+    queryFn: async () => {
+      const { data, error, response } = await api.GET(
+        "/drivers/{id}/ledger/overview",
+        { params: { path: { id: driverId } } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Loading the ledger overview failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+  });
+
+/** The balance, what is owed by age (first in, first out) and the newest confirmed payment. */
+export function useLedgerOverview(driverId: string) {
+  return useQuery(ledgerOverviewOptions(driverId));
+}
+
+/** Definition of one entry's details query. */
+const ledgerEntryOptions = (driverId: string, entryId: string) =>
+  queryOptions({
+    queryKey: queryKeys.drivers.ledgerEntry(driverId, entryId),
+    queryFn: async () => {
+      const { data, error, response } = await api.GET(
+        "/drivers/{id}/ledger/entries/{entryId}",
+        { params: { path: { id: driverId, entryId } } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Loading the entry failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+  });
+
+/** One entry with what it reverses or was reversed by, the credits applied to it and its payment. */
+export function useLedgerEntry(driverId: string, entryId: string | null) {
+  return useQuery({
+    ...ledgerEntryOptions(driverId, entryId ?? ""),
+    enabled: entryId !== null,
+  });
+}
+
+/** Entries fetched per request when a statement needs the whole range (the API allows up to 100). */
+const STATEMENT_CHUNK = 100;
+
+/**
+ * Every entry from `from` to `to`, oldest first, for the printable statement: the pages are fetched one after the
+ * other inside one query, so the statement shows the whole range, not a page.
+ */
+export function useLedgerStatement(driverId: string, from: string, to: string) {
+  return useQuery({
+    queryKey: queryKeys.drivers.ledgerStatement(driverId, from, to),
+    queryFn: async () => {
+      const rows: LedgerRow[] = [];
+      let first: LedgerPage | null = null;
+      for (let page = 1; ; page++) {
+        const { data, error, response } = await api.GET(
+          "/drivers/{id}/ledger",
+          {
+            params: {
+              path: { id: driverId },
+              query: { from, to, order: "asc", page, limit: STATEMENT_CHUNK },
+            },
+          },
+        );
+        if (!data) {
+          throw new Error(
+            apiErrorMessage(
+              error,
+              `Loading the statement failed (${response.status}).`,
+            ),
+          );
+        }
+        first ??= data;
+        rows.push(...data.items);
+        if (rows.length >= data.total || data.items.length === 0) break;
+      }
+      return {
+        rows,
+        totals: first.totals,
+        balanceBeforeCents: first.balanceBeforeCents ?? 0,
+        balanceCents: first.balanceCents,
+      };
+    },
   });
 }

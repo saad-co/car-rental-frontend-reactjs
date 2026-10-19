@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { LedgerRow } from "../../api/ledger.queries";
+import type { LedgerEntry } from "../../api/ledger.queries";
 import { formatCents, formatDay } from "../../utils";
 import TextArea from "../form/input/TextArea";
 import Button from "../ui/button/Button";
@@ -8,7 +8,7 @@ import { entryTypeLabel } from "./ledgerLabels";
 
 interface ReverseLedgerEntryDialogProps {
   /** The entry to reverse; null keeps the dialog closed. */
-  entry: LedgerRow | null;
+  entry: LedgerEntry | null;
   busy: boolean;
   error: string | null;
   onConfirm: (reason: string) => void;

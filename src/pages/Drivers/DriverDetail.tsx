@@ -20,7 +20,7 @@ import {
   ALIAS_SOURCE_LABEL,
   ALIAS_TYPE_LABEL,
   MATCH_METHOD_LABEL,
-  PAYMENT_SOURCE_LABEL,
+  paymentSourceLabel,
 } from "../../components/payments/paymentLabels";
 import ConversationCard from "../../components/sms/ConversationCard";
 import {
@@ -376,7 +376,10 @@ export default function DriverDetail() {
                             {payment.senderName}
                           </span>
                           <span className="block text-theme-xs">
-                            {PAYMENT_SOURCE_LABEL[payment.source]}
+                            {paymentSourceLabel(
+                              payment.source,
+                              payment.manualMethod,
+                            )}
                             {payment.matchMethod &&
                               ` · ${MATCH_METHOD_LABEL[payment.matchMethod]}`}
                           </span>
