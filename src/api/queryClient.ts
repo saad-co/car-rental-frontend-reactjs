@@ -62,6 +62,14 @@ export const queryKeys = {
   ledgerPresets: {
     all: ["ledgerPresets"] as const,
   },
+  /** Contract drafts and their calculated numbers (Module 2 step 1, D71). */
+  contracts: {
+    all: ["contracts"] as const,
+    /** The draft of one driver (`{ draft: null }` when there is none). */
+    draft: (driverId: string) => ["contracts", "draft", driverId] as const,
+    /** The numbers for one set of inputs, `input` being the inputs as JSON text. */
+    numbers: (input: string) => ["contracts", "numbers", input] as const,
+  },
   /** The approve / decline text templates (B73). */
   templates: {
     all: ["templates"] as const,

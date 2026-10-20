@@ -10,6 +10,7 @@ import ChangePassword from "./pages/Driver/ChangePassword";
 import DriverHome from "./pages/Driver/DriverHome";
 import VerifyEmail from "./pages/Driver/VerifyEmail";
 import DriversList from "./pages/Drivers/DriversList";
+import ContractDraft from "./pages/Drivers/ContractDraft";
 import DriverDetail from "./pages/Drivers/DriverDetail";
 import DriverLedger from "./pages/Drivers/DriverLedger";
 import LedgerStatement from "./pages/Drivers/LedgerStatement";
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="drivers" element={<DriversList />} />
             <Route path="drivers/:id" element={<DriverDetail />} />
             <Route path="drivers/:id/ledger" element={<DriverLedger />} />
+            <Route path="drivers/:id/contract" element={<ContractDraft />} />
             <Route
               path="drivers/:id/ledger/statement"
               element={<LedgerStatement />}
