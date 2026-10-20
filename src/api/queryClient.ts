@@ -23,6 +23,10 @@ export type ApplicationsListParams =
 /** Query string of `GET /drivers` (status filter, page, limit), from the generated types. */
 export type DriversListParams = paths["/drivers"]["get"]["parameters"]["query"];
 
+/** Query string of `GET /drivers/{id}/ledger` (type, dates, search, order, page, limit), from the generated types. */
+export type LedgerPageParams =
+  paths["/drivers/{id}/ledger"]["get"]["parameters"]["query"];
+
 /** Query string of `GET /payments` (status and source filters, page, limit), from the generated types. */
 export type PaymentsListParams =
   paths["/payments"]["get"]["parameters"]["query"];
@@ -54,6 +58,10 @@ export const queryKeys = {
     /** The internal notes of one application (B74), all loaded pages. */
     notes: (id: string) => ["applications", "notes", id] as const,
   },
+  /** The quick-pick presets of the New ledger entry window, charges and credits (B86, D66). */
+  ledgerPresets: {
+    all: ["ledgerPresets"] as const,
+  },
   /** The approve / decline text templates (B73). */
   templates: {
     all: ["templates"] as const,
@@ -64,12 +72,20 @@ export const queryKeys = {
     lists: ["drivers", "list"] as const,
     list: (params: DriversListParams) => ["drivers", "list", params] as const,
     detail: (id: string) => ["drivers", "detail", id] as const,
-    /** Everything of one driver's ledger (entries pages and summaries): invalidated after any ledger change. */
+    /** Everything of one driver's ledger (the page, its overview and entry details): invalidated after any ledger change. */
     ledger: (id: string) => ["drivers", "ledger", id] as const,
-    ledgerEntries: (id: string, page: number) =>
-      ["drivers", "ledger", id, "entries", page] as const,
-    ledgerSummary: (id: string, period: string) =>
-      ["drivers", "ledger", id, "summary", period] as const,
+    /** One page of the ledger page's table with its filters. */
+    ledgerPage: (id: string, params: LedgerPageParams) =>
+      ["drivers", "ledger", id, "page", params] as const,
+    /** The aging tiles and the last payment. */
+    ledgerOverview: (id: string) =>
+      ["drivers", "ledger", id, "overview"] as const,
+    /** One entry with what links to it. */
+    ledgerEntry: (id: string, entryId: string) =>
+      ["drivers", "ledger", id, "entry", entryId] as const,
+    /** Every entry of a date range, for the printable statement. */
+    ledgerStatement: (id: string, from: string, to: string) =>
+      ["drivers", "ledger", id, "statement", from, to] as const,
   },
   payments: {
     all: ["payments"] as const,

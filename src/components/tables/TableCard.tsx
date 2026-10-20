@@ -111,7 +111,7 @@ export default function TableCard({
     <div className="rounded-2xl border border-gray-200 bg-white pt-4">
       <div className="mb-4 flex flex-col gap-4 px-6 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           {actions}
           {search && (
             <SearchInput

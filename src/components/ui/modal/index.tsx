@@ -50,12 +50,17 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
+  // The box never grows past 90% of the viewport height: its content scrolls inside it, while the padding (from
+  // `className`) and the close button stay put. `dvh` follows the visible height on phones, where the address bar
+  // moves. Without a cap, a tall dialog was centred and cut off at the top, out of reach of any scroll.
   const contentClasses = isFullscreen
     ? "w-full h-full"
-    : "relative w-full rounded-3xl bg-white";
+    : "relative flex max-h-[90dvh] w-full flex-col rounded-3xl bg-white";
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto modal z-99999">
+    <div
+      className={`fixed inset-0 flex items-center justify-center overflow-y-auto modal z-99999 ${isFullscreen ? "" : "p-4"}`}
+    >
       {!isFullscreen && (
         <div
           className="fixed inset-0 h-full w-full bg-gray-400/50 backdrop-blur-[32px]"
@@ -63,7 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
         ></div>
       )}
       <div
-        className={`${contentClasses}  ${className}`}
+        className={`${contentClasses} ${className ?? ""}`}
         onClick={(e) => e.stopPropagation()}
       >
         {showCloseButton && (
@@ -89,7 +94,9 @@ export const Modal: React.FC<ModalProps> = ({
             </svg>
           </button>
         )}
-        <div>{children}</div>
+        <div className={isFullscreen ? undefined : "min-h-0 overflow-y-auto"}>
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -11,6 +11,8 @@ import DriverHome from "./pages/Driver/DriverHome";
 import VerifyEmail from "./pages/Driver/VerifyEmail";
 import DriversList from "./pages/Drivers/DriversList";
 import DriverDetail from "./pages/Drivers/DriverDetail";
+import DriverLedger from "./pages/Drivers/DriverLedger";
+import LedgerStatement from "./pages/Drivers/LedgerStatement";
 import PaymentsList from "./pages/Payments/PaymentsList";
 import EmailLogList from "./pages/EmailLog/EmailLogList";
 import Settings from "./pages/Settings/Settings";
@@ -41,6 +43,11 @@ export default function App() {
             <Route path="applications/:id" element={<ApplicationDetail />} />
             <Route path="drivers" element={<DriversList />} />
             <Route path="drivers/:id" element={<DriverDetail />} />
+            <Route path="drivers/:id/ledger" element={<DriverLedger />} />
+            <Route
+              path="drivers/:id/ledger/statement"
+              element={<LedgerStatement />}
+            />
             <Route path="payments" element={<PaymentsList />} />
             <Route path="email-log" element={<EmailLogList />} />
             <Route path="settings" element={<Settings />} />

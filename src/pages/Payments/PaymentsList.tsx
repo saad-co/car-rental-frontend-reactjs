@@ -9,7 +9,7 @@ import {
 import AssignDriverDialog from "../../components/payments/AssignDriverDialog";
 import {
   MATCH_METHOD_LABEL,
-  PAYMENT_SOURCE_LABEL,
+  paymentSourceLabel,
 } from "../../components/payments/paymentLabels";
 import DataTable, { type Column } from "../../components/tables/DataTable";
 import TableCard from "../../components/tables/TableCard";
@@ -161,7 +161,7 @@ export default function PaymentsList() {
             {payment.senderName}
           </span>
           <span className="block text-theme-xs text-gray-500">
-            {PAYMENT_SOURCE_LABEL[payment.source]}
+            {paymentSourceLabel(payment.source, payment.manualMethod)}
             {payment.senderHandle && ` · ${payment.senderHandle}`}
           </span>
         </>
