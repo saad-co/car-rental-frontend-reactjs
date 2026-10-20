@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
+import { useContractDraft } from "../../api/contracts.queries";
 import {
   useDeactivateDriver,
   useDriver,
@@ -27,7 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { cn, formatCents, formatDateTime, formatUsPhone } from "../../utils";
+import {
+  cn,
+  formatCents,
+  formatDateTime,
+  formatDay,
+  formatUsPhone,
+} from "../../utils";
 
 /** A white card with a title, the same look as the application page. */
 function Card({ title, children }: { title: string; children: ReactNode }) {
@@ -96,6 +103,55 @@ function OnboardingCard({
           );
         })}
       </ul>
+    </Card>
+  );
+}
+
+/** The same look as the "View ledger" button, for a link that opens another page. */
+const LINK_BUTTON =
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50";
+
+/**
+ * The Contract card (Module 2 step 1): one line about the driver's draft with an "Open" link, or a "Create contract"
+ * link when there is none. Both go to the contract page, where the numbers are worked out.
+ */
+function ContractCard({ driverId }: { driverId: string }) {
+  const { data, isPending, isError, error } = useContractDraft(driverId);
+  const draft = data?.draft ?? null;
+  return (
+    <Card title="Contract">
+      {isPending ? (
+        <p className="text-sm text-gray-500">Loading...</p>
+      ) : isError ? (
+        <p role="alert" className="text-sm text-error-600">
+          {error.message}
+        </p>
+      ) : draft ? (
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-gray-800">
+            Draft · {formatCents(draft.totalRateCents)}/
+            {draft.schedule === "weekly" ? "week" : "day"} · from{" "}
+            {formatDay(draft.startDate)} · due at pickup{" "}
+            {formatCents(draft.numbers.amountDueAtPickupCents)}
+          </p>
+          <Link
+            to={`/admin/drivers/${driverId}/contract`}
+            className={LINK_BUTTON}
+          >
+            Open
+          </Link>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-gray-500">No contract yet.</p>
+          <Link
+            to={`/admin/drivers/${driverId}/contract`}
+            className={LINK_BUTTON}
+          >
+            Create contract
+          </Link>
+        </div>
+      )}
     </Card>
   );
 }
@@ -249,6 +305,7 @@ export default function DriverDetail() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">
           <OnboardingCard driver={driver} busy={busy} onChange={changeStep} />
+          <ContractCard driverId={driver.id} />
           <Card title="Contact">
             <Rows
               rows={[

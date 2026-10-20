@@ -538,6 +538,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts/calculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /contracts/calculate`: the numbers for some inputs, nothing saved. `400` bad inputs. */
+        post: operations["ContractsController_calculate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{driverId}/contract-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers/:driverId/contract-draft`: the driver's draft, or `{ draft: null }`. `404` unknown driver. */
+        get: operations["ContractsController_getDraft"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{driverId}/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /drivers/:driverId/contracts`: starts the draft. `400` bad inputs; `404` unknown driver; `409` a draft exists. */
+        post: operations["ContractsController_createDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** `PUT /contracts/:id`: replaces every input of a draft. `400` bad inputs; `404` unknown id or not a draft. */
+        put: operations["ContractsController_updateDraft"];
+        post?: never;
+        /** `DELETE /contracts/:id`: deletes a draft. `404` unknown id or not a draft. */
+        delete: operations["ContractsController_deleteDraft"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers": {
         parameters: {
             query?: never;
@@ -1262,6 +1331,100 @@ export interface components {
             amountCents?: number | null;
             /** @description What the Description box is filled with: 1 to 500 characters after trimming. */
             description: string;
+        };
+        /**
+         * @description How often the driver pays: weekly or daily.
+         * @enum {string}
+         */
+        ContractSchedule: "weekly" | "daily";
+        ContractInputDto: {
+            /** @description How often the driver pays: weekly or daily. */
+            schedule: components["schemas"]["ContractSchedule"];
+            /** @description The weekly or daily rate in cents, 1 to 1,000,000 ($10,000): the one number the disclosure is calculated from. */
+            totalRateCents: number;
+            /** @description First day of the term, a real day written `YYYY-MM-DD`. */
+            startDate: string;
+            /** @description Length of the term in months, 1 to 60 (the client's contracts use 18). */
+            termMonths: number;
+            /** @description One-time charge: security deposit, cents (0 to 1,000,000). */
+            securityDepositCents: number;
+            /** @description One-time charge: documentation fee, cents. */
+            documentationFeeCents: number;
+            /** @description One-time charge: insurance policy start fee, cents. */
+            insuranceStartFeeCents: number;
+            /** @description One-time charge: other, cents. */
+            otherOneTimeCents: number;
+            /** @description One-time charge: hold vehicle payment, cents. */
+            holdVehicleCents: number;
+            /** @description Recurring charge: excess mileage, cents per mile. */
+            excessMileageCents: number;
+            /** @description Recurring charge: insurance excess, cents per month. */
+            insuranceExcessCents: number;
+            /** @description Recurring charge: other, cents. */
+            otherRecurringCents: number;
+        };
+        ContractNumbersDto: {
+            /** @description Base rate (42% of the total, plus any rounding remainder). */
+            baseCents: number;
+            /** @description Insurance (30%). */
+            insuranceCents: number;
+            /** @description Unlimited miles package (13%). */
+            milesCents: number;
+            /** @description Full maintenance package (10%). */
+            maintenanceCents: number;
+            /** @description Taxes (5%). */
+            taxCents: number;
+            /** @description The weekly or daily payment: equal to the total rate. */
+            paymentCents: number;
+            /** @description The sum of the five one-time charges. */
+            oneTimeTotalCents: number;
+            /** @description First payment + one-time charges. */
+            amountDueAtPickupCents: number;
+            /** @description Payment + excess mileage + insurance excess + other recurring (the sheet's recurring Total row). */
+            recurringTotalCents: number;
+            /** @description Last day of the term, `YYYY-MM-DD` (start date + term months, clamped to the month's last day). */
+            endDate: string;
+        };
+        /** @enum {string} */
+        ContractStatus: "draft";
+        ContractDto: {
+            /** @description How often the driver pays: weekly or daily. */
+            schedule: components["schemas"]["ContractSchedule"];
+            status: components["schemas"]["ContractStatus"];
+            id: string;
+            driverId: string;
+            /** @description Recalculated from the inputs on every read (D71). */
+            numbers: components["schemas"]["ContractNumbersDto"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description The weekly or daily rate in cents, 1 to 1,000,000 ($10,000): the one number the disclosure is calculated from. */
+            totalRateCents: number;
+            /** @description First day of the term, a real day written `YYYY-MM-DD`. */
+            startDate: string;
+            /** @description Length of the term in months, 1 to 60 (the client's contracts use 18). */
+            termMonths: number;
+            /** @description One-time charge: security deposit, cents (0 to 1,000,000). */
+            securityDepositCents: number;
+            /** @description One-time charge: documentation fee, cents. */
+            documentationFeeCents: number;
+            /** @description One-time charge: insurance policy start fee, cents. */
+            insuranceStartFeeCents: number;
+            /** @description One-time charge: other, cents. */
+            otherOneTimeCents: number;
+            /** @description One-time charge: hold vehicle payment, cents. */
+            holdVehicleCents: number;
+            /** @description Recurring charge: excess mileage, cents per mile. */
+            excessMileageCents: number;
+            /** @description Recurring charge: insurance excess, cents per month. */
+            insuranceExcessCents: number;
+            /** @description Recurring charge: other, cents. */
+            otherRecurringCents: number;
+        };
+        ContractDraftDto: {
+            /** @description The driver's draft, or null when there is none. */
+            draft: components["schemas"]["ContractDto"] | null;
         };
         DriverOnboardingDto: {
             /** Format: date-time */
@@ -2517,6 +2680,119 @@ export interface operations {
         };
     };
     LedgerPresetsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContractsController_calculate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractNumbersDto"];
+                };
+            };
+        };
+    };
+    ContractsController_getDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                driverId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDraftDto"];
+                };
+            };
+        };
+    };
+    ContractsController_createDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                driverId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractInputDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    ContractsController_updateDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    ContractsController_deleteDraft: {
         parameters: {
             query?: never;
             header?: never;
