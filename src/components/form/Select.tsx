@@ -11,6 +11,8 @@ interface SelectProps {
   /** The chosen option's value; "" shows the placeholder. */
   value: string;
   onChange: (value: string) => void;
+  /** Called when the list loses focus; used to show a problem once the user has left it. */
+  onBlur?: () => void;
   placeholder?: string;
   className?: string;
   id?: string;
@@ -24,6 +26,7 @@ const Select: React.FC<SelectProps> = ({
   options,
   value,
   onChange,
+  onBlur,
   placeholder = "Select an option",
   className = "",
   id,
@@ -40,6 +43,7 @@ const Select: React.FC<SelectProps> = ({
       } ${className}`}
       value={value}
       onChange={(event) => onChange(event.target.value)}
+      onBlur={onBlur}
     >
       <option value="" disabled className="text-gray-700">
         {placeholder}

@@ -361,8 +361,14 @@ export default function ApplicationDetail() {
             <Rows
               rows={[
                 ["Received", formatDateTime(application.receivedAt)],
-                ["Form", textOf(payload.source) ?? "—"],
-                ["Website id", application.requestId],
+                // Typed in by an admin (D68) or sent by the website form.
+                application.createdBy
+                  ? ["Added by", application.createdBy.email]
+                  : ["Form", textOf(payload.source) ?? "—"],
+                [
+                  application.createdBy ? "Request id" : "Website id",
+                  application.requestId,
+                ],
               ]}
             />
           </Card>

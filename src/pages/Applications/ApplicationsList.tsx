@@ -19,7 +19,7 @@ import {
 import AvatarText from "../../components/ui/avatar/AvatarText";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
-import { TrashBinIcon } from "../../icons";
+import { PlusIcon, TrashBinIcon } from "../../icons";
 import { formatDateTime } from "../../utils";
 
 /** Every status, in display order. */
@@ -232,18 +232,27 @@ export default function ApplicationsList() {
         }}
         onClearAll={view.clearAll}
         actions={
-          ticked.length > 0 && (
+          <>
+            {ticked.length > 0 && (
+              <Button
+                size="sm"
+                variant="danger"
+                disabled={deleteApplications.isPending}
+                onClick={() => setToDelete(ticked)}
+              >
+                {deleteApplications.isPending
+                  ? "Deleting..."
+                  : `Delete (${ticked.length})`}
+              </Button>
+            )}
             <Button
               size="sm"
-              variant="danger"
-              disabled={deleteApplications.isPending}
-              onClick={() => setToDelete(ticked)}
+              startIcon={<PlusIcon />}
+              onClick={() => void navigate("/admin/applications/new")}
             >
-              {deleteApplications.isPending
-                ? "Deleting..."
-                : `Delete (${ticked.length})`}
+              Add application
             </Button>
-          )
+          </>
         }
         isPending={isPending}
         error={isError ? error : null}
