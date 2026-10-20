@@ -137,6 +137,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /applications/manual`: an admin types in an application by hand, with its documents (D68). Same fields and
+         *     rules as the website form; the result is an ordinary application that is then approved like any other. Admin
+         *     only (no `@Public`). Multipart form data: the text fields plus the files `license_file` (required),
+         *     `rating_file` and `earnings_file` (JPG, PNG or PDF, at most 10 MB each). The file fields end in `_file` because
+         *     `earnings` is already a text field (weekly earnings).
+         *
+         *     The interceptor is multer, the library you would mount as `upload.fields([...])` in Express: it reads the
+         *     multipart body, keeps the files in memory and leaves the text fields in `@Body()`, where the global
+         *     ValidationPipe checks them against `ManualApplicationDto`.
+         *
+         *     `201` with `created: false` when the same `request_id` was already stored.
+         */
+        post: operations["ApplicationsController_createManual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/bulk-delete": {
         parameters: {
             query?: never;
@@ -253,8 +282,30 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** `GET /applications/:id/documents`: the files, as our own copies (D54) or admin uploads (D68). */
         get: operations["ApplicationDocumentsController_list"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/documents/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * `PUT /applications/:id/documents/:kind`: puts one file (multipart field `file`) in the licence, rating or earnings
+         *     slot, replacing what is there, a website copy included (D68). JPG, PNG or PDF, at most 10 MB; `400` otherwise.
+         *     Returns the slot. PUT because the slot ends up holding exactly this file however many times it is sent.
+         */
+        put: operations["ApplicationDocumentsController_upload"];
         post?: never;
         delete?: never;
         options?: never;
@@ -537,6 +588,44 @@ export interface paths {
          */
         post: operations["DriversController_setOnboardingStep"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/aliases`: adds a payment alias (a name or handle the driver pays from, per payment method) so
+         *     their payments match automatically (D69). `409` with the owner's name when another driver already has it.
+         *     Returns the updated driver.
+         */
+        post: operations["DriversController_addAlias"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/aliases/{aliasId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** `DELETE /drivers/:id/aliases/:aliasId`: removes one of the driver's aliases. Returns the updated driver. */
+        delete: operations["DriversController_removeAlias"];
         options?: never;
         head?: never;
         patch?: never;
@@ -848,6 +937,12 @@ export interface components {
             /** @description Our id for the application. A repeated submission (same `request_id`) gets the same id. */
             application_id: string;
         };
+        ManualApplicationCreatedDto: {
+            /** @description The new application's id. */
+            id: string;
+            /** @description False when the same `request_id` had already been stored (a double click or a retry): nothing new was made. */
+            created: boolean;
+        };
         ApplicationListItemDto: {
             id: string;
             /** @enum {string} */
@@ -890,6 +985,10 @@ export interface components {
              *     gone either way; the reason for each is in the server log. 0 when everything was removed.
              */
             filesNotRemoved: number;
+        };
+        ApplicationCreatedByDto: {
+            id: string;
+            email: string;
         };
         ApplicationDetailDto: {
             id: string;
@@ -935,6 +1034,8 @@ export interface components {
              * @description When the alert text to staff was really sent; null if it was not (off, dry run, or failed).
              */
             alertedAt: string | null;
+            /** @description The admin who added it by hand (D68). Null for applications that came from the website form. */
+            createdBy: components["schemas"]["ApplicationCreatedByDto"] | null;
         };
         ReviewMessageDto: {
             /**
@@ -956,6 +1057,11 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "stored" | "failed";
+            /**
+             * @description `website`: copied from the website's storage; `admin`: uploaded by an admin (D68).
+             * @enum {string}
+             */
+            origin: "website" | "admin";
             /** @description MIME type, e.g. `image/png`; null if unknown. */
             contentType: string | null;
             sizeBytes: number | null;
@@ -963,6 +1069,8 @@ export interface components {
             url: string | null;
             /** @description Why it could not be copied, in plain words. Null if it did not fail. */
             error: string | null;
+            /** @description The admin who uploaded it (admin uploads only; also null if that account was removed). */
+            uploadedByEmail: string | null;
         };
         ApplicationDocumentListDto: {
             items: components["schemas"]["ApplicationDocumentDto"][];
@@ -1164,6 +1272,8 @@ export interface components {
             vehicleAssignedAt: string | null;
         };
         DriverAliasDto: {
+            /** @description Needed to remove it (`DELETE /drivers/:id/aliases/:aliasId`). */
+            id: string;
             /** @enum {string} */
             type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
             /** @description As entered or as the provider wrote it. */
@@ -1216,6 +1326,15 @@ export interface components {
             step: "contract" | "deposit" | "vehicle";
             /** @description `true` marks the step done (now, by the admin); `false` clears it. */
             done: boolean;
+        };
+        AddAliasDto: {
+            /**
+             * @description The payment method the name or handle belongs to; matching only compares aliases of the payment's own method.
+             * @enum {string}
+             */
+            type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
+            /** @description The name, handle, company, email or phone as the payer shows it. Extra spaces are trimmed. */
+            value: string;
         };
         /** @enum {string} */
         InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
@@ -1793,6 +1912,62 @@ export interface operations {
             };
         };
     };
+    ApplicationsController_createManual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: uuid */
+                    request_id: string;
+                    first_name: string;
+                    last_name: string;
+                    email: string;
+                    phone: string;
+                    street: string;
+                    apt?: string;
+                    city: string;
+                    zip: string;
+                    age: string;
+                    years_driving: string;
+                    violations: string;
+                    accidents: string;
+                    platforms: string[];
+                    driver_rating?: string;
+                    earnings?: string;
+                    previous_companies?: string;
+                    referred_by?: string;
+                    start_date: string;
+                    duration: string;
+                    has_startup_funds: string;
+                    /** @description Required, as an amount in USD, only when has_startup_funds is no */
+                    capital?: string;
+                    has_insurance: string;
+                    has_insurance_last_45_days: string;
+                    /** Format: binary */
+                    license_file: string;
+                    /** Format: binary */
+                    rating_file?: string;
+                    /** Format: binary */
+                    earnings_file?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualApplicationCreatedDto"];
+                };
+            };
+        };
+    };
     ApplicationsController_bulkDelete: {
         parameters: {
             query?: never;
@@ -1925,6 +2100,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplicationDocumentListDto"];
+                };
+            };
+        };
+    };
+    ApplicationDocumentsController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDocumentDto"];
                 };
             };
         };
@@ -2398,6 +2602,53 @@ export interface operations {
                 "application/json": components["schemas"]["SetOnboardingStepDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_addAlias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddAliasDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_removeAlias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                aliasId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

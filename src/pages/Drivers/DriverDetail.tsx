@@ -6,18 +6,16 @@ import {
   useReactivateDriver,
   useSetOnboardingStep,
   type Driver,
-  type DriverAlias,
   type OnboardingStep,
 } from "../../api/drivers.queries";
 import { usePayments } from "../../api/payments.queries";
+import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
 import { ONBOARDING_STEPS } from "../../components/drivers/driverStatus";
 import Checkbox from "../../components/form/input/Checkbox";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
 import {
-  ALIAS_SOURCE_LABEL,
-  ALIAS_TYPE_LABEL,
   MATCH_METHOD_LABEL,
   paymentSourceLabel,
 } from "../../components/payments/paymentLabels";
@@ -55,26 +53,6 @@ function Rows({ rows }: { rows: [label: string, value: ReactNode][] }) {
       ))}
     </ul>
   );
-}
-
-/**
- * Splits the aliases by payment method, in the order the API sends them. Imported aliases that are obviously
- * not a name or handle (the old parser sometimes saved a chunk of email styling) are kept apart, so they never
- * clutter the real ones.
- */
-function groupAliases(aliases: DriverAlias[]) {
-  const looksBroken = (value: string) =>
-    value.length > 80 || /[{}]|;\s*\}|<\/?\w+/.test(value);
-  const groups = new Map<DriverAlias["type"], DriverAlias[]>();
-  const broken: DriverAlias[] = [];
-  for (const alias of aliases) {
-    if (looksBroken(alias.value)) {
-      broken.push(alias);
-      continue;
-    }
-    groups.set(alias.type, [...(groups.get(alias.type) ?? []), alias]);
-  }
-  return { groups: [...groups.entries()], broken };
 }
 
 /**
@@ -124,8 +102,8 @@ function OnboardingCard({
 
 /**
  * Admin page for one driver: status and onboarding (D56), contact details, a payment summary, the payment aliases
- * they pay from (grouped by payment method) and their most recent payments. Aliases are read-only for now: adding
- * and removing them comes with the driver-approval rule (B53).
+ * they pay from (added and removed by an admin, D69) and their most recent payments. Aliases the driver adds
+ * themselves, with admin approval, wait for the driver portal (B53).
  */
 export default function DriverDetail() {
   const { id = "" } = useParams();
@@ -176,7 +154,6 @@ export default function DriverDetail() {
   }
 
   const fullName = `${driver.firstName} ${driver.lastName}`;
-  const { groups, broken } = groupAliases(driver.aliases);
 
   return (
     <div className="space-y-6">
@@ -292,44 +269,7 @@ export default function DriverDetail() {
             />
           </Card>
 
-          <Card title="Payment aliases">
-            <p className="mb-4 text-sm text-gray-500">
-              Names, handles and company names this driver pays from. A payment
-              from any of them is assigned to this driver automatically.
-            </p>
-            {driver.aliases.length === 0 ? (
-              <p className="text-sm text-gray-500">None yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {groups.map(([type, items]) => (
-                  <div key={type}>
-                    <h3 className="mb-1.5 text-theme-xs font-medium text-gray-500">
-                      {ALIAS_TYPE_LABEL[type]}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {items.map((alias) => (
-                        <span
-                          key={alias.value}
-                          title={ALIAS_SOURCE_LABEL[alias.source]}
-                          className="rounded-md bg-gray-100 px-2.5 py-1 text-sm text-gray-700"
-                        >
-                          {alias.value}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {broken.length > 0 && (
-                  <p className="text-theme-xs text-warning-600">
-                    {broken.length} imported{" "}
-                    {broken.length === 1 ? "alias looks" : "aliases look"}{" "}
-                    damaged (leftover email formatting from the old system) and{" "}
-                    {broken.length === 1 ? "is" : "are"} hidden.
-                  </p>
-                )}
-              </div>
-            )}
-          </Card>
+          <DriverAliasesCard driver={driver} />
 
           <Card title="Recent payments">
             {payments.isPending ? (

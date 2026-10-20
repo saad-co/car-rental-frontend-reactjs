@@ -51,9 +51,11 @@ const yesNo = (label: string, key: string): FieldSpec => ({
   },
 });
 
-/** The website's stored lease values. Only `corto` is confirmed (2026-10-11 test); others are shown as sent. */
+/** The website's stored lease values (all three seen on real applications, 2026-10-19). Any other is shown as sent. */
 const LEASE_LENGTHS: Record<string, string> = {
   corto: "Short term (1 to 3 weeks)",
+  mediano: "Medium term (more than 1 month)",
+  largo: "Long term (more than 3 months)",
 };
 
 /** A `YYYY-MM-DD` date as "Oct 12, 2026". Built from its parts, so no time zone can shift the day. */

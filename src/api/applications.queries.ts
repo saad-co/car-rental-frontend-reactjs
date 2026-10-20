@@ -356,3 +356,76 @@ export function useDeleteApplicationNote(id: string) {
       }),
   });
 }
+
+/** What `POST /applications/manual` answers: the new application's id, and whether it was newly made. */
+export type ManualApplicationCreated =
+  components["schemas"]["ManualApplicationCreatedDto"];
+
+/**
+ * Adds an application by hand, with its documents (D68). The body is built by `toFormData` (multipart: the text
+ * answers and up to three files). The generated type of a file is a text, so the already built `FormData` is handed
+ * over with a cast; the client sends a `FormData` as it is and the browser sets the multipart boundary itself. (It
+ * must be passed as `body`: with `body` left out the client sends nothing at all.)
+ *
+ * The same `request_id` sent twice makes one application (`created: false` the second time), so a double click or a
+ * retry after a network error is safe.
+ */
+export function useCreateApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: FormData) => {
+      const { data, error, response } = await api.POST("/applications/manual", {
+        body: body as never,
+      });
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Adding the application failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.lists,
+      });
+    },
+  });
+}
+
+/** The kinds of document an admin can upload, from the generated types. */
+export type ApplicationDocumentKind = ApplicationDocument["kind"];
+
+/**
+ * Puts one file in a document slot of an application, replacing what is there (D68). On success the application's
+ * documents are fetched again.
+ */
+export function useUploadApplicationDocument(applicationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { kind: ApplicationDocumentKind; file: File }) => {
+      const body = new FormData();
+      body.append("file", vars.file);
+      const { data, error, response } = await api.PUT(
+        "/applications/{id}/documents/{kind}",
+        {
+          params: { path: { id: applicationId, kind: vars.kind } },
+          body: body as never,
+        },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Uploading failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.documents(applicationId),
+      });
+    },
+  });
+}

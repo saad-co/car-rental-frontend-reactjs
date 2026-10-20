@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import RequireAuth from "./components/auth/RequireAuth";
 import AppLayout from "./layout/AppLayout";
 import ApplicationDetail from "./pages/Applications/ApplicationDetail";
+import NewApplication from "./pages/Applications/NewApplication";
 import ApplicationsList from "./pages/Applications/ApplicationsList";
 import SignIn from "./pages/AuthPages/SignIn";
 import Home from "./pages/Dashboard/Home";
@@ -38,6 +39,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
             <Route path="applications" element={<ApplicationsList />} />
+            <Route path="applications/new" element={<NewApplication />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
             <Route path="drivers" element={<DriversList />} />
             <Route path="drivers/:id" element={<DriverDetail />} />
