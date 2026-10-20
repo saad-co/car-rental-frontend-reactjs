@@ -147,7 +147,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /applications/manual`: an admin types in an application by hand, with its documents (D64). Same fields and
+         * `POST /applications/manual`: an admin types in an application by hand, with its documents (D68). Same fields and
          *     rules as the website form; the result is an ordinary application that is then approved like any other. Admin
          *     only (no `@Public`). Multipart form data: the text fields plus the files `license_file` (required),
          *     `rating_file` and `earnings_file` (JPG, PNG or PDF, at most 10 MB each). The file fields end in `_file` because
@@ -282,7 +282,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** `GET /applications/:id/documents`: the files, as our own copies (D54) or admin uploads (D64). */
+        /** `GET /applications/:id/documents`: the files, as our own copies (D54) or admin uploads (D68). */
         get: operations["ApplicationDocumentsController_list"];
         put?: never;
         post?: never;
@@ -302,7 +302,7 @@ export interface paths {
         get?: never;
         /**
          * `PUT /applications/:id/documents/:kind`: puts one file (multipart field `file`) in the licence, rating or earnings
-         *     slot, replacing what is there, a website copy included (D64). JPG, PNG or PDF, at most 10 MB; `400` otherwise.
+         *     slot, replacing what is there, a website copy included (D68). JPG, PNG or PDF, at most 10 MB; `400` otherwise.
          *     Returns the slot. PUT because the slot ends up holding exactly this file however many times it is sent.
          */
         put: operations["ApplicationDocumentsController_upload"];
@@ -996,7 +996,7 @@ export interface components {
              * @description When the alert text to staff was really sent; null if it was not (off, dry run, or failed).
              */
             alertedAt: string | null;
-            /** @description The admin who added it by hand (D64). Null for applications that came from the website form. */
+            /** @description The admin who added it by hand (D68). Null for applications that came from the website form. */
             createdBy: components["schemas"]["ApplicationCreatedByDto"] | null;
         };
         ReviewMessageDto: {
@@ -1020,7 +1020,7 @@ export interface components {
              */
             status: "pending" | "stored" | "failed";
             /**
-             * @description `website`: copied from the website's storage; `admin`: uploaded by an admin (D64).
+             * @description `website`: copied from the website's storage; `admin`: uploaded by an admin (D68).
              * @enum {string}
              */
             origin: "website" | "admin";
