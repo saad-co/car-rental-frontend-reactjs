@@ -125,3 +125,28 @@ export function useReactivateDriver(id: string) {
     api.POST("/drivers/{id}/reactivate", { params: { path: { id } } }),
   );
 }
+
+/** The kinds of payment alias (payment methods plus email and phone), from the generated types. */
+export type AliasType = DriverAlias["type"];
+
+/**
+ * Adds a payment alias to the driver (D69): a name or handle they pay from, under one payment method. The API refuses
+ * (409) an alias another driver already has and says whose it is; the message is shown as it comes.
+ */
+export function useAddDriverAlias(id: string) {
+  return useDriverMutation((vars: { type: AliasType; value: string }) =>
+    api.POST("/drivers/{id}/aliases", {
+      params: { path: { id } },
+      body: vars,
+    }),
+  );
+}
+
+/** Removes one alias of the driver, whatever its source. Payments already assigned stay as they are. */
+export function useRemoveDriverAlias(id: string) {
+  return useDriverMutation((aliasId: string) =>
+    api.DELETE("/drivers/{id}/aliases/{aliasId}", {
+      params: { path: { id, aliasId } },
+    }),
+  );
+}

@@ -593,6 +593,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/aliases`: adds a payment alias (a name or handle the driver pays from, per payment method) so
+         *     their payments match automatically (D69). `409` with the owner's name when another driver already has it.
+         *     Returns the updated driver.
+         */
+        post: operations["DriversController_addAlias"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/aliases/{aliasId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** `DELETE /drivers/:id/aliases/:aliasId`: removes one of the driver's aliases. Returns the updated driver. */
+        delete: operations["DriversController_removeAlias"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{id}/deactivate": {
         parameters: {
             query?: never;
@@ -1234,6 +1272,8 @@ export interface components {
             vehicleAssignedAt: string | null;
         };
         DriverAliasDto: {
+            /** @description Needed to remove it (`DELETE /drivers/:id/aliases/:aliasId`). */
+            id: string;
             /** @enum {string} */
             type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
             /** @description As entered or as the provider wrote it. */
@@ -1286,6 +1326,15 @@ export interface components {
             step: "contract" | "deposit" | "vehicle";
             /** @description `true` marks the step done (now, by the admin); `false` clears it. */
             done: boolean;
+        };
+        AddAliasDto: {
+            /**
+             * @description The payment method the name or handle belongs to; matching only compares aliases of the payment's own method.
+             * @enum {string}
+             */
+            type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
+            /** @description The name, handle, company, email or phone as the payer shows it. Extra spaces are trimmed. */
+            value: string;
         };
         /** @enum {string} */
         InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
@@ -2553,6 +2602,53 @@ export interface operations {
                 "application/json": components["schemas"]["SetOnboardingStepDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_addAlias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddAliasDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_removeAlias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                aliasId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
