@@ -21,6 +21,7 @@ import {
 } from "../../components/contracts/contractForm";
 import Card from "../../components/contracts/ContractCard";
 import ContractDetailsCards from "../../components/contracts/ContractDetailsCards";
+import ContractStatusBanner from "../../components/contracts/ContractStatusBanner";
 import LeaseDisclosureSummary from "../../components/contracts/LeaseDisclosureSummary";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -180,14 +181,8 @@ function ContractEditor({
         )}
       </div>
 
-      {sent && draft?.sentValues && sentAt && (
-        <p
-          role="status"
-          className="rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700"
-        >
-          Sent on {formatDateTime(sentAt)} to {draft.sentValues.recipientEmail}.
-          Status updates come in a later step.
-        </p>
+      {sent && draft && (
+        <ContractStatusBanner contract={draft} driverName={driverName} />
       )}
 
       {actionError && (

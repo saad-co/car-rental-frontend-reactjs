@@ -644,6 +644,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /contracts/:id/documents`: short-lived links to the signed contract and its certificate (D75), minted for this
+         *     request and never stored. Both are null until the files are saved. `404` unknown id.
+         */
+        get: operations["ContractsController_getDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/firma": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FirmaWebhookController_receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers": {
         parameters: {
             query?: never;
@@ -1430,7 +1466,7 @@ export interface components {
             address: string;
         };
         /** @enum {string} */
-        ContractStatus: "draft" | "sent";
+        ContractStatus: "draft" | "sent" | "viewed" | "signed" | "declined" | "expired" | "cancelled";
         ContractSentValuesDto: {
             /** @description Every value as printed on the contract, by marker name (`LESSEE_NAME`, `TOTAL_RATE`, ...). */
             values: {
@@ -1476,10 +1512,24 @@ export interface components {
             sentAt: string | null;
             /** @description The frozen copy of what was sent; null while it is a draft. */
             sentValues: components["schemas"]["ContractSentValuesDto"] | null;
+            /**
+             * Format: date-time
+             * @description When the current status happened, as firma reports it (opened, signed, declined, ...); null while `sent` (D75).
+             */
+            statusUpdatedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the driver finished signing; null until they do.
+             */
+            signedAt: string | null;
+            /** @description Why saving the signed files last failed, shown to the admin; null when nothing is wrong. */
+            documentsError: string | null;
             id: string;
             driverId: string;
             /** @description Recalculated from the inputs on every read (D71). */
             numbers: components["schemas"]["ContractNumbersDto"];
+            /** @description True once the signed PDF and the certificate are in our storage (open them with `GET /contracts/:id/documents`). */
+            documentsSaved: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1565,6 +1615,12 @@ export interface components {
             message: string;
             /** @description The labels of the empty values (for example `Vehicle VIN`, `Date of birth`). */
             missing: string[];
+        };
+        ContractDocumentsDto: {
+            /** @description The signed contract with firma's certificate page; null until it is saved. */
+            signedPdfUrl: string | null;
+            /** @description The signature certificate alone; null until it is saved. */
+            certificateUrl: string | null;
         };
         DriverOnboardingDto: {
             /** Format: date-time */
@@ -2996,6 +3052,44 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ContractMissingDto"];
                 };
+            };
+        };
+    };
+    ContractsController_getDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDocumentsDto"];
+                };
+            };
+        };
+    };
+    FirmaWebhookController_receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

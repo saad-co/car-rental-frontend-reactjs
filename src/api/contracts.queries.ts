@@ -13,9 +13,12 @@ import type { components } from "./schema";
 
 /**
  * A saved contract: the typed inputs plus the numbers calculated from them (D71), as the API returns it. A draft has no
- * `sentAt`; once it is sent (step 3) it has one, `status` is `sent`, and it cannot change any more.
+ * `sentAt`; once it is sent (step 3) it has one and it cannot change any more; its `status` then follows firma (step 4).
  */
 export type ContractDraft = components["schemas"]["ContractDto"];
+
+/** Where a contract is (step 4): `draft`, `sent`, `viewed`, then `signed`, `declined`, `expired` or `cancelled`. */
+export type ContractStatus = ContractDraft["status"];
 
 /** What the admin types for a contract: cents are whole cents, `startDate` is `YYYY-MM-DD`; the details are optional. */
 export type ContractInput = components["schemas"]["ContractInputDto"];
@@ -37,6 +40,11 @@ export type ContractSchedule = ContractInput["schedule"];
 const currentOptions = (driverId: string) =>
   queryOptions({
     queryKey: queryKeys.contracts.current(driverId),
+    // A contract waiting for the driver changes on its own (the webhook, or the 5-minute check): look again every 30 s.
+    refetchInterval: (query) => {
+      const status = query.state.data?.contract?.status;
+      return status === "sent" || status === "viewed" ? 30_000 : false;
+    },
     queryFn: async () => {
       const { data, error, response } = await api.GET(
         "/drivers/{driverId}/contract",
@@ -215,4 +223,36 @@ export function useSendContract(driverId: string) {
       });
     },
   });
+}
+
+/**
+ * Links to a signed contract's PDF and certificate (`GET /contracts/:id/documents`). The API mints them for 10 minutes and
+ * never stores them, so they are fetched again each time the page opens (and every 4 minutes while it stays open), never
+ * served from the cache. Pass `enabled: false` until the contract is signed and its files are saved.
+ */
+export function useContractDocuments(contractId: string, enabled: boolean) {
+  return useQuery(
+    queryOptions({
+      queryKey: queryKeys.contracts.documents(contractId),
+      enabled,
+      gcTime: 0,
+      staleTime: 0,
+      refetchInterval: 4 * 60_000,
+      queryFn: async () => {
+        const { data, error, response } = await api.GET(
+          "/contracts/{id}/documents",
+          { params: { path: { id: contractId } } },
+        );
+        if (!data) {
+          throw new Error(
+            apiErrorMessage(
+              error,
+              `Loading the signed files failed (${response.status}).`,
+            ),
+          );
+        }
+        return data;
+      },
+    }),
+  );
 }
