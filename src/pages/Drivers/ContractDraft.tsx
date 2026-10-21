@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
-  useContractDraft,
+  SendContractError,
   useContractNumbers,
   useCreateContractDraft,
   useDeleteContractDraft,
+  useDriverContract,
+  useSendContract,
   useUpdateContractDraft,
   type ContractDraft as Draft,
 } from "../../api/contracts.queries";
@@ -28,16 +30,19 @@ import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
 import { formatDateTime } from "../../utils";
 
 /**
- * The form and the live summary. Mounted once the draft has loaded: the boxes start from the saved draft (or from a
- * blank weekly contract) and are then owned by this component, so a refetch never overwrites what is being typed.
+ * The form and the live summary. Mounted once the contract has loaded: the boxes start from the saved draft (or from a
+ * blank weekly contract) and are then owned by this component, so a refetch never overwrites what is being typed. A
+ * contract that was sent for signing (step 3) is shown read-only, with a banner.
  */
 function ContractEditor({
   driverId,
   driverName,
+  driverEmail,
   draft,
 }: {
   driverId: string;
   driverName: string;
+  driverEmail: string;
   draft: Draft | null;
 }) {
   const navigate = useNavigate();
@@ -45,13 +50,21 @@ function ContractEditor({
     valuesFromDraft(draft),
   );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingSend, setConfirmingSend] = useState(false);
 
   const create = useCreateContractDraft(driverId);
   const update = useUpdateContractDraft(driverId);
   const remove = useDeleteContractDraft(driverId);
+  const send = useSendContract(driverId);
   const mutations = [create, update, remove];
-  const busy = mutations.some((m) => m.isPending);
+  const busy = [...mutations, send].some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
+  const sentAt = draft?.sentAt ?? null;
+  const sent = sentAt !== null;
+  const sendError = send.error;
+  /** Values still empty: the admin must close the dialog and fill them in before trying again. */
+  const missing =
+    sendError instanceof SendContractError ? sendError.missing : [];
 
   const { input, numbersInput, problems } = readContractForm(values);
   const numbers = useContractNumbers(numbersInput);
@@ -107,43 +120,75 @@ function ContractEditor({
       <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-xl font-semibold text-gray-800">
-            Contract draft for {driverName}
+            {sent ? "Contract" : "Contract draft"} for {driverName}
           </h1>
           <p className="text-sm text-gray-500">
-            {draft === null
-              ? "Not saved yet."
-              : unsaved
-                ? "You have unsaved changes."
-                : `Saved ${formatDateTime(draft.updatedAt)}.`}
+            {sent
+              ? "Sent for signing. It can no longer be changed."
+              : draft === null
+                ? "Not saved yet."
+                : unsaved
+                  ? "You have unsaved changes."
+                  : `Saved ${formatDateTime(draft.updatedAt)}.`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {draft && (
+        {!sent && (
+          <div className="flex flex-wrap items-center gap-3">
+            {draft && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                {remove.isPending ? "Deleting..." : "Delete draft"}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
-              disabled={busy}
-              onClick={() => setConfirmingDelete(true)}
+              disabled={busy || input === null || !unsaved}
+              title={
+                input === null
+                  ? "Fill in the boxes marked in red first."
+                  : !unsaved
+                    ? "Nothing has changed since the last save."
+                    : undefined
+              }
+              onClick={save}
             >
-              {remove.isPending ? "Deleting..." : "Delete draft"}
+              {create.isPending || update.isPending
+                ? "Saving..."
+                : "Save draft"}
             </Button>
-          )}
-          <Button
-            size="sm"
-            disabled={busy || input === null || !unsaved}
-            title={
-              input === null
-                ? "Fill in the boxes marked in red first."
-                : !unsaved
-                  ? "Nothing has changed since the last save."
+            <Button
+              size="sm"
+              disabled={busy || draft === null || unsaved}
+              title={
+                draft === null || unsaved
+                  ? "Save the draft first: the saved values are what is sent."
                   : undefined
-            }
-            onClick={save}
-          >
-            {create.isPending || update.isPending ? "Saving..." : "Save draft"}
-          </Button>
-        </div>
+              }
+              onClick={() => {
+                send.reset();
+                setConfirmingSend(true);
+              }}
+            >
+              Send for signing
+            </Button>
+          </div>
+        )}
       </div>
+
+      {sent && draft?.sentValues && sentAt && (
+        <p
+          role="status"
+          className="rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700"
+        >
+          Sent on {formatDateTime(sentAt)} to {draft.sentValues.recipientEmail}.
+          Status updates come in a later step.
+        </p>
+      )}
 
       {actionError && (
         <p
@@ -173,7 +218,54 @@ function ContractEditor({
         and you can start a new draft any time.
       </ConfirmDialog>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <ConfirmDialog
+        isOpen={confirmingSend}
+        title={`Send the contract to ${driverName}?`}
+        confirmLabel={send.isPending ? "Sending..." : "Send for signing"}
+        confirmDisabled={send.isPending || missing.length > 0}
+        onCancel={() => {
+          setConfirmingSend(false);
+          send.reset();
+        }}
+        onConfirm={() => {
+          if (!draft) return;
+          send.mutate(draft.id, {
+            onSuccess: () => setConfirmingSend(false),
+          });
+        }}
+      >
+        <p>
+          It will be emailed to {driverEmail} to sign. It cannot be edited
+          afterwards.
+        </p>
+        {send.isError &&
+          (missing.length > 0 ? (
+            <div
+              role="alert"
+              className="mt-4 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-error-600"
+            >
+              <p>Fill these in first (close this and edit the draft):</p>
+              <ul className="mt-2 list-disc pl-5">
+                {missing.map((label) => (
+                  <li key={label}>{label}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p
+              role="alert"
+              className="mt-4 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-error-600"
+            >
+              {send.error.message}
+            </p>
+          ))}
+      </ConfirmDialog>
+
+      {/* A sent contract is shown as it was sent: every box is switched off. */}
+      <fieldset
+        disabled={sent}
+        className="m-0 grid min-w-0 grid-cols-1 gap-6 border-0 p-0 lg:grid-cols-2"
+      >
         <div className="space-y-6">
           <Card title="Rate and term">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -278,21 +370,21 @@ function ContractEditor({
             )}
           </Card>
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 }
 
 /**
- * A driver's contract draft (Module 2, `/admin/drivers/:id/contract`): the admin types the rate, the dates and the
- * charges, the system works out the rest (D71) and shows it as the lease disclosure; the company, vehicle and driver
- * details (step 2) are typed below; "Save draft" keeps it all. A driver has at most one draft. Nothing is sent to the
- * driver yet (that is step 3).
+ * A driver's contract (Module 2, `/admin/drivers/:id/contract`): the admin types the rate, the dates and the charges, the
+ * system works out the rest (D71) and shows it as the lease disclosure; the company, vehicle and driver details (step 2)
+ * are typed below; "Save draft" keeps it all, and "Send for signing" (step 3) emails it to the driver through firma and
+ * freezes it. A driver has at most one draft.
  */
 export default function ContractDraftPage() {
   const { id = "" } = useParams();
   const driver = useDriver(id);
-  const draft = useContractDraft(id);
+  const draft = useDriverContract(id);
 
   if (driver.isPending || draft.isPending) {
     return <p className="text-sm text-gray-500">Loading...</p>;
@@ -315,7 +407,8 @@ export default function ContractDraftPage() {
     <ContractEditor
       driverId={id}
       driverName={`${driver.data.firstName} ${driver.data.lastName}`}
-      draft={draft.data.draft}
+      driverEmail={driver.data.email}
+      draft={draft.data.contract}
     />
   );
 }

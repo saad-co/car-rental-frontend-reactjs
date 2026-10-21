@@ -572,15 +572,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/drivers/{driverId}/contract-draft": {
+    "/drivers/{driverId}/contract": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** `GET /drivers/:driverId/contract-draft`: the driver's draft, or `{ draft: null }`. `404` unknown driver. */
-        get: operations["ContractsController_getDraft"];
+        /** `GET /drivers/:driverId/contract`: the open draft or else the contract sent last, or `{ contract: null }`. `404` unknown driver. */
+        get: operations["ContractsController_getCurrent"];
         put?: never;
         post?: never;
         delete?: never;
@@ -619,6 +619,26 @@ export interface paths {
         post?: never;
         /** `DELETE /contracts/:id`: deletes a draft. `404` unknown id or not a draft. */
         delete: operations["ContractsController_deleteDraft"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /contracts/:id/send`: sends the draft to the driver to sign (firma) and freezes it. `400` values still empty
+         *     (`missing`); `404` unknown id; `409` already sent, or not an Illinois company; `502` firma refused; `503` no firma key.
+         */
+        post: operations["ContractsController_send"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1410,7 +1430,18 @@ export interface components {
             address: string;
         };
         /** @enum {string} */
-        ContractStatus: "draft";
+        ContractStatus: "draft" | "sent";
+        ContractSentValuesDto: {
+            /** @description Every value as printed on the contract, by marker name (`LESSEE_NAME`, `TOTAL_RATE`, ...). */
+            values: {
+                [key: string]: string;
+            };
+            /** @description File name of the PDF template the contract was made from. */
+            template: string;
+            /** @description The driver the signing email went to. */
+            recipientName: string;
+            recipientEmail: string;
+        };
         ContractDto: {
             /** @description How often the driver pays: weekly or daily. */
             schedule: components["schemas"]["ContractSchedule"];
@@ -1438,6 +1469,13 @@ export interface components {
             /** @description Driver's date of birth, a real day written `YYYY-MM-DD`. Sensitive: only in the single draft response (B94). */
             dateOfBirth?: string | null;
             status: components["schemas"]["ContractStatus"];
+            /**
+             * Format: date-time
+             * @description When it was sent for signing; null while it is a draft.
+             */
+            sentAt: string | null;
+            /** @description The frozen copy of what was sent; null while it is a draft. */
+            sentValues: components["schemas"]["ContractSentValuesDto"] | null;
             id: string;
             driverId: string;
             /** @description Recalculated from the inputs on every read (D71). */
@@ -1469,9 +1507,9 @@ export interface components {
             /** @description Recurring charge: other, cents. */
             otherRecurringCents: number;
         };
-        ContractDraftDto: {
-            /** @description The driver's draft, or null when there is none. */
-            draft: components["schemas"]["ContractDto"] | null;
+        ContractCurrentDto: {
+            /** @description The driver's open draft, or else the contract sent most recently; null when there is none. */
+            contract: components["schemas"]["ContractDto"] | null;
         };
         ContractInputDto: {
             /** @description How often the driver pays: weekly or daily. */
@@ -1521,6 +1559,12 @@ export interface components {
             insuranceExcessCents: number;
             /** @description Recurring charge: other, cents. */
             otherRecurringCents: number;
+        };
+        ContractMissingDto: {
+            statusCode: number;
+            message: string;
+            /** @description The labels of the empty values (for example `Vehicle VIN`, `Date of birth`). */
+            missing: string[];
         };
         DriverOnboardingDto: {
             /** Format: date-time */
@@ -2836,7 +2880,7 @@ export interface operations {
             };
         };
     };
-    ContractsController_getDraft: {
+    ContractsController_getCurrent: {
         parameters: {
             query?: never;
             header?: never;
@@ -2852,7 +2896,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ContractDraftDto"];
+                    "application/json": components["schemas"]["ContractCurrentDto"];
                 };
             };
         };
@@ -2923,6 +2967,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ContractsController_send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractMissingDto"];
+                };
             };
         };
     };

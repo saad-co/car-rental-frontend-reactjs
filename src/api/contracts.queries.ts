@@ -11,7 +11,10 @@ import { apiErrorMessage } from "./errors";
 import { queryKeys } from "./queryClient";
 import type { components } from "./schema";
 
-/** A saved contract draft: the typed inputs plus the numbers calculated from them (D71), as the API returns it. */
+/**
+ * A saved contract: the typed inputs plus the numbers calculated from them (D71), as the API returns it. A draft has no
+ * `sentAt`; once it is sent (step 3) it has one, `status` is `sent`, and it cannot change any more.
+ */
 export type ContractDraft = components["schemas"]["ContractDto"];
 
 /** What the admin types for a contract: cents are whole cents, `startDate` is `YYYY-MM-DD`; the details are optional. */
@@ -30,13 +33,13 @@ export type ContractNumbers = components["schemas"]["ContractNumbersDto"];
 /** `weekly` | `daily`, from the generated types. */
 export type ContractSchedule = ContractInput["schedule"];
 
-/** Definition of the driver's draft query. */
-const draftOptions = (driverId: string) =>
+/** Definition of the driver's current contract query. */
+const currentOptions = (driverId: string) =>
   queryOptions({
-    queryKey: queryKeys.contracts.draft(driverId),
+    queryKey: queryKeys.contracts.current(driverId),
     queryFn: async () => {
       const { data, error, response } = await api.GET(
-        "/drivers/{driverId}/contract-draft",
+        "/drivers/{driverId}/contract",
         { params: { path: { driverId } } },
       );
       if (!data) {
@@ -51,9 +54,9 @@ const draftOptions = (driverId: string) =>
     },
   });
 
-/** The driver's contract draft: `data.draft` is the draft, or null when there is none. */
-export function useContractDraft(driverId: string) {
-  return useQuery(draftOptions(driverId));
+/** The driver's current contract: `data.contract` is the open draft or else the one sent last, null when there is none. */
+export function useDriverContract(driverId: string) {
+  return useQuery(currentOptions(driverId));
 }
 
 /** The five companies a contract's Lessor can be (a fixed list: not paginated). */
@@ -105,7 +108,7 @@ export function useContractNumbers(input: ContractNumbersInput | null) {
   });
 }
 
-/** Starts the driver's draft; the draft query shows it at once. */
+/** Starts the driver's draft; the contract query shows it at once. */
 export function useCreateContractDraft(driverId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -121,12 +124,14 @@ export function useCreateContractDraft(driverId: string) {
       }
       return data;
     },
-    onSuccess: (draft) =>
-      queryClient.setQueryData(queryKeys.contracts.draft(driverId), { draft }),
+    onSuccess: (contract) =>
+      queryClient.setQueryData(queryKeys.contracts.current(driverId), {
+        contract,
+      }),
   });
 }
 
-/** Saves every input of a draft; the draft query shows it at once. */
+/** Saves every input of a draft; the contract query shows it at once. */
 export function useUpdateContractDraft(driverId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -142,12 +147,14 @@ export function useUpdateContractDraft(driverId: string) {
       }
       return data;
     },
-    onSuccess: (draft) =>
-      queryClient.setQueryData(queryKeys.contracts.draft(driverId), { draft }),
+    onSuccess: (contract) =>
+      queryClient.setQueryData(queryKeys.contracts.current(driverId), {
+        contract,
+      }),
   });
 }
 
-/** Deletes the draft; the draft query shows "no draft" at once. */
+/** Deletes the draft; the contract query shows "no contract" at once. */
 export function useDeleteContractDraft(driverId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -162,8 +169,50 @@ export function useDeleteContractDraft(driverId: string) {
       }
     },
     onSuccess: () =>
-      queryClient.setQueryData(queryKeys.contracts.draft(driverId), {
-        draft: null,
+      queryClient.setQueryData(queryKeys.contracts.current(driverId), {
+        contract: null,
       }),
+  });
+}
+
+/**
+ * Why a send was refused. When values are still empty, `missing` lists their names (the API's 400); otherwise it is empty
+ * and `message` is the API's own sentence (already sent, not an Illinois company, firma refused, signing not set up).
+ */
+export class SendContractError extends Error {
+  readonly missing: string[];
+
+  constructor(message: string, missing: string[] = []) {
+    super(message);
+    this.name = "SendContractError";
+    this.missing = missing;
+  }
+}
+
+/** Sends the driver's draft to the driver to sign (firma); the contract query then shows it as sent. */
+export function useSendContract(driverId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error, response } = await api.POST("/contracts/{id}/send", {
+        params: { path: { id } },
+      });
+      if (!data) {
+        const missing = (error as { missing?: unknown } | undefined)?.missing;
+        throw new SendContractError(
+          apiErrorMessage(error, `Sending failed (${response.status}).`),
+          Array.isArray(missing) ? (missing as string[]) : [],
+        );
+      }
+      return data;
+    },
+    onSuccess: (contract) => {
+      queryClient.setQueryData(queryKeys.contracts.current(driverId), {
+        contract,
+      });
+      return queryClient.invalidateQueries({
+        queryKey: queryKeys.drivers.detail(driverId),
+      });
+    },
   });
 }
