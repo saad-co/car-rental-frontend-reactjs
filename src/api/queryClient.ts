@@ -71,6 +71,9 @@ export const queryKeys = {
     numbers: (input: string) => ["contracts", "numbers", input] as const,
     /** The fixed list of companies a contract's Lessor is chosen from (step 2). */
     companies: ["contracts", "companies"] as const,
+    /** The short-lived links to one signed contract's files (step 4); minted per request, so never kept for long. */
+    documents: (contractId: string) =>
+      ["contracts", "documents", contractId] as const,
   },
   /** The approve / decline text templates (B73). */
   templates: {

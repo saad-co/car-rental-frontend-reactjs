@@ -1,6 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { useDriverContract } from "../../api/contracts.queries";
+import {
+  useDriverContract,
+  type ContractDraft,
+} from "../../api/contracts.queries";
 import {
   useDeactivateDriver,
   useDriver,
@@ -10,10 +13,13 @@ import {
   type OnboardingStep,
 } from "../../api/drivers.queries";
 import { usePayments } from "../../api/payments.queries";
+import ContractDocumentLinks from "../../components/contracts/ContractDocumentLinks";
+import { CONTRACT_STATUS } from "../../components/contracts/contractStatus";
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
 import { ONBOARDING_STEPS } from "../../components/drivers/driverStatus";
 import Checkbox from "../../components/form/input/Checkbox";
+import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
 import {
@@ -76,6 +82,14 @@ function OnboardingCard({
   onChange: (step: OnboardingStep, done: boolean) => void;
 }) {
   const locked = driver.status === "inactive";
+  // The contract step is ticked by the system when the driver signs (D75): that tick carries the contract's signing
+  // time exactly, so the same instant means "automatic". An admin's own tick has its own time.
+  const contract = useDriverContract(driver.id).data?.contract ?? null;
+  const contractTickedBySigning = (doneAt: string | null) =>
+    doneAt !== null &&
+    contract?.status === "signed" &&
+    contract.signedAt !== null &&
+    new Date(contract.signedAt).getTime() === new Date(doneAt).getTime();
   return (
     <Card title="Onboarding">
       <p className="mb-4 text-sm text-gray-500">
@@ -97,7 +111,13 @@ function OnboardingCard({
                 onChange={(checked) => onChange(step, checked)}
               />
               <span className="text-theme-xs text-gray-500">
-                {doneAt ? `Done ${formatDateTime(doneAt)}` : "Not done"}
+                {doneAt
+                  ? `Done ${formatDateTime(doneAt)}${
+                      step === "contract" && contractTickedBySigning(doneAt)
+                        ? " · automatic, from the signed contract"
+                        : ""
+                    }`
+                  : "Not done"}
               </span>
             </li>
           );
@@ -111,9 +131,24 @@ function OnboardingCard({
 const LINK_BUTTON =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50";
 
+/** The date that goes with a contract's status: when it was sent, opened, signed, declined, expired or cancelled. */
+function contractWhen(contract: ContractDraft): string {
+  switch (contract.status) {
+    case "draft":
+      return "";
+    case "sent":
+      return formatDateTime(contract.sentAt);
+    case "signed":
+      return formatDateTime(contract.signedAt);
+    default:
+      return formatDateTime(contract.statusUpdatedAt);
+  }
+}
+
 /**
- * The Contract card (Module 2): one line about the driver's contract with an "Open" link (a draft, or "Sent" once it went
- * to the driver for signing), or a "Create contract" link when there is none. Both go to the contract page.
+ * The Contract card (Module 2): one line about the driver's contract with its status and date (a draft, sent, opened,
+ * signed, declined, expired or cancelled) and an "Open" link, plus "Open signed contract" once it is signed and filed, or a
+ * "Create contract" link when there is none. The links go to the contract page.
  */
 function ContractCard({ driverId }: { driverId: string }) {
   const { data, isPending, isError, error } = useDriverContract(driverId);
@@ -127,22 +162,28 @@ function ContractCard({ driverId }: { driverId: string }) {
           {error.message}
         </p>
       ) : contract ? (
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-gray-800">
-            {contract.sentAt
-              ? `Sent ${formatDateTime(contract.sentAt)}`
-              : "Draft"}{" "}
-            · {formatCents(contract.totalRateCents)}/
+            <Badge size="sm" color={CONTRACT_STATUS[contract.status].color}>
+              {CONTRACT_STATUS[contract.status].label}
+            </Badge>{" "}
+            {contractWhen(contract)} · {formatCents(contract.totalRateCents)}/
             {contract.schedule === "weekly" ? "week" : "day"} · from{" "}
             {formatDay(contract.startDate)} · due at pickup{" "}
             {formatCents(contract.numbers.amountDueAtPickupCents)}
           </p>
-          <Link
-            to={`/admin/drivers/${driverId}/contract`}
-            className={LINK_BUTTON}
-          >
-            Open
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <ContractDocumentLinks
+              contract={contract}
+              withCertificate={false}
+            />
+            <Link
+              to={`/admin/drivers/${driverId}/contract`}
+              className={LINK_BUTTON}
+            >
+              Open
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-4">
