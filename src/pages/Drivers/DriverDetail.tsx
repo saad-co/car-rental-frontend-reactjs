@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { useContractDraft } from "../../api/contracts.queries";
+import { useDriverContract } from "../../api/contracts.queries";
 import {
   useDeactivateDriver,
   useDriver,
@@ -112,12 +112,12 @@ const LINK_BUTTON =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50";
 
 /**
- * The Contract card (Module 2 step 1): one line about the driver's draft with an "Open" link, or a "Create contract"
- * link when there is none. Both go to the contract page, where the numbers are worked out.
+ * The Contract card (Module 2): one line about the driver's contract with an "Open" link (a draft, or "Sent" once it went
+ * to the driver for signing), or a "Create contract" link when there is none. Both go to the contract page.
  */
 function ContractCard({ driverId }: { driverId: string }) {
-  const { data, isPending, isError, error } = useContractDraft(driverId);
-  const draft = data?.draft ?? null;
+  const { data, isPending, isError, error } = useDriverContract(driverId);
+  const contract = data?.contract ?? null;
   return (
     <Card title="Contract">
       {isPending ? (
@@ -126,13 +126,16 @@ function ContractCard({ driverId }: { driverId: string }) {
         <p role="alert" className="text-sm text-error-600">
           {error.message}
         </p>
-      ) : draft ? (
+      ) : contract ? (
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-gray-800">
-            Draft · {formatCents(draft.totalRateCents)}/
-            {draft.schedule === "weekly" ? "week" : "day"} · from{" "}
-            {formatDay(draft.startDate)} · due at pickup{" "}
-            {formatCents(draft.numbers.amountDueAtPickupCents)}
+            {contract.sentAt
+              ? `Sent ${formatDateTime(contract.sentAt)}`
+              : "Draft"}{" "}
+            · {formatCents(contract.totalRateCents)}/
+            {contract.schedule === "weekly" ? "week" : "day"} · from{" "}
+            {formatDay(contract.startDate)} · due at pickup{" "}
+            {formatCents(contract.numbers.amountDueAtPickupCents)}
           </p>
           <Link
             to={`/admin/drivers/${driverId}/contract`}
