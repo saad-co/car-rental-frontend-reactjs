@@ -555,6 +555,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /contracts/companies`: the fixed list of companies a contract's Lessor is chosen from (not paginated: five rows). */
+        get: operations["ContractsController_listCompanies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{driverId}/contract-draft": {
         parameters: {
             query?: never;
@@ -581,7 +598,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** `POST /drivers/:driverId/contracts`: starts the draft. `400` bad inputs; `404` unknown driver; `409` a draft exists. */
+        /** `POST /drivers/:driverId/contracts`: starts the draft. `400` bad inputs or unknown company; `404` unknown driver; `409` a draft exists. */
         post: operations["ContractsController_createDraft"];
         delete?: never;
         options?: never;
@@ -597,7 +614,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** `PUT /contracts/:id`: replaces every input of a draft. `400` bad inputs; `404` unknown id or not a draft. */
+        /** `PUT /contracts/:id`: replaces every input of a draft. `400` bad inputs or unknown company; `404` unknown id or not a draft. */
         put: operations["ContractsController_updateDraft"];
         post?: never;
         /** `DELETE /contracts/:id`: deletes a draft. `404` unknown id or not a draft. */
@@ -1337,7 +1354,7 @@ export interface components {
          * @enum {string}
          */
         ContractSchedule: "weekly" | "daily";
-        ContractInputDto: {
+        ContractNumbersInputDto: {
             /** @description How often the driver pays: weekly or daily. */
             schedule: components["schemas"]["ContractSchedule"];
             /** @description The weekly or daily rate in cents, 1 to 1,000,000 ($10,000): the one number the disclosure is calculated from. */
@@ -1385,11 +1402,41 @@ export interface components {
             /** @description Last day of the term, `YYYY-MM-DD` (start date + term months, clamped to the month's last day). */
             endDate: string;
         };
+        ContractCompanyDto: {
+            id: string;
+            /** @description The name as printed on the contract, and as the company's signature (D72). */
+            name: string;
+            /** @description The address on one line, as printed on the contract. */
+            address: string;
+        };
         /** @enum {string} */
         ContractStatus: "draft";
         ContractDto: {
             /** @description How often the driver pays: weekly or daily. */
             schedule: components["schemas"]["ContractSchedule"];
+            /**
+             * Format: uuid
+             * @description The Lessor: the id of a company from `GET /contracts/companies`.
+             */
+            companyId?: string | null;
+            /** @description Vehicle model, as typed. */
+            vehicleModel?: string | null;
+            /** @description Vehicle identification number, as typed. */
+            vehicleVin?: string | null;
+            /** @description Licence plate, as typed. */
+            vehiclePlate?: string | null;
+            /** @description The state the plate is from, as typed. */
+            vehiclePlateState?: string | null;
+            /** @description Purchase option price in cents (0 up to the column's limit). */
+            purchaseOptionCents?: number | null;
+            /** @description The driver's address on one line, as typed. */
+            lesseeAddress?: string | null;
+            /** @description Driver's licence number. Sensitive: only in the single draft response, never in a list (B94). */
+            licenseNumber?: string | null;
+            /** @description The state that issued the licence, as typed. */
+            licenseState?: string | null;
+            /** @description Driver's date of birth, a real day written `YYYY-MM-DD`. Sensitive: only in the single draft response (B94). */
+            dateOfBirth?: string | null;
             status: components["schemas"]["ContractStatus"];
             id: string;
             driverId: string;
@@ -1425,6 +1472,55 @@ export interface components {
         ContractDraftDto: {
             /** @description The driver's draft, or null when there is none. */
             draft: components["schemas"]["ContractDto"] | null;
+        };
+        ContractInputDto: {
+            /** @description How often the driver pays: weekly or daily. */
+            schedule: components["schemas"]["ContractSchedule"];
+            /**
+             * Format: uuid
+             * @description The Lessor: the id of a company from `GET /contracts/companies`.
+             */
+            companyId?: string | null;
+            /** @description Vehicle model, as typed. */
+            vehicleModel?: string | null;
+            /** @description Vehicle identification number, as typed. */
+            vehicleVin?: string | null;
+            /** @description Licence plate, as typed. */
+            vehiclePlate?: string | null;
+            /** @description The state the plate is from, as typed. */
+            vehiclePlateState?: string | null;
+            /** @description Purchase option price in cents (0 up to the column's limit). */
+            purchaseOptionCents?: number | null;
+            /** @description The driver's address on one line, as typed. */
+            lesseeAddress?: string | null;
+            /** @description Driver's licence number. Sensitive: only in the single draft response, never in a list (B94). */
+            licenseNumber?: string | null;
+            /** @description The state that issued the licence, as typed. */
+            licenseState?: string | null;
+            /** @description Driver's date of birth, a real day written `YYYY-MM-DD`. Sensitive: only in the single draft response (B94). */
+            dateOfBirth?: string | null;
+            /** @description The weekly or daily rate in cents, 1 to 1,000,000 ($10,000): the one number the disclosure is calculated from. */
+            totalRateCents: number;
+            /** @description First day of the term, a real day written `YYYY-MM-DD`. */
+            startDate: string;
+            /** @description Length of the term in months, 1 to 60 (the client's contracts use 18). */
+            termMonths: number;
+            /** @description One-time charge: security deposit, cents (0 to 1,000,000). */
+            securityDepositCents: number;
+            /** @description One-time charge: documentation fee, cents. */
+            documentationFeeCents: number;
+            /** @description One-time charge: insurance policy start fee, cents. */
+            insuranceStartFeeCents: number;
+            /** @description One-time charge: other, cents. */
+            otherOneTimeCents: number;
+            /** @description One-time charge: hold vehicle payment, cents. */
+            holdVehicleCents: number;
+            /** @description Recurring charge: excess mileage, cents per mile. */
+            excessMileageCents: number;
+            /** @description Recurring charge: insurance excess, cents per month. */
+            insuranceExcessCents: number;
+            /** @description Recurring charge: other, cents. */
+            otherRecurringCents: number;
         };
         DriverOnboardingDto: {
             /** Format: date-time */
@@ -2707,7 +2803,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ContractInputDto"];
+                "application/json": components["schemas"]["ContractNumbersInputDto"];
             };
         };
         responses: {
@@ -2717,6 +2813,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContractNumbersDto"];
+                };
+            };
+        };
+    };
+    ContractsController_listCompanies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractCompanyDto"][];
                 };
             };
         };

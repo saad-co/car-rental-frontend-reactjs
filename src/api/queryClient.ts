@@ -69,6 +69,8 @@ export const queryKeys = {
     draft: (driverId: string) => ["contracts", "draft", driverId] as const,
     /** The numbers for one set of inputs, `input` being the inputs as JSON text. */
     numbers: (input: string) => ["contracts", "numbers", input] as const,
+    /** The fixed list of companies a contract's Lessor is chosen from (step 2). */
+    companies: ["contracts", "companies"] as const,
   },
   /** The approve / decline text templates (B73). */
   templates: {

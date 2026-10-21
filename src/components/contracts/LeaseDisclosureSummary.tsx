@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type {
-  ContractInput,
   ContractNumbers,
+  ContractNumbersInput,
 } from "../../api/contracts.queries";
 import { cn, formatCents, formatDay } from "../../utils";
 
@@ -51,7 +51,7 @@ export default function LeaseDisclosureSummary({
   input,
   numbers,
 }: {
-  input: ContractInput;
+  input: ContractNumbersInput;
   numbers: ContractNumbers;
 }) {
   const payment = input.schedule === "weekly" ? "Weekly" : "Daily";
