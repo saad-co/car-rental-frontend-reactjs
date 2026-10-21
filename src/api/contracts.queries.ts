@@ -14,8 +14,15 @@ import type { components } from "./schema";
 /** A saved contract draft: the typed inputs plus the numbers calculated from them (D71), as the API returns it. */
 export type ContractDraft = components["schemas"]["ContractDto"];
 
-/** What the admin types for a contract: cents are whole cents, `startDate` is `YYYY-MM-DD`. */
+/** What the admin types for a contract: cents are whole cents, `startDate` is `YYYY-MM-DD`; the details are optional. */
 export type ContractInput = components["schemas"]["ContractInputDto"];
+
+/** The part of the inputs the numbers are calculated from (the rate, term and charges; none of the details). */
+export type ContractNumbersInput =
+  components["schemas"]["ContractNumbersInputDto"];
+
+/** One company of the Lessor list: its name is also printed as the company's signature. */
+export type ContractCompany = components["schemas"]["ContractCompanyDto"];
 
 /** The calculated numbers (rate breakdown, totals, end date). */
 export type ContractNumbers = components["schemas"]["ContractNumbersDto"];
@@ -49,13 +56,34 @@ export function useContractDraft(driverId: string) {
   return useQuery(draftOptions(driverId));
 }
 
+/** The five companies a contract's Lessor can be (a fixed list: not paginated). */
+export function useContractCompanies() {
+  return useQuery(
+    queryOptions({
+      queryKey: queryKeys.contracts.companies,
+      queryFn: async () => {
+        const { data, error, response } = await api.GET("/contracts/companies");
+        if (!data) {
+          throw new Error(
+            apiErrorMessage(
+              error,
+              `Loading the companies failed (${response.status}).`,
+            ),
+          );
+        }
+        return data;
+      },
+    }),
+  );
+}
+
 /**
  * The calculated numbers for some inputs, from `POST /contracts/calculate` (nothing is saved). The inputs are sent
  * 300 ms after the last change, so typing does not send a request per key. Pass null while the inputs are not valid:
  * nothing is sent then. The result holds the inputs it was calculated for, so the screen never mixes numbers with
  * different inputs; while a new answer loads, the previous one stays.
  */
-export function useContractNumbers(input: ContractInput | null) {
+export function useContractNumbers(input: ContractNumbersInput | null) {
   const json = useDebouncedValue(input ? JSON.stringify(input) : null, 300);
   return useQuery({
     queryKey: queryKeys.contracts.numbers(json ?? ""),
@@ -63,7 +91,7 @@ export function useContractNumbers(input: ContractInput | null) {
     placeholderData: keepPreviousData,
     queryFn: async () => {
       // `json` is what we stringified above, so parsing it back gives the same inputs.
-      const body = JSON.parse(json ?? "null") as ContractInput;
+      const body = JSON.parse(json ?? "null") as ContractNumbersInput;
       const { data, error, response } = await api.POST("/contracts/calculate", {
         body,
       });

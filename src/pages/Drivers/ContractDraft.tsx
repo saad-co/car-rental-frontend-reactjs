@@ -17,6 +17,8 @@ import {
   type ChargeKey,
   type ContractFormValues,
 } from "../../components/contracts/contractForm";
+import Card from "../../components/contracts/ContractCard";
+import ContractDetailsCards from "../../components/contracts/ContractDetailsCards";
 import LeaseDisclosureSummary from "../../components/contracts/LeaseDisclosureSummary";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -24,25 +26,6 @@ import Select from "../../components/form/Select";
 import Button from "../../components/ui/button/Button";
 import ConfirmDialog from "../../components/ui/modal/ConfirmDialog";
 import { formatDateTime } from "../../utils";
-
-/** A white card with a title, the same look as the driver page. */
-function Card({
-  title,
-  note,
-  children,
-}: {
-  title: string;
-  note?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6">
-      <h2 className="text-base font-semibold text-gray-800">{title}</h2>
-      {note && <p className="mt-1 text-sm text-gray-500">{note}</p>}
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
 
 /**
  * The form and the live summary. Mounted once the draft has loaded: the boxes start from the saved draft (or from a
@@ -70,8 +53,8 @@ function ContractEditor({
   const busy = mutations.some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
 
-  const { input, problems } = readContractForm(values);
-  const numbers = useContractNumbers(input);
+  const { input, numbersInput, problems } = readContractForm(values);
+  const numbers = useContractNumbers(numbersInput);
 
   /** Saved, never saved, or changed since: compares the boxes with the saved draft's own values. */
   const savedInput = draft
@@ -262,6 +245,8 @@ function ContractEditor({
               {RECURRING_CHARGES.map(([key, label]) => moneyBox(key, label))}
             </div>
           </Card>
+
+          <ContractDetailsCards values={values} problems={problems} set={set} />
         </div>
 
         <div>
@@ -269,14 +254,14 @@ function ContractEditor({
             title="Lease disclosure summary"
             note="Calculated from the total rate. Nothing here is typed by hand."
           >
-            {input === null || !numbers.data ? (
-              numbers.isError && input !== null ? (
+            {numbersInput === null || !numbers.data ? (
+              numbers.isError && numbersInput !== null ? (
                 <p role="alert" className="text-sm text-error-600">
                   {numbers.error.message}
                 </p>
               ) : (
                 <p className="text-sm text-gray-500">
-                  {input === null
+                  {numbersInput === null
                     ? "Enter the total rate to see the summary."
                     : "Calculating..."}
                 </p>
@@ -299,9 +284,10 @@ function ContractEditor({
 }
 
 /**
- * A driver's contract draft (Module 2 step 1, `/admin/drivers/:id/contract`): the admin types the rate, the dates and
- * the charges, the system works out the rest (D71) and shows it as the lease disclosure; "Save draft" keeps it. A driver
- * has at most one draft. Nothing is sent to the driver yet (that is step 3).
+ * A driver's contract draft (Module 2, `/admin/drivers/:id/contract`): the admin types the rate, the dates and the
+ * charges, the system works out the rest (D71) and shows it as the lease disclosure; the company, vehicle and driver
+ * details (step 2) are typed below; "Save draft" keeps it all. A driver has at most one draft. Nothing is sent to the
+ * driver yet (that is step 3).
  */
 export default function ContractDraftPage() {
   const { id = "" } = useParams();
