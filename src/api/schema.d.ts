@@ -635,7 +635,7 @@ export interface paths {
         put?: never;
         /**
          * `POST /contracts/:id/send`: sends the draft to the driver to sign (firma) and freezes it. `400` values still empty
-         *     (`missing`); `404` unknown id; `409` already sent, or not an Illinois company; `502` firma refused; `503` no firma key.
+         *     (`missing`); `404` unknown id; `409` already sent, or its company's state has no contract yet; `502` firma refused; `503` no firma key.
          */
         post: operations["ContractsController_send"];
         delete?: never;
@@ -1472,6 +1472,8 @@ export interface components {
             values: {
                 [key: string]: string;
             };
+            /** @description The application document (the driver's licence file) drawn on the contract's last page (D76). Absent on contracts sent before it. */
+            licenseDocumentId?: string;
             /** @description File name of the PDF template the contract was made from. */
             template: string;
             /** @description The driver the signing email went to. */
