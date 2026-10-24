@@ -185,7 +185,7 @@ export function useDeleteContractDraft(driverId: string) {
 
 /**
  * Why a send was refused. When values are still empty, `missing` lists their names (the API's 400); otherwise it is empty
- * and `message` is the API's own sentence (already sent, not an Illinois company, firma refused, signing not set up).
+ * and `message` is the API's own sentence (already sent, its company's state has no contract yet, firma refused, signing not set up).
  */
 export class SendContractError extends Error {
   readonly missing: string[];
