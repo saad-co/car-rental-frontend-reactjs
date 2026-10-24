@@ -136,15 +136,21 @@ type TextKey = Exclude<keyof FormValues, "platforms">;
 
 /**
  * Adds an application by hand (B85, D68): one page with the questions of the gonzocar.com form, in its three
- * sections and with its rules, plus the documents. The admin then approves it from its page like any other
- * application, which is what creates the driver and sends the texts.
+ * sections and with its rules, plus the documents. Saving also approves it (D79), which creates the driver and
+ * sends the approval text: the same page serves "Add application" and, with `addDriver`, "Add driver" on the
+ * Drivers page; only the wording and where it goes afterwards differ.
  *
  * A problem shows right under its field as soon as the field has been visited (left, or changed for a list or a
  * button); Save marks everything not yet visited. Nothing is created until Save. The request id is made once when
  * the page opens, so a double click or a retry after a network error makes only one application.
  */
-export default function NewApplication() {
+export default function NewApplication({
+  addDriver = false,
+}: {
+  addDriver?: boolean;
+}) {
   const navigate = useNavigate();
+  const backTo = addDriver ? "/admin/drivers" : "/admin/applications";
   const create = useCreateApplication();
   const [requestId] = useState(() => crypto.randomUUID());
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
@@ -204,7 +210,12 @@ export default function NewApplication() {
       return;
     }
     create.mutate(toFormData(requestId, values, files), {
-      onSuccess: (result) => void navigate(`/admin/applications/${result.id}`),
+      onSuccess: (result) =>
+        void navigate(
+          result.driverId
+            ? `/admin/drivers/${result.driverId}`
+            : `/admin/applications/${result.id}`,
+        ),
     });
   };
 
@@ -240,17 +251,17 @@ export default function NewApplication() {
     <form onSubmit={onSubmit} noValidate className="space-y-6">
       <div>
         <Link
-          to="/admin/applications"
+          to={backTo}
           className="text-sm text-gray-500 hover:text-brand-500"
         >
-          ← Applications
+          ← {addDriver ? "Drivers" : "Applications"}
         </Link>
         <h1 className="mt-1 text-xl font-semibold text-gray-800">
-          Add application
+          {addDriver ? "Add driver" : "Add application"}
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          The same questions as the website form. Review and approve it from its
-          page afterwards, as with any application.
+          The same questions as the website form. Saving approves it: the driver
+          is created and gets the approval text.
         </p>
       </div>
 
@@ -561,12 +572,16 @@ export default function NewApplication() {
         <Button
           variant="outline"
           disabled={create.isPending}
-          onClick={() => void navigate("/admin/applications")}
+          onClick={() => void navigate(backTo)}
         >
           Cancel
         </Button>
         <Button type="submit" disabled={create.isPending}>
-          {create.isPending ? "Saving..." : "Save application"}
+          {create.isPending
+            ? "Saving..."
+            : addDriver
+              ? "Save driver"
+              : "Save and approve"}
         </Button>
       </div>
     </form>

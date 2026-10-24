@@ -43,6 +43,7 @@ export default function App() {
             <Route path="applications/new" element={<NewApplication />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
             <Route path="drivers" element={<DriversList />} />
+            <Route path="drivers/new" element={<NewApplication addDriver />} />
             <Route path="drivers/:id" element={<DriverDetail />} />
             <Route path="drivers/:id/ledger" element={<DriverLedger />} />
             <Route path="drivers/:id/contract" element={<ContractDraft />} />
