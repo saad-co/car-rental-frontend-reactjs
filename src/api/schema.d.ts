@@ -148,8 +148,8 @@ export interface paths {
         put?: never;
         /**
          * `POST /applications/manual`: an admin types in an application by hand, with its documents (D68). Same fields and
-         *     rules as the website form; the result is an ordinary application that is then approved like any other. Admin
-         *     only (no `@Public`). Multipart form data: the text fields plus the files `license_file` (required),
+         *     rules as the website form. It is approved straight away (D79): the result carries the new driver's `driverId`.
+         *     Admin only (no `@Public`). Multipart form data: the text fields plus the files `license_file` (required),
          *     `rating_file` and `earnings_file` (JPG, PNG or PDF, at most 10 MB each). The file fields end in `_file` because
          *     `earnings` is already a text field (weekly earnings).
          *
@@ -1084,6 +1084,11 @@ export interface components {
             id: string;
             /** @description False when the same `request_id` had already been stored (a double click or a retry): nothing new was made. */
             created: boolean;
+            /**
+             * @description The driver created by approving it (D79). Null only for a repeat of a request whose approval has not finished, or
+             *     whose application an admin has since declined or put on hold.
+             */
+            driverId: string | null;
         };
         ApplicationListItemDto: {
             id: string;

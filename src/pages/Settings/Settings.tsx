@@ -15,7 +15,7 @@ const KINDS: { kind: TemplateKind; title: string; when: string }[] = [
   {
     kind: "application_approved",
     title: "Approved texts",
-    when: "One of these is sent when you approve an application: you pick it in the Approve dialog and can edit it first. The driver's login (email and temporary password) follows in a second text, which is not editable. The first text in the list is the one offered first.",
+    when: "One of these is sent when you approve an application: you pick it in the Approve dialog and can edit it first. A driver added with Add driver gets the first text in the list. The first text in the list is the one offered first.",
   },
   {
     kind: "application_declined",

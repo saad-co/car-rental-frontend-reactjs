@@ -17,6 +17,8 @@ import {
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
 import { DRIVER_STATUS_LABEL } from "../../components/drivers/driverStatus";
 import AvatarText from "../../components/ui/avatar/AvatarText";
+import Button from "../../components/ui/button/Button";
+import { PlusIcon } from "../../icons";
 import { formatDateTime, formatUsPhone } from "../../utils";
 
 const STATUSES = Object.keys(DRIVER_STATUS_LABEL) as DriverStatus[];
@@ -87,7 +89,8 @@ const columns: Column<Driver>[] = [
 
 /**
  * Admin list of drivers, newest first, on the shared table components (B75): search (name, email, phone), a
- * Status filter, 8 rows per page; the view lives in the URL. Drivers are created by approving an application.
+ * Status filter, 8 rows per page; the view lives in the URL. Drivers are created by approving an application, or
+ * with "Add driver", which fills in and approves one in a single step (D79).
  */
 export default function DriversList() {
   const navigate = useNavigate();
@@ -128,13 +131,22 @@ export default function DriversList() {
         onChange: view.setDateRange,
       }}
       onClearAll={view.clearAll}
+      actions={
+        <Button
+          size="sm"
+          startIcon={<PlusIcon />}
+          onClick={() => void navigate("/admin/drivers/new")}
+        >
+          Add driver
+        </Button>
+      }
       isPending={isPending}
       error={isError ? error : null}
       isEmpty={data?.items.length === 0}
       emptyText={
         view.search || status || view.from || view.to
           ? "No drivers match this search or filter."
-          : "No drivers. Drivers are created by approving an application."
+          : "No drivers. Add one, or approve an application."
       }
       page={view.page}
       totalPages={data ? pageCount(data.total) : 1}

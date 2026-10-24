@@ -357,7 +357,7 @@ export function useDeleteApplicationNote(id: string) {
   });
 }
 
-/** What `POST /applications/manual` answers: the new application's id, and whether it was newly made. */
+/** What `POST /applications/manual` answers: the new application's id, whether it was newly made, and its driver. */
 export type ManualApplicationCreated =
   components["schemas"]["ManualApplicationCreatedDto"];
 
@@ -366,6 +366,10 @@ export type ManualApplicationCreated =
  * answers and up to three files). The generated type of a file is a text, so the already built `FormData` is handed
  * over with a cast; the client sends a `FormData` as it is and the browser sets the multipart boundary itself. (It
  * must be passed as `body`: with `body` left out the client sends nothing at all.)
+ *
+ * The application is approved straight away (D79), so the answer carries the new driver's id and the drivers lists
+ * are refreshed too. If approval fails after saving, the error says the application was saved; sending the same
+ * `request_id` again retries the approval.
  *
  * The same `request_id` sent twice makes one application (`created: false` the second time), so a double click or a
  * retry after a network error is safe.
@@ -391,6 +395,7 @@ export function useCreateApplication() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.applications.lists,
       });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
     },
   });
 }
