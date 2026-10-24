@@ -41,9 +41,15 @@ const currentOptions = (driverId: string) =>
   queryOptions({
     queryKey: queryKeys.contracts.current(driverId),
     // A contract waiting for the driver changes on its own (the webhook, or the 5-minute check): look again every 30 s.
+    // A signed one whose files are not saved yet is filed about a minute after the signing (D77): look every 15 s.
     refetchInterval: (query) => {
-      const status = query.state.data?.contract?.status;
-      return status === "sent" || status === "viewed" ? 30_000 : false;
+      const contract = query.state.data?.contract;
+      if (contract?.status === "sent" || contract?.status === "viewed") {
+        return 30_000;
+      }
+      return contract?.status === "signed" && !contract.documentsSaved
+        ? 15_000
+        : false;
     },
     queryFn: async () => {
       const { data, error, response } = await api.GET(
