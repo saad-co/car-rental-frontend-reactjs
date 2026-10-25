@@ -8,6 +8,8 @@ import {
   useDeactivateDriver,
   useDriver,
   useReactivateDriver,
+  useRemoveFromCollections,
+  useSendToCollections,
   useSetDriverArchived,
   useSetOnboardingStep,
   type Driver,
@@ -16,9 +18,15 @@ import {
 import { usePayments } from "../../api/payments.queries";
 import ContractDocumentLinks from "../../components/contracts/ContractDocumentLinks";
 import { CONTRACT_STATUS } from "../../components/contracts/contractStatus";
+import BalanceText from "../../components/drivers/BalanceText";
+import DepositDialog from "../../components/drivers/DepositDialog";
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
+import LeavingDialog from "../../components/drivers/LeavingDialog";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
-import { ONBOARDING_STEPS } from "../../components/drivers/driverStatus";
+import {
+  leftReasonText,
+  ONBOARDING_STEPS,
+} from "../../components/drivers/driverStatus";
 import Checkbox from "../../components/form/input/Checkbox";
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
@@ -77,10 +85,13 @@ function OnboardingCard({
   driver,
   busy,
   onChange,
+  onEditDeposit,
 }: {
   driver: Driver;
   busy: boolean;
   onChange: (step: OnboardingStep, done: boolean) => void;
+  /** Opens the amount box for a ticked deposit: records an amount that is missing, or corrects it (D82). */
+  onEditDeposit: () => void;
 }) {
   const locked = driver.status === "inactive";
   // The contract step is ticked by the system when the driver signs (D75): that tick carries the contract's signing
@@ -98,7 +109,7 @@ function OnboardingCard({
           ? "This driver is inactive. Reactivate them to change these steps."
           : driver.status === "active"
             ? "All steps are done: the driver is active."
-            : "The driver becomes active as soon as all three are done, in any order."}
+            : "They become an active driver as soon as all three are done, in any order."}
       </p>
       <ul className="space-y-3">
         {ONBOARDING_STEPS.map(({ step, label, field }) => {
@@ -117,8 +128,26 @@ function OnboardingCard({
                       step === "contract" && contractTickedBySigning(doneAt)
                         ? " · automatic, from the signed contract"
                         : ""
+                    }${
+                      step === "deposit"
+                        ? driver.onboarding.depositPaidCents === null
+                          ? " · amount not recorded"
+                          : ` · ${formatCents(driver.onboarding.depositPaidCents)}`
+                        : ""
                     }`
                   : "Not done"}
+                {step === "deposit" && doneAt && !locked && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={onEditDeposit}
+                    className="ml-2 text-brand-500 hover:underline disabled:opacity-50"
+                  >
+                    {driver.onboarding.depositPaidCents === null
+                      ? "Add amount"
+                      : "Edit amount"}
+                  </button>
+                )}
               </span>
             </li>
           );
@@ -215,15 +244,30 @@ export default function DriverDetail() {
   const deactivate = useDeactivateDriver(id);
   const reactivate = useReactivateDriver(id);
   const setArchived = useSetDriverArchived();
-  const mutations = [setStep, deactivate, reactivate, setArchived];
+  const sendToCollections = useSendToCollections(id);
+  const removeFromCollections = useRemoveFromCollections();
+  const mutations = [
+    setStep,
+    deactivate,
+    reactivate,
+    setArchived,
+    sendToCollections,
+    removeFromCollections,
+  ];
   const busy = mutations.some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
 
   /** An un-tick waiting for confirmation (it would take an active driver back to onboarding). */
   const [confirmingUntick, setConfirmingUntick] =
     useState<OnboardingStep | null>(null);
-  /** True while the "Deactivate?" dialog is open. */
-  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
+  /** Which "how did they leave?" dialog is open (D81). */
+  const [leaving, setLeaving] = useState<"deactivate" | "collections" | null>(
+    null,
+  );
+  /** The deposit amount box: "tick" for a first tick, "edit" to record or correct the amount (D82). */
+  const [depositDialog, setDepositDialog] = useState<"tick" | "edit" | null>(
+    null,
+  );
 
   /** Clears the previous action's error, then runs this one. */
   const run = (action: () => void) => {
@@ -232,6 +276,15 @@ export default function DriverDetail() {
   };
 
   const changeStep = (step: OnboardingStep, done: boolean) => {
+    // Ticking the deposit asks how much was paid (D82).
+    if (
+      done &&
+      step === "deposit" &&
+      driver?.onboarding.depositPaidAt === null
+    ) {
+      setDepositDialog("tick");
+      return;
+    }
     if (!done && driver?.status === "active") {
       setConfirmingUntick(step);
       return;
@@ -259,11 +312,18 @@ export default function DriverDetail() {
 
   return (
     <div className="space-y-6">
+      {/* Someone still in onboarding is not a driver yet: they came from, and go back to, Approved applications. */}
       <Link
-        to="/admin/drivers"
+        to={
+          driver.status === "onboarding"
+            ? "/admin/approved-applications"
+            : "/admin/drivers"
+        }
         className="inline-block text-sm text-gray-500 hover:text-gray-700"
       >
-        ← Back to drivers
+        {driver.status === "onboarding"
+          ? "← Back to approved applications"
+          : "← Back to drivers"}
       </Link>
 
       <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
@@ -273,7 +333,10 @@ export default function DriverDetail() {
             <DriverStatusBadge driver={driver} />
           </div>
           <p className="text-sm text-gray-500">
-            Driver since {formatDateTime(driver.createdAt)}
+            {driver.status === "onboarding"
+              ? "Onboarding since"
+              : "Driver since"}{" "}
+            {formatDateTime(driver.createdAt)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -308,6 +371,31 @@ export default function DriverDetail() {
                   : "Archive"}
             </Button>
           )}
+          {/* Leaving options (D81): deactivate, archive (above), send to collections. */}
+          {driver.status !== "onboarding" &&
+            (driver.sentToCollectionsAt ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() =>
+                  run(() => removeFromCollections.mutate(driver.id))
+                }
+              >
+                {removeFromCollections.isPending
+                  ? "Removing..."
+                  : "Remove from collections"}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setLeaving("collections")}
+              >
+                Send to collections
+              </Button>
+            ))}
           {driver.status === "inactive" ? (
             <Button
               size="sm"
@@ -321,13 +409,26 @@ export default function DriverDetail() {
               size="sm"
               variant="outline"
               disabled={busy}
-              onClick={() => setConfirmingDeactivate(true)}
+              onClick={() => setLeaving("deactivate")}
             >
               {deactivate.isPending ? "Deactivating..." : "Deactivate"}
             </Button>
           )}
         </div>
       </div>
+
+      {driver.status === "inactive" && (
+        <p
+          role="status"
+          className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
+        >
+          Left: {leftReasonText(driver.leftReason)}
+          {driver.leftAt && ` · noted ${formatDateTime(driver.leftAt)}`}.
+          {driver.sentToCollectionsAt &&
+            ` In collections since ${formatDateTime(driver.sentToCollectionsAt)}.`}{" "}
+          Balance: <BalanceText cents={driver.balanceCents} />.
+        </p>
+      )}
 
       {driver.archivedAt && (
         <p
@@ -349,21 +450,82 @@ export default function DriverDetail() {
         </p>
       )}
 
-      <ConfirmDialog
-        isOpen={confirmingDeactivate}
-        title={`Deactivate ${fullName}?`}
-        confirmLabel="Deactivate"
-        confirmVariant="danger"
-        onCancel={() => setConfirmingDeactivate(false)}
-        onConfirm={() => {
-          setConfirmingDeactivate(false);
-          run(() => deactivate.mutate(undefined));
-        }}
-      >
-        Use this when the driver leaves. They can no longer log in to the driver
-        portal, and are signed out at once. Their history and onboarding steps
-        are kept, and you can reactivate them later.
-      </ConfirmDialog>
+      {leaving === "deactivate" && (
+        <LeavingDialog
+          title={`Deactivate ${fullName}?`}
+          confirmLabel="Deactivate"
+          confirmVariant="danger"
+          onCancel={() => setLeaving(null)}
+          onConfirm={(reason) => {
+            setLeaving(null);
+            run(() => deactivate.mutate({ reason }));
+          }}
+        >
+          Use this when the driver leaves. They can no longer log in to the
+          driver portal, and are signed out at once. Their history and
+          onboarding steps are kept, and you can reactivate them later.
+        </LeavingDialog>
+      )}
+
+      {leaving === "collections" &&
+        (driver.leftReason ? (
+          <ConfirmDialog
+            isOpen
+            title={`Send ${fullName} to collections?`}
+            confirmLabel="Send to collections"
+            confirmVariant="danger"
+            onCancel={() => setLeaving(null)}
+            onConfirm={() => {
+              setLeaving(null);
+              run(() => sendToCollections.mutate({}));
+            }}
+          >
+            They will be listed on the Collections page, where you can message
+            them about what they owe. Balance:{" "}
+            <BalanceText cents={driver.balanceCents} />. You can remove them
+            from collections later.
+          </ConfirmDialog>
+        ) : (
+          <LeavingDialog
+            title={`Send ${fullName} to collections?`}
+            confirmLabel="Send to collections"
+            confirmVariant="danger"
+            onCancel={() => setLeaving(null)}
+            onConfirm={(reason) => {
+              setLeaving(null);
+              run(() => sendToCollections.mutate({ reason }));
+            }}
+          >
+            They will be listed on the Collections page, where you can message
+            them about what they owe. Balance:{" "}
+            <BalanceText cents={driver.balanceCents} />.
+            {driver.status === "active" &&
+              " They are deactivated at the same time: they can no longer log in to the driver portal."}
+          </LeavingDialog>
+        ))}
+
+      {depositDialog && (
+        <DepositDialog
+          title={
+            depositDialog === "tick"
+              ? "How much was the deposit?"
+              : "Deposit amount"
+          }
+          confirmLabel={depositDialog === "tick" ? "Tick deposit paid" : "Save"}
+          initialCents={driver.onboarding.depositPaidCents}
+          onCancel={() => setDepositDialog(null)}
+          onConfirm={(cents) => {
+            setDepositDialog(null);
+            run(() =>
+              setStep.mutate({
+                step: "deposit",
+                done: true,
+                depositPaidCents: cents,
+              }),
+            );
+          }}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={confirmingUntick !== null}
@@ -385,7 +547,12 @@ export default function DriverDetail() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">
-          <OnboardingCard driver={driver} busy={busy} onChange={changeStep} />
+          <OnboardingCard
+            driver={driver}
+            busy={busy}
+            onChange={changeStep}
+            onEditDeposit={() => setDepositDialog("edit")}
+          />
           <ContractCard driverId={driver.id} />
           <Card title="Contact">
             <Rows

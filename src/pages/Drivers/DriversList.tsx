@@ -15,7 +15,6 @@ import {
 import TableCard from "../../components/tables/TableCard";
 import {
   LIST_PAGE_SIZE,
-  filterOptions,
   pageCount,
   useListParams,
 } from "../../components/tables/useListParams";
@@ -34,7 +33,16 @@ const LISTED_LABELS = {
   active: DRIVER_STATUS_LABEL.active,
   inactive: DRIVER_STATUS_LABEL.inactive,
 };
-const STATUSES = Object.keys(LISTED_LABELS) as DriverStatus[];
+/**
+ * The Status filter: Active is the default (nothing in the URL), Inactive is `?status=inactive`, and `?status=all` lists
+ * both. "Driver" means an active or inactive person; people still in onboarding are not drivers yet (Abulkalam, 2026-10-26).
+ */
+const STATUS_URL_VALUES = ["inactive", "all"];
+const STATUS_OPTIONS = [
+  { label: LISTED_LABELS.active, value: undefined },
+  { label: LISTED_LABELS.inactive, value: "inactive" },
+  { label: "All", value: "all" },
+];
 
 /** The table's columns; `onArchive` archives or unarchives the row's driver (the "⋯" menu). */
 const makeColumns = (onArchive: (driver: Driver) => void): Column<Driver>[] => [
@@ -94,7 +102,7 @@ const makeColumns = (onArchive: (driver: Driver) => void): Column<Driver>[] => [
         label={`Actions for ${driver.firstName} ${driver.lastName}`}
         actions={[
           { label: "View ledger", to: `/admin/drivers/${driver.id}/ledger` },
-          { label: "View driver", to: `/admin/drivers/${driver.id}` },
+          { label: "View details", to: `/admin/drivers/${driver.id}` },
           {
             label: driver.archivedAt ? "Unarchive" : "Archive",
             onClick: () => onArchive(driver),
@@ -113,14 +121,24 @@ const makeColumns = (onArchive: (driver: Driver) => void): Column<Driver>[] => [
  */
 export default function DriversList() {
   const navigate = useNavigate();
-  const view = useListParams({ status: STATUSES, ...ARCHIVED_FILTER });
-  const status = view.filters.status as DriverStatus | undefined;
+  const view = useListParams({
+    status: STATUS_URL_VALUES,
+    ...ARCHIVED_FILTER,
+  });
+  const statusParam = view.filters.status;
+  /** What the API is asked for: Active unless the URL says otherwise; undefined (both) for "all". */
+  const status: DriverStatus | undefined =
+    statusParam === "all"
+      ? undefined
+      : ((statusParam as DriverStatus | undefined) ?? "active");
   const archivedOnly = view.filters.show === "archived";
   const setArchived = useSetDriverArchived();
 
   const { data, isPending, isError, error, isPlaceholderData } = useDrivers({
     status,
     onboarding: false,
+    // Drivers in collections are on the Collections page (D81).
+    collections: false,
     archived: archivedOnly || undefined,
     search: view.search || undefined,
     from: view.from,
@@ -156,8 +174,8 @@ export default function DriversList() {
             {
               key: "status",
               label: "Status",
-              options: filterOptions(LISTED_LABELS),
-              value: status,
+              options: STATUS_OPTIONS,
+              value: statusParam,
             },
             archivedFilterGroup(view.filters.show),
           ],
@@ -183,7 +201,7 @@ export default function DriversList() {
         error={isError ? error : null}
         isEmpty={data?.items.length === 0}
         emptyText={
-          view.search || status || archivedOnly || view.from || view.to
+          view.search || statusParam || archivedOnly || view.from || view.to
             ? "No drivers match this search or filter."
             : "No drivers yet. Add one, or start onboarding on an approved application."
         }

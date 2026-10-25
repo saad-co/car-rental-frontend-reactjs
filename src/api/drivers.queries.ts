@@ -102,21 +102,74 @@ function useDriverMutation<V>(
   });
 }
 
-/** Ticks (`done: true`) or un-ticks one onboarding step; the API sets the status from the steps (D56). */
+/** How a driver left (D81): `contract_ended` | `bad_driver` | `cooperative_returned_car`, from the generated types. */
+export type LeftReason = NonNullable<Driver["leftReason"]>;
+
+/**
+ * Ticks (`done: true`) or un-ticks one onboarding step; the API sets the status from the steps (D56). Ticking the
+ * deposit also sends the amount paid in cents (D82); sending it again with a ticked deposit records or corrects it.
+ */
 export function useSetOnboardingStep(id: string) {
-  return useDriverMutation((vars: { step: OnboardingStep; done: boolean }) =>
-    api.POST("/drivers/{id}/onboarding", {
+  return useDriverMutation(
+    (vars: {
+      step: OnboardingStep;
+      done: boolean;
+      depositPaidCents?: number;
+    }) =>
+      api.POST("/drivers/{id}/onboarding", {
+        params: { path: { id } },
+        body: vars,
+      }),
+  );
+}
+
+/** Marks the driver inactive with how they left; their login stops working (B67, D81). */
+export function useDeactivateDriver(id: string) {
+  return useDriverMutation((vars: { reason: LeftReason }) =>
+    api.POST("/drivers/{id}/deactivate", {
       params: { path: { id } },
       body: vars,
     }),
   );
 }
 
-/** Marks the driver inactive; their login stops working (B67). */
-export function useDeactivateDriver(id: string) {
-  return useDriverMutation(() =>
-    api.POST("/drivers/{id}/deactivate", { params: { path: { id } } }),
+/**
+ * Sends the driver to collections (D81). `reason` is needed when no reason is noted yet: the driver is then
+ * deactivated in the same step.
+ */
+export function useSendToCollections(id: string) {
+  return useDriverMutation((vars: { reason?: LeftReason }) =>
+    api.POST("/drivers/{id}/collections", {
+      params: { path: { id } },
+      body: vars,
+    }),
   );
+}
+
+/**
+ * Takes a driver out of collections (D81). Takes the id with the call, so the Collections page can use it for any
+ * row; the driver stays inactive. Refreshes the detail and every drivers list.
+ */
+export function useRemoveFromCollections() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error, response } = await api.POST(
+        "/drivers/{id}/remove-from-collections",
+        { params: { path: { id } } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `The request failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: (driver) => {
+      queryClient.setQueryData(queryKeys.drivers.detail(driver.id), driver);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
+    },
+  });
 }
 
 /** Brings an inactive driver back (active or onboarding, from their steps). */

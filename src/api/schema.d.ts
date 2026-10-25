@@ -863,8 +863,48 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** `POST /drivers/:id/deactivate`: the driver left (B67). Their login stops working at once. */
+        /**
+         * `POST /drivers/:id/deactivate`: the driver left (B67), and how: `reason` is required (D81). Their login stops
+         *     working at once.
+         */
         post: operations["DriversController_deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/collections`: sends the driver to collections (D81). `reason` is needed when no reason is noted
+         *     yet; the driver is then deactivated in the same step. `409` for a driver still in onboarding.
+         */
+        post: operations["DriversController_sendToCollections"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/remove-from-collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /drivers/:id/remove-from-collections`: takes the driver out of collections; they stay inactive. */
+        post: operations["DriversController_removeFromCollections"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1816,6 +1856,8 @@ export interface components {
             contractSignedAt: string | null;
             /** Format: date-time */
             depositPaidAt: string | null;
+            /** @description The deposit amount in cents typed when the step was ticked (D82); null if not recorded (ticked before this existed). */
+            depositPaidCents: number | null;
             /** Format: date-time */
             vehicleAssignedAt: string | null;
         };
@@ -1855,6 +1897,21 @@ export interface components {
              * @description When an admin archived the driver (D80); null = not archived.
              */
             archivedAt: string | null;
+            /**
+             * @description How the driver left (D81); null if not inactive, or deactivated before reasons existed ("reason not recorded").
+             * @enum {string|null}
+             */
+            leftReason: "contract_ended" | "bad_driver" | "cooperative_returned_car" | null;
+            /**
+             * Format: date-time
+             * @description When the reason was noted; null with no reason.
+             */
+            leftAt: string | null;
+            /**
+             * Format: date-time
+             * @description When an admin sent the driver to collections (D81); null = not in collections.
+             */
+            sentToCollectionsAt: string | null;
             /** @description Every payment alias of the driver, grouped by payment method then by value. Empty if none yet. */
             aliases: components["schemas"]["DriverAliasDto"][];
             /** @description Number of payments assigned to this driver. */
@@ -1879,6 +1936,11 @@ export interface components {
             step: "contract" | "deposit" | "vehicle";
             /** @description `true` marks the step done (now, by the admin); `false` clears it. */
             done: boolean;
+            /**
+             * @description The deposit amount in cents (D82). Required when the deposit step is ticked for the first time; may also be sent
+             *     with an already-ticked deposit to record or correct the amount. Not allowed for the other steps or with `done: false`.
+             */
+            depositPaidCents?: number;
         };
         AddAliasDto: {
             /**
@@ -1888,6 +1950,14 @@ export interface components {
             type: "zelle" | "cashapp" | "venmo" | "chime" | "stripe" | "email" | "phone";
             /** @description The name, handle, company, email or phone as the payer shows it. Extra spaces are trimmed. */
             value: string;
+        };
+        DeactivateDriverDto: {
+            /** @enum {string} */
+            reason: "contract_ended" | "bad_driver" | "cooperative_returned_car";
+        };
+        SendToCollectionsDto: {
+            /** @enum {string} */
+            reason?: "contract_ended" | "bad_driver" | "cooperative_returned_car";
         };
         /** @enum {string} */
         InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
@@ -3407,6 +3477,13 @@ export interface operations {
                  *     payment pickers need (a deposit arrives while the driver is still in onboarding).
                  */
                 onboarding?: boolean;
+                /**
+                 * @description `true` lists only drivers in collections (D81), newest sent first, and the date range then filters the day they
+                 *     were sent. `false` leaves them out: the Drivers page, since they are on the Collections page. Omitted: no
+                 *     collections filter, which is what the payment pickers need (money from a driver in collections must still be
+                 *     assignable to them).
+                 */
+                collections?: boolean;
                 /** @description `true` = only archived, otherwise only not archived. */
                 archived?: boolean;
                 /** @description First day to include, e.g. `2026-10-01`. */
@@ -3526,6 +3603,56 @@ export interface operations {
         };
     };
     DriversController_deactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeactivateDriverDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_sendToCollections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendToCollectionsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_removeFromCollections: {
         parameters: {
             query?: never;
             header?: never;
