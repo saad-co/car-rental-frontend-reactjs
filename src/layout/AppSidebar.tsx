@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router";
 import {
+  CheckCircleIcon,
   DocsIcon,
   DollarIcon,
   GridIcon,
@@ -22,6 +23,11 @@ type NavItem = {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <GridIcon />, path: "/admin" },
   { name: "Applications", icon: <DocsIcon />, path: "/admin/applications" },
+  {
+    name: "Approved applications",
+    icon: <CheckCircleIcon />,
+    path: "/admin/approved-applications",
+  },
   { name: "Drivers", icon: <UserIcon />, path: "/admin/drivers" },
   { name: "Payments", icon: <DollarIcon />, path: "/admin/payments" },
   { name: "Email log", icon: <MailIcon />, path: "/admin/email-log" },

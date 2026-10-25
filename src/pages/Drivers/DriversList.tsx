@@ -2,11 +2,16 @@ import BalanceText from "../../components/drivers/BalanceText";
 import { Link, useNavigate } from "react-router";
 import {
   useDrivers,
+  useSetDriverArchived,
   type Driver,
   type DriverStatus,
 } from "../../api/drivers.queries";
 import DataTable, { type Column } from "../../components/tables/DataTable";
 import RowActionsMenu from "../../components/tables/RowActionsMenu";
+import {
+  ARCHIVED_FILTER,
+  archivedFilterGroup,
+} from "../../components/tables/archivedFilter";
 import TableCard from "../../components/tables/TableCard";
 import {
   LIST_PAGE_SIZE,
@@ -21,9 +26,18 @@ import Button from "../../components/ui/button/Button";
 import { PlusIcon } from "../../icons";
 import { formatDateTime, formatUsPhone } from "../../utils";
 
-const STATUSES = Object.keys(DRIVER_STATUS_LABEL) as DriverStatus[];
+/**
+ * The statuses listed here: active and inactive only (D80). A driver still in onboarding is on the Approved applications
+ * page until the three steps are done.
+ */
+const LISTED_LABELS = {
+  active: DRIVER_STATUS_LABEL.active,
+  inactive: DRIVER_STATUS_LABEL.inactive,
+};
+const STATUSES = Object.keys(LISTED_LABELS) as DriverStatus[];
 
-const columns: Column<Driver>[] = [
+/** The table's columns; `onArchive` archives or unarchives the row's driver (the "⋯" menu). */
+const makeColumns = (onArchive: (driver: Driver) => void): Column<Driver>[] => [
   {
     key: "driver",
     header: "Driver",
@@ -81,6 +95,10 @@ const columns: Column<Driver>[] = [
         actions={[
           { label: "View ledger", to: `/admin/drivers/${driver.id}/ledger` },
           { label: "View driver", to: `/admin/drivers/${driver.id}` },
+          {
+            label: driver.archivedAt ? "Unarchive" : "Archive",
+            onClick: () => onArchive(driver),
+          },
         ]}
       />
     ),
@@ -89,16 +107,21 @@ const columns: Column<Driver>[] = [
 
 /**
  * Admin list of drivers, newest first, on the shared table components (B75): search (name, email, phone), a
- * Status filter, 8 rows per page; the view lives in the URL. Drivers are created by approving an application, or
- * with "Add driver", which fills in and approves one in a single step (D79).
+ * Status filter, 8 rows per page; the view lives in the URL. Only active and inactive drivers are listed (D80); a
+ * driver is created by "Start onboarding" on an approved application, or by "Add driver" (D79), and appears here once
+ * onboarding is done. Drivers are archived, never deleted: archived ones are hidden, and the Show filter lists them.
  */
 export default function DriversList() {
   const navigate = useNavigate();
-  const view = useListParams({ status: STATUSES });
+  const view = useListParams({ status: STATUSES, ...ARCHIVED_FILTER });
   const status = view.filters.status as DriverStatus | undefined;
+  const archivedOnly = view.filters.show === "archived";
+  const setArchived = useSetDriverArchived();
 
   const { data, isPending, isError, error, isPlaceholderData } = useDrivers({
     status,
+    onboarding: false,
+    archived: archivedOnly || undefined,
     search: view.search || undefined,
     from: view.from,
     to: view.to,
@@ -106,61 +129,80 @@ export default function DriversList() {
     limit: LIST_PAGE_SIZE,
   });
 
+  const columns = makeColumns((driver) => {
+    setArchived.reset();
+    setArchived.mutate({ id: driver.id, archived: !driver.archivedAt });
+  });
+
   return (
-    <TableCard
-      title="Drivers"
-      search={{
-        value: view.search,
-        onSearch: view.setSearch,
-        placeholder: "Search name, email, phone...",
-      }}
-      filters={{
-        groups: [
-          {
-            key: "status",
-            label: "Status",
-            options: filterOptions(DRIVER_STATUS_LABEL),
-            value: status,
-          },
-        ],
-        onApply: (values) => view.setFilters({ status: values.status }),
-      }}
-      dateRange={{
-        label: "Since",
-        value: { from: view.from, to: view.to },
-        onChange: view.setDateRange,
-      }}
-      onClearAll={view.clearAll}
-      actions={
-        <Button
-          size="sm"
-          startIcon={<PlusIcon />}
-          onClick={() => void navigate("/admin/drivers/new")}
+    <div className="space-y-6">
+      {setArchived.isError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-600"
         >
-          Add driver
-        </Button>
-      }
-      isPending={isPending}
-      error={isError ? error : null}
-      isEmpty={data?.items.length === 0}
-      emptyText={
-        view.search || status || view.from || view.to
-          ? "No drivers match this search or filter."
-          : "No drivers. Add one, or approve an application."
-      }
-      page={view.page}
-      totalPages={data ? pageCount(data.total) : 1}
-      onPageChange={view.setPage}
-    >
-      {data && (
-        <DataTable
-          columns={columns}
-          rows={data.items}
-          rowKey={(driver) => driver.id}
-          onRowClick={(driver) => void navigate(`/admin/drivers/${driver.id}`)}
-          dimmed={isPlaceholderData}
-        />
+          {setArchived.error.message}
+        </p>
       )}
-    </TableCard>
+      <TableCard
+        title="Drivers"
+        search={{
+          value: view.search,
+          onSearch: view.setSearch,
+          placeholder: "Search name, email, phone...",
+        }}
+        filters={{
+          groups: [
+            {
+              key: "status",
+              label: "Status",
+              options: filterOptions(LISTED_LABELS),
+              value: status,
+            },
+            archivedFilterGroup(view.filters.show),
+          ],
+          onApply: (values) =>
+            view.setFilters({ status: values.status, show: values.show }),
+        }}
+        dateRange={{
+          label: "Since",
+          value: { from: view.from, to: view.to },
+          onChange: view.setDateRange,
+        }}
+        onClearAll={view.clearAll}
+        actions={
+          <Button
+            size="sm"
+            startIcon={<PlusIcon />}
+            onClick={() => void navigate("/admin/drivers/new")}
+          >
+            Add driver
+          </Button>
+        }
+        isPending={isPending}
+        error={isError ? error : null}
+        isEmpty={data?.items.length === 0}
+        emptyText={
+          view.search || status || archivedOnly || view.from || view.to
+            ? "No drivers match this search or filter."
+            : "No drivers yet. Add one, or start onboarding on an approved application."
+        }
+        page={view.page}
+        totalPages={data ? pageCount(data.total) : 1}
+        onPageChange={view.setPage}
+      >
+        {data && (
+          <DataTable
+            columns={columns}
+            rows={data.items}
+            rowKey={(driver) => driver.id}
+            onRowClick={(driver) =>
+              void navigate(`/admin/drivers/${driver.id}`)
+            }
+            dimmed={isPlaceholderData}
+          />
+        )}
+      </TableCard>
+    </div>
   );
 }

@@ -148,7 +148,9 @@ export interface paths {
         put?: never;
         /**
          * `POST /applications/manual`: an admin types in an application by hand, with its documents (D68). Same fields and
-         *     rules as the website form. It is approved straight away (D79): the result carries the new driver's `driverId`.
+         *     rules as the website form. It is approved straight away (D79). Approving creates no driver (D80): with
+         *     `?startOnboarding=true` ("Add driver") the driver is created too and the result carries its `driverId`; without
+         *     it ("Add application") `driverId` is null.
          *     Admin only (no `@Public`). Multipart form data: the text fields plus the files `license_file` (required),
          *     `rating_file` and `earnings_file` (JPG, PNG or PDF, at most 10 MB each). The file fields end in `_file` because
          *     `earnings` is already a text field (weekly earnings).
@@ -160,6 +162,27 @@ export interface paths {
          *     `201` with `created: false` when the same `request_id` was already stored.
          */
         post: operations["ApplicationsController_createManual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/approved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /applications/approved`: the Approved applications page (D80): approved applications whose onboarding is not
+         *     finished (no driver yet, or the driver is still in onboarding), with the onboarding progress. Same search, dates and
+         *     `archived` switch as the main list. Declared before `:id` so "approved" is never read as an id.
+         */
+        get: operations["ApplicationsController_listApproved"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -223,8 +246,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /applications/:id/approve`: creates the driver and marks the application approved, and texts the
-         *     applicant. Optional body `{ "message": "..." }` is the approval text the admin picked and edited (B81); without
+         * `POST /applications/:id/approve`: marks the application approved and texts the applicant. No driver is created
+         *     (D80); "Start onboarding" does that. Optional body `{ "message": "..." }` is the approval text the admin picked and edited (B81); without
          *     it the first approved template is sent. `400` for an unknown placeholder in it.
          *
          *     POST because it is an action with side effects, not an edit of a field. `@HttpCode(200)`
@@ -269,6 +292,64 @@ export interface paths {
         put?: never;
         /** `POST /applications/:id/hold`: puts the application on hold to decide later. */
         post: operations["ApplicationsController_hold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/start-onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /applications/:id/start-onboarding`: for an approved application, creates the driver (in onboarding) and
+         *     their login (D80). `409` if it is not approved, is archived, already has its driver, or a driver or login already
+         *     has this email or phone.
+         */
+        post: operations["ApplicationsController_startOnboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /applications/:id/archive`: hides the application from the normal list (D80); delete stays separate. An
+         *     approved one in onboarding takes its driver with it; `409` if its driver is already active or inactive.
+         */
+        post: operations["ApplicationsController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /applications/:id/unarchive`: brings an archived application (and its onboarding driver) back. */
+        post: operations["ApplicationsController_unarchive"];
         delete?: never;
         options?: never;
         head?: never;
@@ -790,6 +871,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:id/archive`: hides the driver from the normal list and stops billing and reminders (D80). Any
+         *     `active` or `inactive` driver, no need to deactivate first; drivers are archived, never deleted. `409` for a
+         *     driver still in onboarding (archive their approved application instead).
+         */
+        post: operations["DriversController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /drivers/:id/unarchive`: brings an archived driver back, with the status they had. */
+        post: operations["DriversController_unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{id}/reactivate": {
         parameters: {
             query?: never;
@@ -1112,10 +1231,68 @@ export interface components {
             receivedAt: string;
             /** @description Why the alert text to staff about this application could not be sent; null if it did not fail. */
             alertError: string | null;
+            /**
+             * Format: date-time
+             * @description When an admin archived it (D80); null = not archived.
+             */
+            archivedAt: string | null;
         };
         ApplicationListDto: {
             items: components["schemas"]["ApplicationListItemDto"][];
             /** @description Number of applications matching the filter, across all pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        ApprovedApplicationDriverDto: {
+            id: string;
+            /**
+             * @description `onboarding` here by definition: a driver who is `active` or `inactive` is on the Drivers page.
+             * @enum {string}
+             */
+            status: "onboarding" | "active" | "inactive";
+            /**
+             * Format: date-time
+             * @description The three onboarding steps (D56): when each was ticked; null while not done.
+             */
+            contractSignedAt: string | null;
+            /** Format: date-time */
+            depositPaidAt: string | null;
+            /** Format: date-time */
+            vehicleAssignedAt: string | null;
+        };
+        ApprovedApplicationItemDto: {
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "on_hold";
+            firstName: string;
+            lastName: string;
+            email: string;
+            /** @description As the applicant typed it (usually 10 digits). */
+            phone: string;
+            city: string | null;
+            /**
+             * Format: date-time
+             * @description When the applicant pressed submit, by their browser's clock.
+             */
+            submittedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When our API received it.
+             */
+            receivedAt: string;
+            /** @description Why the alert text to staff about this application could not be sent; null if it did not fail. */
+            alertError: string | null;
+            /**
+             * Format: date-time
+             * @description When an admin archived it (D80); null = not archived.
+             */
+            archivedAt: string | null;
+            /** @description Null until an admin presses "Start onboarding"; then the driver, while onboarding is not finished. */
+            driver: components["schemas"]["ApprovedApplicationDriverDto"] | null;
+        };
+        ApprovedApplicationListDto: {
+            items: components["schemas"]["ApprovedApplicationItemDto"][];
             total: number;
             page: number;
             limit: number;
@@ -1159,6 +1336,11 @@ export interface components {
             receivedAt: string;
             /** @description Why the alert text to staff about this application could not be sent; null if it did not fail. */
             alertError: string | null;
+            /**
+             * Format: date-time
+             * @description When an admin archived it (D80); null = not archived.
+             */
+            archivedAt: string | null;
             /** @description The website's id for the submission. */
             requestId: string;
             zip: string | null;
@@ -1174,7 +1356,7 @@ export interface components {
             reviewedById: string | null;
             /** Format: date-time */
             reviewedAt: string | null;
-            /** @description The driver created on approval. Null unless approved. */
+            /** @description The driver created by "Start onboarding" (D80). Null until then, and always null unless approved. */
             driverId: string | null;
             /**
              * Format: date-time
@@ -1665,9 +1847,14 @@ export interface components {
             onboarding: components["schemas"]["DriverOnboardingDto"];
             /**
              * Format: date-time
-             * @description When the driver was created (the application's approval).
+             * @description When the driver was created (when onboarding was started on the approved application, D80).
              */
             createdAt: string;
+            /**
+             * Format: date-time
+             * @description When an admin archived the driver (D80); null = not archived.
+             */
+            archivedAt: string | null;
             /** @description Every payment alias of the driver, grouped by payment method then by value. Empty if none yet. */
             aliases: components["schemas"]["DriverAliasDto"][];
             /** @description Number of payments assigned to this driver. */
@@ -2225,6 +2412,8 @@ export interface operations {
             query: {
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description `true` = only archived, otherwise only not archived. */
+                archived?: boolean;
                 /** @description First day to include, e.g. `2026-10-01`. */
                 from?: string;
                 /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
@@ -2280,7 +2469,13 @@ export interface operations {
     };
     ApplicationsController_createManual: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description `true` for "Add driver": after approving, also create the driver (in onboarding), so the admin lands on the
+                 *     driver's page. Omitted or `false` for "Add application": approved only, no driver.
+                 */
+                startOnboarding?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2330,6 +2525,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ManualApplicationCreatedDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_listApproved: {
+        parameters: {
+            query: {
+                /** @description Only applications with this status. Omit for all. */
+                status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description `true` = only archived, otherwise only not archived. */
+                archived?: boolean;
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovedApplicationListDto"];
                 };
             };
         };
@@ -2429,6 +2658,69 @@ export interface operations {
         };
     };
     ApplicationsController_hold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_startOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailDto"];
+                };
+            };
+        };
+    };
+    ApplicationsController_unarchive: {
         parameters: {
             query?: never;
             header?: never;
@@ -3109,6 +3401,14 @@ export interface operations {
                 limit: number;
                 /** @description Only drivers with this status. Omit for all. */
                 status?: "onboarding" | "active" | "inactive";
+                /**
+                 * @description `false` leaves out drivers still in `onboarding`: the Drivers page lists only active and inactive drivers, those
+                 *     in onboarding are on the Approved applications page (D80). Omitted or `true`: every status, which is what the
+                 *     payment pickers need (a deposit arrives while the driver is still in onboarding).
+                 */
+                onboarding?: boolean;
+                /** @description `true` = only archived, otherwise only not archived. */
+                archived?: boolean;
                 /** @description First day to include, e.g. `2026-10-01`. */
                 from?: string;
                 /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
@@ -3226,6 +3526,48 @@ export interface operations {
         };
     };
     DriversController_deactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDto"];
+                };
+            };
+        };
+    };
+    DriversController_unarchive: {
         parameters: {
             query?: never;
             header?: never;

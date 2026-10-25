@@ -126,6 +126,33 @@ export function useReactivateDriver(id: string) {
   );
 }
 
+/**
+ * Archives (`archived: true`) or unarchives a driver (D80). Takes the id with the choice, so the lists can use it for any
+ * row. On success the detail cache and every drivers list are refreshed; the API refuses (409) a driver still in
+ * onboarding, whose approved application is archived instead.
+ */
+export function useSetDriverArchived() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id: string; archived: boolean }) => {
+      const path = { params: { path: { id: vars.id } } };
+      const { data, error, response } = vars.archived
+        ? await api.POST("/drivers/{id}/archive", path)
+        : await api.POST("/drivers/{id}/unarchive", path);
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `The request failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: (driver) => {
+      queryClient.setQueryData(queryKeys.drivers.detail(driver.id), driver);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
+    },
+  });
+}
+
 /** The kinds of payment alias (payment methods plus email and phone), from the generated types. */
 export type AliasType = DriverAlias["type"];
 

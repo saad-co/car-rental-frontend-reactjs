@@ -136,9 +136,9 @@ type TextKey = Exclude<keyof FormValues, "platforms">;
 
 /**
  * Adds an application by hand (B85, D68): one page with the questions of the gonzocar.com form, in its three
- * sections and with its rules, plus the documents. Saving also approves it (D79), which creates the driver and
- * sends the approval text: the same page serves "Add application" and, with `addDriver`, "Add driver" on the
- * Drivers page; only the wording and where it goes afterwards differ.
+ * sections and with its rules, plus the documents. Saving also approves it (D79) and sends the approval text; approving
+ * creates no driver (D80), so "Add application" ends approved and "Add driver" (`addDriver`, on the Drivers page) also
+ * starts onboarding, which creates the driver. Only the wording and where it goes afterwards differ.
  *
  * A problem shows right under its field as soon as the field has been visited (left, or changed for a list or a
  * button); Save marks everything not yet visited. Nothing is created until Save. The request id is made once when
@@ -209,14 +209,20 @@ export default function NewApplication({
       );
       return;
     }
-    create.mutate(toFormData(requestId, values, files), {
-      onSuccess: (result) =>
-        void navigate(
-          result.driverId
-            ? `/admin/drivers/${result.driverId}`
-            : `/admin/applications/${result.id}`,
-        ),
-    });
+    create.mutate(
+      {
+        body: toFormData(requestId, values, files),
+        startOnboarding: addDriver,
+      },
+      {
+        onSuccess: (result) =>
+          void navigate(
+            result.driverId
+              ? `/admin/drivers/${result.driverId}`
+              : `/admin/applications/${result.id}`,
+          ),
+      },
+    );
   };
 
   /** One file picker of the last section. */
