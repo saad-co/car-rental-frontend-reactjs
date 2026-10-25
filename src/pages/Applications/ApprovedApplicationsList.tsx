@@ -142,7 +142,7 @@ export default function ApprovedApplicationsList() {
               onClick={(event) => event.stopPropagation()}
               className="text-sm text-brand-500"
             >
-              Open driver
+              View details
             </Link>
           ) : (
             !application.archivedAt && (

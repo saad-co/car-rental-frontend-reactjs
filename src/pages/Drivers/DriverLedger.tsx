@@ -103,10 +103,16 @@ export default function DriverLedger() {
   return (
     <div className="space-y-6">
       <Link
-        to="/admin/drivers"
+        to={
+          driver.data.status === "onboarding"
+            ? "/admin/approved-applications"
+            : "/admin/drivers"
+        }
         className="inline-block text-sm text-gray-500 hover:text-gray-700"
       >
-        ← Back to drivers
+        {driver.data.status === "onboarding"
+          ? "← Back to approved applications"
+          : "← Back to drivers"}
       </Link>
 
       <LedgerHeader driver={driver.data} overview={overview.data} />
@@ -116,7 +122,12 @@ export default function DriverLedger() {
           {overview.error.message}
         </p>
       )}
-      {overview.data && <AgingTiles aging={overview.data.aging} />}
+      {overview.data && driver.data && (
+        <AgingTiles
+          aging={overview.data.aging}
+          deposit={driver.data.onboarding}
+        />
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button size="sm" onClick={() => openAdd("debit")}>

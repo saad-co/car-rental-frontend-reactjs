@@ -38,11 +38,12 @@ export default function LedgerHeader({
             to={`/admin/drivers/${driver.id}`}
             className="text-sm text-brand-500 hover:text-brand-600"
           >
-            View driver
+            View details
           </Link>
         </div>
         <p className="text-sm text-gray-500">
-          {formatUsPhone(driver.phone)} · Driver since{" "}
+          {formatUsPhone(driver.phone)} ·{" "}
+          {driver.status === "onboarding" ? "Onboarding since" : "Driver since"}{" "}
           {formatDateTime(driver.createdAt)}
         </p>
         <p className="text-sm text-gray-500">
