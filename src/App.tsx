@@ -3,6 +3,7 @@ import RequireAuth from "./components/auth/RequireAuth";
 import AppLayout from "./layout/AppLayout";
 import ApplicationDetail from "./pages/Applications/ApplicationDetail";
 import NewApplication from "./pages/Applications/NewApplication";
+import ApprovedApplicationsList from "./pages/Applications/ApprovedApplicationsList";
 import ApplicationsList from "./pages/Applications/ApplicationsList";
 import SignIn from "./pages/AuthPages/SignIn";
 import Home from "./pages/Dashboard/Home";
@@ -42,6 +43,10 @@ export default function App() {
             <Route path="applications" element={<ApplicationsList />} />
             <Route path="applications/new" element={<NewApplication />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
+            <Route
+              path="approved-applications"
+              element={<ApprovedApplicationsList />}
+            />
             <Route path="drivers" element={<DriversList />} />
             <Route path="drivers/new" element={<NewApplication addDriver />} />
             <Route path="drivers/:id" element={<DriverDetail />} />

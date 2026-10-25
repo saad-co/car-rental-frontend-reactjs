@@ -3,11 +3,10 @@ import { createPortal } from "react-dom";
 import { HorizontaLDots } from "../../icons";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
-/** One action in a row's menu: its label and the page it opens. */
-export interface RowAction {
-  label: string;
-  to: string;
-}
+/** One action in a row's menu: its label and either the page it opens (`to`) or what it does (`onClick`). */
+export type RowAction = { label: string } & (
+  { to: string } | { onClick: () => void }
+);
 
 /** Room the menu needs below the button before it opens upward instead (pixels). */
 const MENU_ROOM = 8 + 40 * 3;
@@ -111,9 +110,10 @@ export default function RowActionsMenu({
           >
             {actions.map((action) => (
               <DropdownItem
-                key={action.to}
-                tag="a"
-                to={action.to}
+                key={action.label}
+                tag={"to" in action ? "a" : "button"}
+                to={"to" in action ? action.to : undefined}
+                onClick={"onClick" in action ? action.onClick : undefined}
                 onItemClick={() => setPosition(null)}
                 baseClassName="block w-full rounded-lg px-3 py-2 text-start text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               >

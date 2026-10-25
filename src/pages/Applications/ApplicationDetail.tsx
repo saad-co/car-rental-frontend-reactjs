@@ -4,6 +4,9 @@ import {
   deleteResultMessage,
   useApplication,
   useApproveApplication,
+  useArchiveApplication,
+  useStartOnboarding,
+  useUnarchiveApplication,
   useDeleteApplications,
   useHoldApplication,
   useRejectApplication,
@@ -77,6 +80,7 @@ function FieldRows({
 /** Which review buttons make sense in each status. Approved is final, and cannot be deleted (API rules). */
 function availableActions(status: ApplicationDetailData["status"]) {
   return {
+    // "Start onboarding" (D80) is offered on an approved application that has no driver yet; the page checks that.
     approve: status !== "approved",
     hold: status === "pending" || status === "rejected",
     reject: status === "pending" || status === "on_hold",
@@ -106,7 +110,18 @@ export default function ApplicationDetail() {
   const reject = useRejectApplication();
   const hold = useHoldApplication();
   const remove = useDeleteApplications();
-  const mutations = [approve, reject, hold, remove];
+  const startOnboarding = useStartOnboarding();
+  const archive = useArchiveApplication();
+  const unarchive = useUnarchiveApplication();
+  const mutations = [
+    approve,
+    reject,
+    hold,
+    remove,
+    startOnboarding,
+    archive,
+    unarchive,
+  ];
   const busy = mutations.some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
 
@@ -195,13 +210,41 @@ export default function ApplicationDetail() {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>
-            <ApplicationStatusBadge status={application.status} />
+            <ApplicationStatusBadge
+              status={application.status}
+              archivedAt={application.archivedAt}
+            />
           </div>
           <p className="text-sm text-gray-500">
             Submitted {formatDateTime(application.submittedAt)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {application.archivedAt ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => {
+                mutations.forEach((m) => m.reset());
+                unarchive.mutate(id);
+              }}
+            >
+              {unarchive.isPending ? "Unarchiving..." : "Unarchive"}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => {
+                mutations.forEach((m) => m.reset());
+                archive.mutate(id);
+              }}
+            >
+              {archive.isPending ? "Archiving..." : "Archive"}
+            </Button>
+          )}
           {actions.delete && (
             <Button
               variant="outline"
@@ -242,6 +285,24 @@ export default function ApplicationDetail() {
               {approve.isPending ? "Approving..." : "Approve"}
             </Button>
           )}
+          {application.status === "approved" &&
+            !application.driverId &&
+            !application.archivedAt && (
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() => {
+                  mutations.forEach((m) => m.reset());
+                  startOnboarding.mutate(id, {
+                    // The driver now exists: go to their page, where the contract, deposit and vehicle are done.
+                    onSuccess: (started) =>
+                      void navigate(`/admin/drivers/${started.driverId}`),
+                  });
+                }}
+              >
+                {startOnboarding.isPending ? "Starting..." : "Start onboarding"}
+              </Button>
+            )}
         </div>
       </div>
 
@@ -251,6 +312,17 @@ export default function ApplicationDetail() {
           className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-600"
         >
           {actionError.message}
+        </p>
+      )}
+
+      {application.archivedAt && (
+        <p
+          role="status"
+          className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
+        >
+          This application is archived on{" "}
+          {formatDateTime(application.archivedAt)}. It is hidden from the lists;
+          Unarchive brings it back.
         </p>
       )}
 
@@ -285,10 +357,10 @@ export default function ApplicationDetail() {
             run(approve, message);
           }}
         >
-          This creates a driver with {application.email} and phone{" "}
-          {application.phone}, and sends two texts from the business number: the
-          text below, then their login (email and a temporary password). An
-          approved application cannot be changed.
+          This marks the application approved and sends the text below from the
+          business number to {application.phone}. No driver is created yet:
+          press Start onboarding when {application.firstName} wants to go ahead.
+          An approved application cannot be changed.
         </ReviewTextDialog>
       )}
 
@@ -344,12 +416,23 @@ export default function ApplicationDetail() {
                   <ApplicationStatusBadge
                     key="status"
                     status={application.status}
+                    archivedAt={application.archivedAt}
                   />,
                 ],
                 ["Last reviewed", formatDateTime(application.reviewedAt)],
                 [
                   "Driver",
-                  application.driverId ? "Created on approval" : "Not created",
+                  application.driverId ? (
+                    <Link
+                      key="driver"
+                      to={`/admin/drivers/${application.driverId}`}
+                      className="text-brand-500"
+                    >
+                      Onboarding started: open driver
+                    </Link>
+                  ) : (
+                    "Not created (onboarding not started)"
+                  ),
                 ],
               ]}
             />

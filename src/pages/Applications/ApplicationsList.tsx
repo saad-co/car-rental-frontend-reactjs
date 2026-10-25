@@ -3,13 +3,19 @@ import { Link, useLocation, useNavigate } from "react-router";
 import {
   deleteResultMessage,
   useApplications,
+  useArchiveApplication,
   useDeleteApplications,
+  useUnarchiveApplication,
   type ApplicationListItem,
   type ApplicationStatus,
 } from "../../api/applications.queries";
 import ApplicationStatusBadge from "../../components/applications/ApplicationStatusBadge";
 import { APPLICATION_STATUS } from "../../components/applications/applicationStatus";
 import DataTable, { type Column } from "../../components/tables/DataTable";
+import {
+  ARCHIVED_FILTER,
+  archivedFilterGroup,
+} from "../../components/tables/archivedFilter";
 import TableCard from "../../components/tables/TableCard";
 import {
   LIST_PAGE_SIZE,
@@ -46,6 +52,9 @@ const isDeletable = (application: ApplicationListItem) =>
  * Admin list of driver applications, newest first, built on the shared table components (B75): search, a Status
  * filter, 8 rows per page. The view lives in the URL (`?q=pat&status=pending&page=2`).
  *
+ * Archived applications are hidden; the Show filter ("Archived only") lists them (D80). Each row has Archive or
+ * Unarchive, which is not a delete: archived ones keep their documents and texts. Delete stays separate.
+ *
  * Rows can be ticked and deleted together, or one by one with the trash icon (B66). Approved applications can be
  * neither: the API refuses to delete them. The selection holds only rows of the page on screen and is cleared
  * whenever the view changes (search, filter, page, back button), so nothing out of sight is ever deleted.
@@ -53,12 +62,14 @@ const isDeletable = (application: ApplicationListItem) =>
 export default function ApplicationsList() {
   const navigate = useNavigate();
   const location = useLocation();
-  const view = useListParams({ status: STATUSES });
+  const view = useListParams({ status: STATUSES, ...ARCHIVED_FILTER });
   const status = view.filters.status as ApplicationStatus | undefined;
+  const archivedOnly = view.filters.show === "archived";
 
   const { data, isPending, isError, error, isPlaceholderData } =
     useApplications({
       status,
+      archived: archivedOnly || undefined,
       search: view.search || undefined,
       from: view.from,
       to: view.to,
@@ -69,7 +80,7 @@ export default function ApplicationsList() {
   /** Ids of the ticked rows. */
   const [selected, setSelected] = useState<Set<string>>(new Set());
   /** The view the selection belongs to; when the view changes, the selection is dropped. */
-  const viewKey = `${view.search}|${status ?? ""}|${view.from ?? ""}|${view.to ?? ""}|${view.page}`;
+  const viewKey = `${view.search}|${status ?? ""}|${archivedOnly}|${view.from ?? ""}|${view.to ?? ""}|${view.page}`;
   const [selectionView, setSelectionView] = useState(viewKey);
   if (viewKey !== selectionView) {
     setSelectionView(viewKey);
@@ -83,6 +94,11 @@ export default function ApplicationsList() {
     (location.state as ApplicationsListState | null)?.deletedNotice ?? null,
   );
   const deleteApplications = useDeleteApplications();
+  const archive = useArchiveApplication();
+  const unarchive = useUnarchiveApplication();
+  const archiveBusy = archive.isPending || unarchive.isPending;
+  /** Why the last archive or unarchive was refused (e.g. the applicant is already a driver), shown above the table. */
+  const archiveError = archive.error ?? unarchive.error;
 
   const runDelete = () => {
     if (!toDelete) return;
@@ -136,7 +152,9 @@ export default function ApplicationsList() {
     {
       key: "status",
       header: "Status",
-      render: (a) => <ApplicationStatusBadge status={a.status} />,
+      render: (a) => (
+        <ApplicationStatusBadge status={a.status} archivedAt={a.archivedAt} />
+      ),
     },
     {
       key: "received",
@@ -148,22 +166,41 @@ export default function ApplicationsList() {
       header: "Action",
       align: "center",
       className: "w-px",
-      render: (application) =>
-        isDeletable(application) && (
+      render: (application) => (
+        <div className="flex items-center justify-center gap-4">
           <button
             type="button"
-            aria-label={`Delete ${application.firstName} ${application.lastName}`}
-            title="Delete"
-            disabled={deleteApplications.isPending}
+            aria-label={`${application.archivedAt ? "Unarchive" : "Archive"} ${application.firstName} ${application.lastName}`}
+            disabled={archiveBusy}
             onClick={(event) => {
               event.stopPropagation(); // not also open the row
-              setToDelete([application]);
+              archive.reset();
+              unarchive.reset();
+              (application.archivedAt ? unarchive : archive).mutate(
+                application.id,
+              );
             }}
-            className="text-gray-700 hover:text-error-500 disabled:opacity-50"
+            className="text-sm text-gray-700 hover:text-brand-500 disabled:opacity-50"
           >
-            <TrashBinIcon />
+            {application.archivedAt ? "Unarchive" : "Archive"}
           </button>
-        ),
+          {isDeletable(application) && (
+            <button
+              type="button"
+              aria-label={`Delete ${application.firstName} ${application.lastName}`}
+              title="Delete"
+              disabled={deleteApplications.isPending}
+              onClick={(event) => {
+                event.stopPropagation(); // not also open the row
+                setToDelete([application]);
+              }}
+              className="text-gray-700 hover:text-error-500 disabled:opacity-50"
+            >
+              <TrashBinIcon />
+            </button>
+          )}
+        </div>
+      ),
     },
   ];
 
@@ -187,6 +224,15 @@ export default function ApplicationsList() {
           className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-600"
         >
           {deleteApplications.error.message}
+        </p>
+      )}
+
+      {archiveError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-600"
+        >
+          {archiveError.message}
         </p>
       )}
 
@@ -222,8 +268,10 @@ export default function ApplicationsList() {
               options: STATUS_OPTIONS,
               value: status,
             },
+            archivedFilterGroup(view.filters.show),
           ],
-          onApply: (values) => view.setFilters({ status: values.status }),
+          onApply: (values) =>
+            view.setFilters({ status: values.status, show: values.show }),
         }}
         dateRange={{
           label: "Received",
@@ -258,7 +306,7 @@ export default function ApplicationsList() {
         error={isError ? error : null}
         isEmpty={data?.items.length === 0}
         emptyText={
-          view.search || status || view.from || view.to
+          view.search || status || archivedOnly || view.from || view.to
             ? "No applications match this search or filter."
             : "No applications."
         }

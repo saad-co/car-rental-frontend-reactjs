@@ -20,6 +20,10 @@ export const queryClient = new QueryClient({
 export type ApplicationsListParams =
   paths["/applications"]["get"]["parameters"]["query"];
 
+/** Query string of `GET /applications/approved` (search, dates, archived, page, limit), from the generated types. */
+export type ApprovedApplicationsListParams =
+  paths["/applications/approved"]["get"]["parameters"]["query"];
+
 /** Query string of `GET /drivers` (status filter, page, limit), from the generated types. */
 export type DriversListParams = paths["/drivers"]["get"]["parameters"]["query"];
 
@@ -52,6 +56,10 @@ export const queryKeys = {
     lists: ["applications", "list"] as const,
     list: (params: ApplicationsListParams) =>
       ["applications", "list", params] as const,
+    /** Prefix of every Approved applications list (D80), whatever its filter and page. */
+    approvedLists: ["applications", "approved"] as const,
+    approved: (params: ApprovedApplicationsListParams) =>
+      ["applications", "approved", params] as const,
     detail: (id: string) => ["applications", "detail", id] as const,
     /** The uploaded documents of one application (our copies). */
     documents: (id: string) => ["applications", "documents", id] as const,

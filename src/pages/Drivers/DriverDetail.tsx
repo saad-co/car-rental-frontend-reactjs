@@ -8,6 +8,7 @@ import {
   useDeactivateDriver,
   useDriver,
   useReactivateDriver,
+  useSetDriverArchived,
   useSetOnboardingStep,
   type Driver,
   type OnboardingStep,
@@ -213,7 +214,8 @@ export default function DriverDetail() {
   const setStep = useSetOnboardingStep(id);
   const deactivate = useDeactivateDriver(id);
   const reactivate = useReactivateDriver(id);
-  const mutations = [setStep, deactivate, reactivate];
+  const setArchived = useSetDriverArchived();
+  const mutations = [setStep, deactivate, reactivate, setArchived];
   const busy = mutations.some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
 
@@ -282,6 +284,30 @@ export default function DriverDetail() {
           >
             View ledger
           </Link>
+          {/* A driver still in onboarding is archived through their approved application (the API refuses it here). */}
+          {driver.status !== "onboarding" && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() =>
+                run(() =>
+                  setArchived.mutate({
+                    id: driver.id,
+                    archived: !driver.archivedAt,
+                  }),
+                )
+              }
+            >
+              {driver.archivedAt
+                ? setArchived.isPending
+                  ? "Unarchiving..."
+                  : "Unarchive"
+                : setArchived.isPending
+                  ? "Archiving..."
+                  : "Archive"}
+            </Button>
+          )}
           {driver.status === "inactive" ? (
             <Button
               size="sm"
@@ -302,6 +328,17 @@ export default function DriverDetail() {
           )}
         </div>
       </div>
+
+      {driver.archivedAt && (
+        <p
+          role="status"
+          className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
+        >
+          This driver is archived on {formatDateTime(driver.archivedAt)}. They
+          are hidden from the Drivers list and are not billed or reminded;
+          Unarchive brings them back.
+        </p>
+      )}
 
       {actionError && (
         <p

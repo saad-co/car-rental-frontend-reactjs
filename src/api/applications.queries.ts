@@ -9,7 +9,11 @@ import {
 } from "@tanstack/react-query";
 import { api } from "./client";
 import { apiErrorMessage } from "./errors";
-import { queryKeys, type ApplicationsListParams } from "./queryClient";
+import {
+  queryKeys,
+  type ApplicationsListParams,
+  type ApprovedApplicationsListParams,
+} from "./queryClient";
 import type { components } from "./schema";
 
 /** One row of the applications list, exactly as the API returns it. */
@@ -55,6 +59,39 @@ const applicationsListOptions = (params: ApplicationsListParams) =>
 /** One page of applications, newest first, optionally filtered by status. */
 export function useApplications(params: ApplicationsListParams) {
   return useQuery(applicationsListOptions(params));
+}
+
+/** One row of the Approved applications page (D80): the application and, once onboarding started, its driver. */
+export type ApprovedApplicationItem =
+  components["schemas"]["ApprovedApplicationItemDto"];
+
+/** Definition of the Approved applications list query. */
+const approvedApplicationsOptions = (params: ApprovedApplicationsListParams) =>
+  queryOptions({
+    queryKey: queryKeys.applications.approved(params),
+    queryFn: async () => {
+      const { data, error, response } = await api.GET(
+        "/applications/approved",
+        { params: { query: params } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Loading approved applications failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    placeholderData: keepPreviousData,
+  });
+
+/** One page of approved applications whose onboarding is not finished (D80), newest first. */
+export function useApprovedApplications(
+  params: ApprovedApplicationsListParams,
+) {
+  return useQuery(approvedApplicationsOptions(params));
 }
 
 /** Definition of the application detail query. */
@@ -115,10 +152,10 @@ type ReviewAction = keyof typeof reviewRequests;
  *
  * On success:
  * - the detail cache is replaced with the response, so the page updates without a refetch;
- * - every applications list is marked stale (by the `lists` key prefix) and refetches,
- *   because the application's status changed;
- * - the chats refetch, because approve and decline may have sent texts;
- * - after an approval, driver queries are marked stale too: a new driver exists.
+ * - every applications list, and the Approved applications list, is marked stale (by the key prefixes) and
+ *   refetches, because the application's status changed;
+ * - the chats refetch, because approve and decline may have sent texts.
+ * An approval creates no driver (D80), so the driver queries are left alone.
  */
 function useReviewApplication(action: ReviewAction) {
   const queryClient = useQueryClient();
@@ -140,16 +177,16 @@ function useReviewApplication(action: ReviewAction) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.applications.lists,
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.approvedLists,
+      });
       // Approve and decline may have texted the applicant (B71, B72): the chat on the page shows it right away.
       void queryClient.invalidateQueries({ queryKey: queryKeys.sms.all });
-      if (action === "approve") {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
-      }
     },
   });
 }
 
-/** Approves an application; the API creates the driver. */
+/** Approves an application (a status and the approval text only; no driver is created, D80). */
 export function useApproveApplication() {
   return useReviewApplication("approve");
 }
@@ -162,6 +199,68 @@ export function useRejectApplication() {
 /** Puts an application on hold. */
 export function useHoldApplication() {
   return useReviewApplication("hold");
+}
+
+/**
+ * Shared logic of the mutations that change one application and answer with it: the detail cache is replaced with the
+ * response, and every applications list, the Approved applications list and the drivers lists refetch (an onboarding
+ * driver is archived or created along with its application).
+ */
+function useApplicationMutation(
+  request: (id: string) => Promise<{
+    data?: ApplicationDetail;
+    error?: unknown;
+    response: Response;
+  }>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error, response } = await request(id);
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `The request failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: (application) => {
+      queryClient.setQueryData(
+        queryKeys.applications.detail(application.id),
+        application,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.lists,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.approvedLists,
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
+    },
+  });
+}
+
+/** "Start onboarding" on an approved application (D80): creates the driver in onboarding. Takes the application id. */
+export function useStartOnboarding() {
+  return useApplicationMutation((id) =>
+    api.POST("/applications/{id}/start-onboarding", {
+      params: { path: { id } },
+    }),
+  );
+}
+
+/** Archives an application (hidden from the normal list; an onboarding driver goes with it). Takes its id. */
+export function useArchiveApplication() {
+  return useApplicationMutation((id) =>
+    api.POST("/applications/{id}/archive", { params: { path: { id } } }),
+  );
+}
+
+/** Brings an archived application back. Takes its id. */
+export function useUnarchiveApplication() {
+  return useApplicationMutation((id) =>
+    api.POST("/applications/{id}/unarchive", { params: { path: { id } } }),
+  );
 }
 
 /** What a delete removed: `{ deleted, filesNotRemoved }`. */
@@ -367,8 +466,9 @@ export type ManualApplicationCreated =
  * over with a cast; the client sends a `FormData` as it is and the browser sets the multipart boundary itself. (It
  * must be passed as `body`: with `body` left out the client sends nothing at all.)
  *
- * The application is approved straight away (D79), so the answer carries the new driver's id and the drivers lists
- * are refreshed too. If approval fails after saving, the error says the application was saved; sending the same
+ * The application is approved straight away (D79). Approving creates no driver (D80): with `startOnboarding` ("Add
+ * driver") the driver is created too and the answer carries its id; without it ("Add application") `driverId` is null.
+ * The drivers lists are refreshed too. If approval fails after saving, the error says the application was saved; sending the same
  * `request_id` again retries the approval.
  *
  * The same `request_id` sent twice makes one application (`created: false` the second time), so a double click or a
@@ -377,9 +477,10 @@ export type ManualApplicationCreated =
 export function useCreateApplication() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: FormData) => {
+    mutationFn: async (vars: { body: FormData; startOnboarding: boolean }) => {
       const { data, error, response } = await api.POST("/applications/manual", {
-        body: body as never,
+        params: { query: { startOnboarding: vars.startOnboarding } },
+        body: vars.body as never,
       });
       if (!data) {
         throw new Error(
@@ -394,6 +495,9 @@ export function useCreateApplication() {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.applications.lists,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.approvedLists,
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
     },
