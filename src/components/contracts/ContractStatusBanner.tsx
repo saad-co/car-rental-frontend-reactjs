@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import type { ContractDraft } from "../../api/contracts.queries";
-import { formatDateTime } from "../../utils";
+import { formatCents, formatDateTime } from "../../utils";
 import ContractDocumentLinks from "./ContractDocumentLinks";
+import { FILE_LINK_BUTTON } from "./contractStatus";
 
 /** A coloured notice, as used on the contract page. */
 function Notice({
@@ -30,7 +32,8 @@ function Notice({
 
 /**
  * Where a sent contract is (step 4, D75), one banner per status: sent, opened by the driver, signed (with the signed
- * contract and certificate, or the reason they are not saved yet), declined, expired, cancelled. Each carries its date.
+ * contract and certificate, or the reason they are not saved yet, and what went on the driver's ledger, step 5, D83),
+ * declined, expired, cancelled. Each carries its date.
  */
 export default function ContractStatusBanner({
   contract,
@@ -77,6 +80,27 @@ export default function ContractStatusBanner({
             <p role="alert">Reason: {contract.documentsError}</p>
           )}
           <ContractDocumentLinks contract={contract} />
+          {/* Signing puts the pickup charges and the first rent on the driver's ledger (step 5, D83). */}
+          <p>
+            The pickup charges (
+            {formatCents(contract.numbers.amountDueAtPickupCents)}) were added
+            to the driver&apos;s ledger.
+          </p>
+          <Link
+            to={`/admin/drivers/${contract.driverId}/ledger`}
+            className={FILE_LINK_BUTTON}
+          >
+            View ledger
+          </Link>
+          {contract.notPostedAutomatically.length > 0 && (
+            <p
+              role="note"
+              className="rounded-lg border border-warning-200 bg-warning-50 px-3 py-2 text-warning-700"
+            >
+              Not posted automatically yet:{" "}
+              {contract.notPostedAutomatically.join(", ")}.
+            </p>
+          )}
         </Notice>
       );
     case "declined":

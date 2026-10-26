@@ -4,7 +4,7 @@ import type { BadgeColor } from "../ui/badge/Badge";
 
 /**
  * The short type shown in the history: a manual entry is a "Charge" or a "Credit" (its reason says what for, D61);
- * the others say what made them.
+ * the others say what made them (rent, or a charge from a signed contract such as the security deposit, D83).
  */
 export function entryTypeLabel(
   entry: Pick<LedgerEntry, "kind" | "direction">,
@@ -18,6 +18,8 @@ export function entryTypeLabel(
       return "Reversal";
     case "rent":
       return "Rent";
+    case "contract_charge":
+      return "Contract charge";
     default:
       return entry.kind;
   }

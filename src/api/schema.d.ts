@@ -966,103 +966,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inbound-emails": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /inbound-emails`: one page of processed emails with their outcome, newest first. */
-        get: operations["InboundEmailsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /payments`: one page of payments, most recent first. `?match=review` lists "Needs review". */
-        get: operations["PaymentsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payments/manual": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * `POST /payments/manual`: records a payment an admin received by hand (cash, check, card, or any method) and
-         *     credits the driver's ledger. `201` the payment (also when the same `requestKey` is sent again); `400` bad
-         *     amount or date, unknown driver; `409` a possible duplicate (body has `code: "possible_duplicate"` and the
-         *     payment found; send `confirmDuplicate: true` to record anyway), the key reused, or the reference used before.
-         */
-        post: operations["PaymentsController_recordManual"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payments/{id}/void": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * `POST /payments/:id/void`: voids a payment recorded by hand and reverses its ledger credit. `201` the payment;
-         *     `404` unknown payment; `409` not a manual payment, or already voided.
-         */
-        post: operations["PaymentsController_voidManual"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payments/{id}/assign": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * `POST /payments/:id/assign`: assigns or re-assigns a payment to a driver and saves the payer's name as
-         *     that driver's alias (unless another driver already owns it, which the answer reports).
-         *     `404` unknown payment, `400` unknown driver, `409` a rejected or discrepancy payment.
-         */
-        post: operations["PaymentsController_assign"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/drivers/{id}/ledger": {
         parameters: {
             query?: never;
@@ -1181,6 +1084,103 @@ export interface paths {
          *     still has credits applied.
          */
         post: operations["LedgerController_reverse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbound-emails": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /inbound-emails`: one page of processed emails with their outcome, newest first. */
+        get: operations["InboundEmailsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /payments`: one page of payments, most recent first. `?match=review` lists "Needs review". */
+        get: operations["PaymentsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /payments/manual`: records a payment an admin received by hand (cash, check, card, or any method) and
+         *     credits the driver's ledger. `201` the payment (also when the same `requestKey` is sent again); `400` bad
+         *     amount or date, unknown driver; `409` a possible duplicate (body has `code: "possible_duplicate"` and the
+         *     payment found; send `confirmDuplicate: true` to record anyway), the key reused, or the reference used before.
+         */
+        post: operations["PaymentsController_recordManual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /payments/:id/void`: voids a payment recorded by hand and reverses its ledger credit. `201` the payment;
+         *     `404` unknown payment; `409` not a manual payment, or already voided.
+         */
+        post: operations["PaymentsController_voidManual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /payments/:id/assign`: assigns or re-assigns a payment to a driver and saves the payer's name as
+         *     that driver's alias (unless another driver already owns it, which the answer reports).
+         *     `404` unknown payment, `400` unknown driver, `409` a rejected or discrepancy payment.
+         */
+        post: operations["PaymentsController_assign"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1759,6 +1759,11 @@ export interface components {
             numbers: components["schemas"]["ContractNumbersDto"];
             /** @description True once the signed PDF and the certificate are in our storage (open them with `GET /contracts/:id/documents`). */
             documentsSaved: boolean;
+            /**
+             * @description The recurring lines of this contract that are not posted to the ledger by themselves (excess mileage, insurance excess,
+             *     other recurring), only the ones with an amount, so the admin sees what is left to charge by hand (D83). Empty when none.
+             */
+            notPostedAutomatically: string[];
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1960,168 +1965,23 @@ export interface components {
             reason?: "contract_ended" | "bad_driver" | "cooperative_returned_car";
         };
         /** @enum {string} */
-        InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
-        InboundEmailDto: {
-            provider: components["schemas"]["InboundEmailProvider"];
-            id: string;
-            /**
-             * Format: date-time
-             * @description When our mail server received it.
-             */
-            receivedAt: string;
-            fromAddress: string | null;
-            subject: string;
-            /** @enum {string} */
-            status: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
-            /** @description Why it was rejected or failed (always set for those statuses). */
-            statusReason: string | null;
-            /** @description True only when DKIM passed for the provider's own domain. */
-            authDkimPass: boolean;
-            /** @description The signing domain that passed, e.g. `venmo.com`. */
-            authDkimDomain: string | null;
-            /** @description The message's UID in the mailbox (for finding it in Gmail by hand if needed). */
-            imapUid: number;
-            /** @description The payment this email created, if any. */
-            paymentId: string | null;
-        };
-        InboundEmailListDto: {
-            items: components["schemas"]["InboundEmailDto"][];
-            /** @description Number of emails matching the filters, across all pages. */
-            total: number;
-            page: number;
-            limit: number;
-        };
-        /**
-         * @description For a payment an admin recorded by hand: how it was paid (cash, check, ...). Null for every other source.
-         * @enum {string}
-         */
-        PaymentManualMethod: "zelle" | "cash_app" | "venmo" | "stripe" | "chime" | "cash" | "check" | "card" | "money_order" | "other";
-        PaymentDriverDto: {
-            id: string;
-            firstName: string;
-            lastName: string;
-        };
-        PaymentDto: {
-            /** @description For a payment an admin recorded by hand: how it was paid (cash, check, ...). Null for every other source. */
-            manualMethod: components["schemas"]["PaymentManualMethod"] | null;
-            id: string;
-            /** @enum {string} */
-            source: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
-            /** @enum {string} */
-            status: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
-            /** @description For a payment an admin recorded by hand: the text they gave for the driver's statement. */
-            description: string | null;
-            /** @description For a payment an admin recorded by hand: their staff-only note. */
-            internalNote: string | null;
-            /** @description Integer cents. The frontend formats it; never a float. */
-            amountCents: number;
-            /** @description The payer's name exactly as the provider wrote it. */
-            senderName: string;
-            senderHandle: string | null;
-            /** @description The provider's transaction id, when the email showed one. */
-            transactionId: string | null;
-            /**
-             * Format: date-time
-             * @description When the payment happened (exact time from the email, or when the email arrived).
-             */
-            occurredAt: string;
-            /** @description How sure the AI was about what it read from the email, 0 to 1. Null for sources without AI. */
-            extractionConfidence: number | null;
-            /** @description The record it came from; for email sources, the id of the inbound email. */
-            externalId: string;
-            /** @description The driver it is assigned to. Null while unmatched. */
-            driver: components["schemas"]["PaymentDriverDto"] | null;
-            /** @description The AI's best guess when it was not sure enough: "Needs review". */
-            suggestedDriver: components["schemas"]["PaymentDriverDto"] | null;
-            /**
-             * @description How it was assigned: alias, exact name, AI or by an admin.
-             * @enum {string|null}
-             */
-            matchMethod: "alias" | "name" | "ai" | "manual" | null;
-            /** @description 1 for alias and name, the AI's confidence for AI matches and suggestions, null for manual. */
-            matchConfidence: number | null;
-            /** @description One line on why (the alias, the AI's reason, or why matching failed). */
-            matchExplanation: string | null;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        PaymentListDto: {
-            items: components["schemas"]["PaymentDto"][];
-            /** @description Number of payments matching the filters, across all pages. */
-            total: number;
-            page: number;
-            limit: number;
-        };
-        RecordPaymentDto: {
-            /** @description How it was paid. Zelle, Cash App, Venmo, Stripe and Chime payments normally arrive by email by themselves. */
-            method: components["schemas"]["PaymentManualMethod"];
-            /**
-             * Format: uuid
-             * @description The driver who paid.
-             */
-            driverId: string;
-            /** @description Whole cents, 1 to 1,000,000 ($10,000). */
-            amountCents: number;
-            /** @description The day it was paid, `YYYY-MM-DD` in Chicago: today or up to 90 days back. */
-            paidOn: string;
-            /**
-             * @description A receipt number, check number or confirmation code, if there is one. Two manual payments cannot share the same
-             *     reference (a check recorded twice is refused).
-             */
-            reference?: string;
-            /**
-             * Format: uuid
-             * @description A UUID the form makes once per payment. Sending the same request again (a double click, a retry) returns the
-             *     payment already recorded instead of recording a second one.
-             */
-            requestKey: string;
-            /**
-             * @description Set to true to record it although the driver already has a confirmed payment of the same amount within three
-             *     days (the answer to the "possible duplicate" warning).
-             */
-            confirmDuplicate?: boolean;
-            /**
-             * @description The text for the driver's statement. Empty: the ledger writes its own ("Cash payment · ref 17"). Up to 500
-             *     characters.
-             */
-            description?: string;
-            /** @description A note for staff only (optional, up to 500 characters). Typed once; copied to the ledger credit; never on a statement. */
-            internalNote?: string;
-        };
-        VoidPaymentDto: {
-            /** @description Why the payment is voided, e.g. "Check bounced". 1 to 400 characters after trimming. */
-            reason: string;
-        };
-        AssignPaymentDto: {
-            /**
-             * Format: uuid
-             * @description The driver the payment belongs to.
-             */
-            driverId: string;
-        };
-        AssignPaymentResultDto: {
-            payment: components["schemas"]["PaymentDto"];
-            /** @description True if the payer's name was saved as a new alias of the driver. */
-            aliasSaved: boolean;
-            /**
-             * @description The driver who already owns the payer's name as an alias, if it is someone else: that alias is NOT
-             *     moved (one alias, one driver); the admin decides.
-             */
-            aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
-        };
-        /** @enum {string} */
         LedgerTypeFilter: "charges" | "credits" | "payments" | "reversals";
         /** @enum {string} */
         LedgerOrder: "asc" | "desc";
         /** @enum {string} */
         LedgerDirection: "debit" | "credit";
         /** @enum {string} */
-        LedgerEntryKind: "rent" | "payment" | "adjustment" | "reversal";
+        LedgerEntryKind: "rent" | "payment" | "adjustment" | "reversal" | "contract_charge";
         /**
          * @description For a payment row: where the payment came from.
          * @enum {string}
          */
         PaymentSource: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+        /**
+         * @description For a payment row recorded by hand: how it was paid.
+         * @enum {string}
+         */
+        PaymentManualMethod: "zelle" | "cash_app" | "venmo" | "stripe" | "chime" | "cash" | "check" | "card" | "money_order" | "other";
         LedgerRowDto: {
             direction: components["schemas"]["LedgerDirection"];
             kind: components["schemas"]["LedgerEntryKind"];
@@ -2362,6 +2222,151 @@ export interface components {
         ReverseLedgerEntryDto: {
             /** @description Why the entry is cancelled, e.g. "Late fee waived by the owner". 1 to 400 characters after trimming. */
             reason: string;
+        };
+        /** @enum {string} */
+        InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
+        InboundEmailDto: {
+            provider: components["schemas"]["InboundEmailProvider"];
+            id: string;
+            /**
+             * Format: date-time
+             * @description When our mail server received it.
+             */
+            receivedAt: string;
+            fromAddress: string | null;
+            subject: string;
+            /** @enum {string} */
+            status: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+            /** @description Why it was rejected or failed (always set for those statuses). */
+            statusReason: string | null;
+            /** @description True only when DKIM passed for the provider's own domain. */
+            authDkimPass: boolean;
+            /** @description The signing domain that passed, e.g. `venmo.com`. */
+            authDkimDomain: string | null;
+            /** @description The message's UID in the mailbox (for finding it in Gmail by hand if needed). */
+            imapUid: number;
+            /** @description The payment this email created, if any. */
+            paymentId: string | null;
+        };
+        InboundEmailListDto: {
+            items: components["schemas"]["InboundEmailDto"][];
+            /** @description Number of emails matching the filters, across all pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        PaymentDriverDto: {
+            id: string;
+            firstName: string;
+            lastName: string;
+        };
+        PaymentDto: {
+            /** @description For a payment an admin recorded by hand: how it was paid (cash, check, ...). Null for every other source. */
+            manualMethod: components["schemas"]["PaymentManualMethod"] | null;
+            id: string;
+            /** @enum {string} */
+            source: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+            /** @enum {string} */
+            status: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
+            /** @description For a payment an admin recorded by hand: the text they gave for the driver's statement. */
+            description: string | null;
+            /** @description For a payment an admin recorded by hand: their staff-only note. */
+            internalNote: string | null;
+            /** @description Integer cents. The frontend formats it; never a float. */
+            amountCents: number;
+            /** @description The payer's name exactly as the provider wrote it. */
+            senderName: string;
+            senderHandle: string | null;
+            /** @description The provider's transaction id, when the email showed one. */
+            transactionId: string | null;
+            /**
+             * Format: date-time
+             * @description When the payment happened (exact time from the email, or when the email arrived).
+             */
+            occurredAt: string;
+            /** @description How sure the AI was about what it read from the email, 0 to 1. Null for sources without AI. */
+            extractionConfidence: number | null;
+            /** @description The record it came from; for email sources, the id of the inbound email. */
+            externalId: string;
+            /** @description The driver it is assigned to. Null while unmatched. */
+            driver: components["schemas"]["PaymentDriverDto"] | null;
+            /** @description The AI's best guess when it was not sure enough: "Needs review". */
+            suggestedDriver: components["schemas"]["PaymentDriverDto"] | null;
+            /**
+             * @description How it was assigned: alias, exact name, AI or by an admin.
+             * @enum {string|null}
+             */
+            matchMethod: "alias" | "name" | "ai" | "manual" | null;
+            /** @description 1 for alias and name, the AI's confidence for AI matches and suggestions, null for manual. */
+            matchConfidence: number | null;
+            /** @description One line on why (the alias, the AI's reason, or why matching failed). */
+            matchExplanation: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PaymentListDto: {
+            items: components["schemas"]["PaymentDto"][];
+            /** @description Number of payments matching the filters, across all pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        RecordPaymentDto: {
+            /** @description How it was paid. Zelle, Cash App, Venmo, Stripe and Chime payments normally arrive by email by themselves. */
+            method: components["schemas"]["PaymentManualMethod"];
+            /**
+             * Format: uuid
+             * @description The driver who paid.
+             */
+            driverId: string;
+            /** @description Whole cents, 1 to 1,000,000 ($10,000). */
+            amountCents: number;
+            /** @description The day it was paid, `YYYY-MM-DD` in Chicago: today or up to 90 days back. */
+            paidOn: string;
+            /**
+             * @description A receipt number, check number or confirmation code, if there is one. Two manual payments cannot share the same
+             *     reference (a check recorded twice is refused).
+             */
+            reference?: string;
+            /**
+             * Format: uuid
+             * @description A UUID the form makes once per payment. Sending the same request again (a double click, a retry) returns the
+             *     payment already recorded instead of recording a second one.
+             */
+            requestKey: string;
+            /**
+             * @description Set to true to record it although the driver already has a confirmed payment of the same amount within three
+             *     days (the answer to the "possible duplicate" warning).
+             */
+            confirmDuplicate?: boolean;
+            /**
+             * @description The text for the driver's statement. Empty: the ledger writes its own ("Cash payment · ref 17"). Up to 500
+             *     characters.
+             */
+            description?: string;
+            /** @description A note for staff only (optional, up to 500 characters). Typed once; copied to the ledger credit; never on a statement. */
+            internalNote?: string;
+        };
+        VoidPaymentDto: {
+            /** @description Why the payment is voided, e.g. "Check bounced". 1 to 400 characters after trimming. */
+            reason: string;
+        };
+        AssignPaymentDto: {
+            /**
+             * Format: uuid
+             * @description The driver the payment belongs to.
+             */
+            driverId: string;
+        };
+        AssignPaymentResultDto: {
+            payment: components["schemas"]["PaymentDto"];
+            /** @description True if the payer's name was saved as a new alias of the driver. */
+            aliasSaved: boolean;
+            /**
+             * @description The driver who already owns the payer's name as an alias, if it is someone else: that alias is NOT
+             *     moved (one alias, one driver); the admin decides.
+             */
+            aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
         };
     };
     responses: never;
@@ -3736,154 +3741,6 @@ export interface operations {
             };
         };
     };
-    InboundEmailsController_list: {
-        parameters: {
-            query: {
-                /** @description Only emails from this provider. Omit for all. */
-                provider?: components["schemas"]["InboundEmailProvider"];
-                /** @description Only emails with this outcome. Omit for all. */
-                status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
-                /** @description First day to include, e.g. `2026-10-01`. */
-                from?: string;
-                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
-                to?: string;
-                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
-                search?: string;
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InboundEmailListDto"];
-                };
-            };
-        };
-    };
-    PaymentsController_list: {
-        parameters: {
-            query: {
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-                /** @description Only payments with this status. Omit for all. */
-                status?: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
-                /** @description Only payments from this source. Omit for all. */
-                source?: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
-                /** @description Only payments assigned to this driver (the driver page). Omit for all. */
-                driverId?: string;
-                /**
-                 * @description `assigned`: has a driver. `review`: matching looked at it and could not place it ("Needs review").
-                 *     Omit for all.
-                 */
-                match?: "assigned" | "review";
-                /** @description First day to include, e.g. `2026-10-01`. */
-                from?: string;
-                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
-                to?: string;
-                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
-                search?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentListDto"];
-                };
-            };
-        };
-    };
-    PaymentsController_recordManual: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RecordPaymentDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentDto"];
-                };
-            };
-        };
-    };
-    PaymentsController_voidManual: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VoidPaymentDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentDto"];
-                };
-            };
-        };
-    };
-    PaymentsController_assign: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignPaymentDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AssignPaymentResultDto"];
-                };
-            };
-        };
-    };
     LedgerController_list: {
         parameters: {
             query: {
@@ -4037,6 +3894,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerEntryDto"];
+                };
+            };
+        };
+    };
+    InboundEmailsController_list: {
+        parameters: {
+            query: {
+                /** @description Only emails from this provider. Omit for all. */
+                provider?: components["schemas"]["InboundEmailProvider"];
+                /** @description Only emails with this outcome. Omit for all. */
+                status?: "processed" | "rejected_unverified" | "extraction_failed" | "not_payment" | "duplicate_payment";
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboundEmailListDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_list: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+                /** @description Only payments with this status. Omit for all. */
+                status?: "reported" | "confirmed" | "unmatched" | "rejected" | "discrepancy";
+                /** @description Only payments from this source. Omit for all. */
+                source?: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+                /** @description Only payments assigned to this driver (the driver page). Omit for all. */
+                driverId?: string;
+                /**
+                 * @description `assigned`: has a driver. `review`: matching looked at it and could not place it ("Needs review").
+                 *     Omit for all.
+                 */
+                match?: "assigned" | "review";
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+                /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentListDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_recordManual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordPaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_voidManual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidPaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_assign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignPaymentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignPaymentResultDto"];
                 };
             };
         };
