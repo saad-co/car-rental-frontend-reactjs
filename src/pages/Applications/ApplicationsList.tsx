@@ -13,8 +13,8 @@ import ApplicationStatusBadge from "../../components/applications/ApplicationSta
 import { APPLICATION_STATUS } from "../../components/applications/applicationStatus";
 import DataTable, { type Column } from "../../components/tables/DataTable";
 import {
-  ARCHIVED_FILTER,
-  archivedFilterGroup,
+  APPLICATIONS_SHOW_FILTER,
+  applicationsShowFilterGroup,
 } from "../../components/tables/archivedFilter";
 import TableCard from "../../components/tables/TableCard";
 import {
@@ -48,6 +48,11 @@ export interface ApplicationsListState {
 const isDeletable = (application: ApplicationListItem) =>
   application.status !== "approved";
 
+/** The person is already an active or inactive driver: archiving the application archives the driver too (D84). */
+const hasLiveDriver = (application: ApplicationListItem) =>
+  application.driverStatus === "active" ||
+  application.driverStatus === "inactive";
+
 /**
  * Admin list of driver applications, newest first, built on the shared table components (B75): search, a Status
  * filter, 8 rows per page. The view lives in the URL (`?q=pat&status=pending&page=2`).
@@ -62,14 +67,17 @@ const isDeletable = (application: ApplicationListItem) =>
 export default function ApplicationsList() {
   const navigate = useNavigate();
   const location = useLocation();
-  const view = useListParams({ status: STATUSES, ...ARCHIVED_FILTER });
+  const view = useListParams({ status: STATUSES, ...APPLICATIONS_SHOW_FILTER });
   const status = view.filters.status as ApplicationStatus | undefined;
   const archivedOnly = view.filters.show === "archived";
+  /** The "Became drivers" view (D84): applications whose person is now an active or inactive driver. */
+  const becameDriver = view.filters.show === "driver";
 
   const { data, isPending, isError, error, isPlaceholderData } =
     useApplications({
       status,
       archived: archivedOnly || undefined,
+      becameDriver: becameDriver || undefined,
       search: view.search || undefined,
       from: view.from,
       to: view.to,
@@ -80,7 +88,7 @@ export default function ApplicationsList() {
   /** Ids of the ticked rows. */
   const [selected, setSelected] = useState<Set<string>>(new Set());
   /** The view the selection belongs to; when the view changes, the selection is dropped. */
-  const viewKey = `${view.search}|${status ?? ""}|${archivedOnly}|${view.from ?? ""}|${view.to ?? ""}|${view.page}`;
+  const viewKey = `${view.search}|${status ?? ""}|${archivedOnly}|${becameDriver}|${view.from ?? ""}|${view.to ?? ""}|${view.page}`;
   const [selectionView, setSelectionView] = useState(viewKey);
   if (viewKey !== selectionView) {
     setSelectionView(viewKey);
@@ -89,6 +97,8 @@ export default function ApplicationsList() {
 
   /** The applications the "Delete?" dialog is asking about; null when it is closed. */
   const [toDelete, setToDelete] = useState<ApplicationListItem[] | null>(null);
+  /** The application the "Archive?" dialog is asking about: one whose driver is active or inactive (D84). */
+  const [toArchive, setToArchive] = useState<ApplicationListItem | null>(null);
   /** What the last delete did, shown above the table. Starts with the detail page's message, if any. */
   const [notice, setNotice] = useState<string | null>(
     (location.state as ApplicationsListState | null)?.deletedNotice ?? null,
@@ -97,7 +107,7 @@ export default function ApplicationsList() {
   const archive = useArchiveApplication();
   const unarchive = useUnarchiveApplication();
   const archiveBusy = archive.isPending || unarchive.isPending;
-  /** Why the last archive or unarchive was refused (e.g. the applicant is already a driver), shown above the table. */
+  /** Why the last archive or unarchive failed, shown above the table. */
   const archiveError = archive.error ?? unarchive.error;
 
   const runDelete = () => {
@@ -176,6 +186,10 @@ export default function ApplicationsList() {
               event.stopPropagation(); // not also open the row
               archive.reset();
               unarchive.reset();
+              if (!application.archivedAt && hasLiveDriver(application)) {
+                setToArchive(application);
+                return;
+              }
               (application.archivedAt ? unarchive : archive).mutate(
                 application.id,
               );
@@ -237,6 +251,20 @@ export default function ApplicationsList() {
       )}
 
       <ConfirmDialog
+        isOpen={toArchive !== null}
+        title={`Archive ${toArchive?.firstName} ${toArchive?.lastName}?`}
+        confirmLabel="Archive"
+        onCancel={() => setToArchive(null)}
+        onConfirm={() => {
+          if (toArchive) archive.mutate(toArchive.id);
+          setToArchive(null);
+        }}
+      >
+        They are already a driver, so their driver is archived too: billing and
+        reminders stop. Unarchive brings both back.
+      </ConfirmDialog>
+
+      <ConfirmDialog
         isOpen={toDelete !== null}
         title={
           deleteCount === 1
@@ -268,7 +296,7 @@ export default function ApplicationsList() {
               options: STATUS_OPTIONS,
               value: status,
             },
-            archivedFilterGroup(view.filters.show),
+            applicationsShowFilterGroup(view.filters.show),
           ],
           onApply: (values) =>
             view.setFilters({ status: values.status, show: values.show }),
@@ -306,7 +334,12 @@ export default function ApplicationsList() {
         error={isError ? error : null}
         isEmpty={data?.items.length === 0}
         emptyText={
-          view.search || status || archivedOnly || view.from || view.to
+          view.search ||
+          status ||
+          archivedOnly ||
+          becameDriver ||
+          view.from ||
+          view.to
             ? "No applications match this search or filter."
             : "No applications."
         }

@@ -103,6 +103,8 @@ export default function ApplicationDetail() {
   const [confirmingApprove, setConfirmingApprove] = useState(false);
   /** True while the "Delete?" dialog is open. */
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  /** True while the "Archive?" dialog is open: the driver is archived with the application (D84). */
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
   /** True while the Decline dialog is open (B72, B81: with or without a text). */
   const [confirmingDecline, setConfirmingDecline] = useState(false);
 
@@ -239,6 +241,13 @@ export default function ApplicationDetail() {
               disabled={busy}
               onClick={() => {
                 mutations.forEach((m) => m.reset());
+                if (
+                  application.driverStatus === "active" ||
+                  application.driverStatus === "inactive"
+                ) {
+                  setConfirmingArchive(true);
+                  return;
+                }
                 archive.mutate(id);
               }}
             >
@@ -321,8 +330,10 @@ export default function ApplicationDetail() {
           className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
         >
           This application is archived on{" "}
-          {formatDateTime(application.archivedAt)}. It is hidden from the lists;
-          Unarchive brings it back.
+          {formatDateTime(application.archivedAt)}
+          {application.driverId ? ", together with its driver" : ""}. It is
+          hidden from the lists; Unarchive brings it back
+          {application.driverId ? " (both)" : ""}.
         </p>
       )}
 
@@ -390,6 +401,20 @@ export default function ApplicationDetail() {
       )}
 
       <ConfirmDialog
+        isOpen={confirmingArchive}
+        title={`Archive ${fullName}?`}
+        confirmLabel="Archive"
+        onCancel={() => setConfirmingArchive(false)}
+        onConfirm={() => {
+          setConfirmingArchive(false);
+          archive.mutate(id);
+        }}
+      >
+        {fullName} is already a driver, so their driver is archived too: billing
+        and reminders stop. Unarchive brings both back.
+      </ConfirmDialog>
+
+      <ConfirmDialog
         isOpen={confirmingDelete}
         title={`Delete ${fullName}'s application?`}
         confirmLabel="Delete"
@@ -428,7 +453,9 @@ export default function ApplicationDetail() {
                       to={`/admin/drivers/${application.driverId}`}
                       className="text-brand-500"
                     >
-                      Onboarding started: open driver
+                      {application.driverStatus === "onboarding"
+                        ? "Onboarding started: open driver"
+                        : "View driver"}
                     </Link>
                   ) : (
                     "Not created (onboarding not started)"

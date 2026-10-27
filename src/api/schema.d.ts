@@ -329,8 +329,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /applications/:id/archive`: hides the application from the normal list (D80); delete stays separate. An
-         *     approved one in onboarding takes its driver with it; `409` if its driver is already active or inactive.
+         * `POST /applications/:id/archive`: hides the application from the normal list (D80); delete stays separate. Its
+         *     driver, whatever the status, is archived with it (D84), which stops billing and reminders.
          */
         post: operations["ApplicationsController_archive"];
         delete?: never;
@@ -348,7 +348,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** `POST /applications/:id/unarchive`: brings an archived application (and its onboarding driver) back. */
+        /** `POST /applications/:id/unarchive`: brings an archived application (and its driver, D84) back. */
         post: operations["ApplicationsController_unarchive"];
         delete?: never;
         options?: never;
@@ -922,8 +922,8 @@ export interface paths {
         put?: never;
         /**
          * `POST /drivers/:id/archive`: hides the driver from the normal list and stops billing and reminders (D80). Any
-         *     `active` or `inactive` driver, no need to deactivate first; drivers are archived, never deleted. `409` for a
-         *     driver still in onboarding (archive their approved application instead).
+         *     driver, no need to deactivate first; drivers are archived, never deleted. The application they came from is
+         *     archived with them (D84).
          */
         post: operations["DriversController_archive"];
         delete?: never;
@@ -941,7 +941,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** `POST /drivers/:id/unarchive`: brings an archived driver back, with the status they had. */
+        /** `POST /drivers/:id/unarchive`: brings an archived driver back, with the status they had, and their application with them (D84). */
         post: operations["DriversController_unarchive"];
         delete?: never;
         options?: never;
@@ -1276,6 +1276,11 @@ export interface components {
              * @description When an admin archived it (D80); null = not archived.
              */
             archivedAt: string | null;
+            /**
+             * @description Status of the driver "Start onboarding" created (D80); null if there is none. Archiving also archives that driver (D84).
+             * @enum {string|null}
+             */
+            driverStatus: "onboarding" | "active" | "inactive" | null;
         };
         ApplicationListDto: {
             items: components["schemas"]["ApplicationListItemDto"][];
@@ -1328,6 +1333,11 @@ export interface components {
              * @description When an admin archived it (D80); null = not archived.
              */
             archivedAt: string | null;
+            /**
+             * @description Status of the driver "Start onboarding" created (D80); null if there is none. Archiving also archives that driver (D84).
+             * @enum {string|null}
+             */
+            driverStatus: "onboarding" | "active" | "inactive" | null;
             /** @description Null until an admin presses "Start onboarding"; then the driver, while onboarding is not finished. */
             driver: components["schemas"]["ApprovedApplicationDriverDto"] | null;
         };
@@ -1381,6 +1391,11 @@ export interface components {
              * @description When an admin archived it (D80); null = not archived.
              */
             archivedAt: string | null;
+            /**
+             * @description Status of the driver "Start onboarding" created (D80); null if there is none. Archiving also archives that driver (D84).
+             * @enum {string|null}
+             */
+            driverStatus: "onboarding" | "active" | "inactive" | null;
             /** @description The website's id for the submission. */
             requestId: string;
             zip: string | null;
@@ -1928,6 +1943,8 @@ export interface components {
             lastPaymentAt: string | null;
             /** @description Ledger balance in cents: credits minus debits (D60). Negative = the driver owes money; 0 with no entries. */
             balanceCents: number;
+            /** @description The application this driver came from (D84), for the link between the two pages; null for imported drivers. */
+            applicationId: string | null;
         };
         DriverListDto: {
             items: components["schemas"]["DriverDto"][];
@@ -2487,6 +2504,8 @@ export interface operations {
             query: {
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description `true` = only applications whose driver is active or inactive (D84). Not together with `archived=true`. */
+                becameDriver?: boolean;
                 /** @description `true` = only archived, otherwise only not archived. */
                 archived?: boolean;
                 /** @description First day to include, e.g. `2026-10-01`. */
@@ -2609,6 +2628,8 @@ export interface operations {
             query: {
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
+                /** @description `true` = only applications whose driver is active or inactive (D84). Not together with `archived=true`. */
+                becameDriver?: boolean;
                 /** @description `true` = only archived, otherwise only not archived. */
                 archived?: boolean;
                 /** @description First day to include, e.g. `2026-10-01`. */

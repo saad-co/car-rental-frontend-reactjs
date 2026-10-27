@@ -257,6 +257,8 @@ export default function DriverDetail() {
   const busy = mutations.some((m) => m.isPending);
   const actionError = mutations.find((m) => m.isError)?.error;
 
+  /** True while the "Archive?" dialog is open: their application is archived with them (D84). */
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
   /** An un-tick waiting for confirmation (it would take an active driver back to onboarding). */
   const [confirmingUntick, setConfirmingUntick] =
     useState<OnboardingStep | null>(null);
@@ -340,6 +342,14 @@ export default function DriverDetail() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {driver.applicationId && (
+            <Link
+              to={`/admin/applications/${driver.applicationId}`}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
+            >
+              View application
+            </Link>
+          )}
           {/* The one ledger lives on its own page (B86); this page only links to it. */}
           <Link
             to={`/admin/drivers/${driver.id}/ledger`}
@@ -347,30 +357,32 @@ export default function DriverDetail() {
           >
             View ledger
           </Link>
-          {/* A driver still in onboarding is archived through their approved application (the API refuses it here). */}
-          {driver.status !== "onboarding" && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() =>
-                run(() =>
-                  setArchived.mutate({
-                    id: driver.id,
-                    archived: !driver.archivedAt,
-                  }),
-                )
+          {/* Their application is archived and unarchived with them (D84). */}
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              if (!driver.archivedAt && driver.applicationId) {
+                setConfirmingArchive(true);
+                return;
               }
-            >
-              {driver.archivedAt
-                ? setArchived.isPending
-                  ? "Unarchiving..."
-                  : "Unarchive"
-                : setArchived.isPending
-                  ? "Archiving..."
-                  : "Archive"}
-            </Button>
-          )}
+              run(() =>
+                setArchived.mutate({
+                  id: driver.id,
+                  archived: !driver.archivedAt,
+                }),
+              );
+            }}
+          >
+            {driver.archivedAt
+              ? setArchived.isPending
+                ? "Unarchiving..."
+                : "Unarchive"
+              : setArchived.isPending
+                ? "Archiving..."
+                : "Archive"}
+          </Button>
           {/* Leaving options (D81): deactivate, archive (above), send to collections. */}
           {driver.status !== "onboarding" &&
             (driver.sentToCollectionsAt ? (
@@ -435,9 +447,11 @@ export default function DriverDetail() {
           role="status"
           className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
         >
-          This driver is archived on {formatDateTime(driver.archivedAt)}. They
-          are hidden from the Drivers list and are not billed or reminded;
-          Unarchive brings them back.
+          This driver is archived on {formatDateTime(driver.archivedAt)}
+          {driver.applicationId ? ", together with their application" : ""}.
+          They are hidden from the Drivers list and are not billed or reminded;
+          Unarchive brings them back
+          {driver.applicationId ? " (both)" : ""}.
         </p>
       )}
 
@@ -526,6 +540,20 @@ export default function DriverDetail() {
           }}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={confirmingArchive}
+        title={`Archive ${fullName}?`}
+        confirmLabel="Archive"
+        onCancel={() => setConfirmingArchive(false)}
+        onConfirm={() => {
+          setConfirmingArchive(false);
+          run(() => setArchived.mutate({ id: driver.id, archived: true }));
+        }}
+      >
+        Their application is archived too, and billing and reminders stop.
+        Unarchive brings both back.
+      </ConfirmDialog>
 
       <ConfirmDialog
         isOpen={confirmingUntick !== null}

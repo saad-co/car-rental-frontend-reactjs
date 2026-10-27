@@ -203,8 +203,8 @@ export function useHoldApplication() {
 
 /**
  * Shared logic of the mutations that change one application and answer with it: the detail cache is replaced with the
- * response, and every applications list, the Approved applications list and the drivers lists refetch (an onboarding
- * driver is archived or created along with its application).
+ * response, and every applications list, the Approved applications list and the drivers lists refetch (a driver is
+ * archived or created along with its application).
  */
 function useApplicationMutation(
   request: (id: string) => Promise<{
@@ -249,14 +249,14 @@ export function useStartOnboarding() {
   );
 }
 
-/** Archives an application (hidden from the normal list; an onboarding driver goes with it). Takes its id. */
+/** Archives an application (hidden from the normal list; its driver, whatever the status, goes with it, D84). Takes its id. */
 export function useArchiveApplication() {
   return useApplicationMutation((id) =>
     api.POST("/applications/{id}/archive", { params: { path: { id } } }),
   );
 }
 
-/** Brings an archived application back. Takes its id. */
+/** Brings an archived application (and its driver, D84) back. Takes its id. */
 export function useUnarchiveApplication() {
   return useApplicationMutation((id) =>
     api.POST("/applications/{id}/unarchive", { params: { path: { id } } }),
