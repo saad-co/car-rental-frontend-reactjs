@@ -181,8 +181,8 @@ export function useReactivateDriver(id: string) {
 
 /**
  * Archives (`archived: true`) or unarchives a driver (D80). Takes the id with the choice, so the lists can use it for any
- * row. On success the detail cache and every drivers list are refreshed; the API refuses (409) a driver still in
- * onboarding, whose approved application is archived instead.
+ * row. The driver's application is archived or brought back with them (D84), so on success the detail cache, every
+ * drivers list and every applications query are refreshed.
  */
 export function useSetDriverArchived() {
   const queryClient = useQueryClient();
@@ -202,6 +202,9 @@ export function useSetDriverArchived() {
     onSuccess: (driver) => {
       queryClient.setQueryData(queryKeys.drivers.detail(driver.id), driver);
       void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.all,
+      });
     },
   });
 }
