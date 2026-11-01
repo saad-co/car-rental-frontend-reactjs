@@ -67,7 +67,7 @@ export default function ConversationCard({
   }, [kind, id, syncNow]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-surface">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-500">

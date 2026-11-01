@@ -91,7 +91,7 @@ export default function ApprovedApplicationsList() {
     {
       key: "phone",
       header: "Phone",
-      className: "whitespace-nowrap",
+      className: "num whitespace-nowrap",
       render: (a) =>
         formatUsPhone(`+1${a.phone.replace(/\D/g, "").slice(-10)}`),
     },
@@ -123,6 +123,7 @@ export default function ApprovedApplicationsList() {
     {
       key: "received",
       header: "Received",
+      className: "num whitespace-nowrap text-gray-500",
       render: (a) => formatDateTime(a.receivedAt),
     },
     {

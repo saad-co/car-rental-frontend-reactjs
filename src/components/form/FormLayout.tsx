@@ -24,7 +24,7 @@ export function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6">
+    <section className="rounded-2xl border border-gray-200 bg-surface p-6">
       <div className="mb-6 flex items-start gap-4">
         <span
           aria-hidden="true"

@@ -61,7 +61,7 @@ export default function SignIn({ role }: { role: AuthUser["role"] }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-theme-xs">
+      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-surface p-8 shadow-theme-xs">
         <div className="mb-5 sm:mb-8">
           <h1 className="mb-2 font-semibold text-gray-800 text-title-sm">
             {role === "admin" ? "Admin sign in" : "Driver sign in"}

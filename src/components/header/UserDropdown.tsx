@@ -50,7 +50,7 @@ export default function UserDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        className="absolute right-0 mt-4.25 flex w-65 flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg"
+        className="absolute right-0 mt-4.25 flex w-65 flex-col rounded-2xl border border-gray-200 bg-surface p-3 shadow-theme-lg"
       >
         <span className="block font-medium text-gray-700 text-theme-sm">
           {user.email}

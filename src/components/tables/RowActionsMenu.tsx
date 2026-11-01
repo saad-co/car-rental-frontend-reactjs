@@ -106,7 +106,7 @@ export default function RowActionsMenu({
             // Stops a click on the menu from also opening the row it belongs to.
             onClick={(event) => event.stopPropagation()}
             style={position}
-            className="fixed z-99999 w-48 rounded-xl border border-gray-200 bg-white p-1.5 shadow-theme-lg"
+            className="fixed z-99999 w-48 rounded-xl border border-gray-300 bg-gray-100 p-1.5 shadow-theme-xl"
           >
             {actions.map((action) => (
               <DropdownItem

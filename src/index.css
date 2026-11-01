@@ -1,17 +1,24 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap")
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap")
 layer(base);
 
 @import "tailwindcss";
 
 /*
-  Theme copied from TailAdmin (light only, no dark mode).
+  Theme: TailAdmin's tokens, re-coloured dark (the "ledger" look, B112, D87): every TailAdmin component keeps its classes
+  and turns dark because the colours behind the names changed. The grey scale is inverted (gray-50 is the page, gray-900
+  the brightest text), `brand` is burnt orange, the status colours keep their meaning with dark tints (50-200) and light
+  tones (500-900) so `bg-error-50 text-error-600` still reads. `white` stays white (text on orange); cards use `surface`.
   `@theme` is Tailwind v4's way of defining design tokens in CSS: every
   --color-*, --text-*, --shadow-* entry below becomes a utility class
   (e.g. --color-brand-500 gives bg-brand-500, text-brand-500, border-brand-500).
 */
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  /* Body text, headings and the brand, and numbers (money lines up in columns: tabular figures). */
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: Archivo, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -43,113 +50,119 @@ layer(base);
   --color-current: currentColor;
   --color-transparent: transparent;
   --color-white: #ffffff;
-  --color-black: #101828;
+  --color-black: #05090f;
+  /* Cards, panels, dropdowns, modals (was bg-surface). */
+  --color-surface: #142035;
+  /* Behind a modal or the mobile sidebar. */
+  --color-scrim: #05090f;
 
-  --color-brand-25: #f2f7ff;
-  --color-brand-50: #ecf3ff;
-  --color-brand-100: #dde9ff;
-  --color-brand-200: #c2d6ff;
-  --color-brand-300: #9cb9ff;
-  --color-brand-400: #7592ff;
-  --color-brand-500: #465fff;
-  --color-brand-600: #3641f5;
-  --color-brand-700: #2a31d8;
-  --color-brand-800: #252dae;
-  --color-brand-900: #262e89;
-  --color-brand-950: #161950;
+  --color-brand-25: #1d1610;
+  --color-brand-50: #2a1a10;
+  --color-brand-100: #3a2112;
+  --color-brand-200: #5a2c14;
+  --color-brand-300: #8c3f18;
+  --color-brand-400: #c2541e;
+  --color-brand-500: #d9652b;
+  --color-brand-600: #e57c42;
+  --color-brand-700: #ee9461;
+  --color-brand-800: #f4b08a;
+  --color-brand-900: #f8cdb4;
+  --color-brand-950: #fbe3d5;
 
-  --color-blue-light-25: #f5fbff;
-  --color-blue-light-50: #f0f9ff;
-  --color-blue-light-100: #e0f2fe;
-  --color-blue-light-200: #b9e6fe;
-  --color-blue-light-300: #7cd4fd;
-  --color-blue-light-400: #36bffa;
-  --color-blue-light-500: #0ba5ec;
-  --color-blue-light-600: #0086c9;
-  --color-blue-light-700: #026aa2;
-  --color-blue-light-800: #065986;
-  --color-blue-light-900: #0b4a6f;
-  --color-blue-light-950: #062c41;
+  --color-blue-light-25: #101b2e;
+  --color-blue-light-50: #14213a;
+  --color-blue-light-100: #1a2b4a;
+  --color-blue-light-200: #24406a;
+  --color-blue-light-300: #2f5590;
+  --color-blue-light-400: #4a72ad;
+  --color-blue-light-500: #6e95d1;
+  --color-blue-light-600: #8eaedd;
+  --color-blue-light-700: #adc5e7;
+  --color-blue-light-800: #c9d9ef;
+  --color-blue-light-900: #dfe8f6;
+  --color-blue-light-950: #eef3fb;
 
-  --color-gray-25: #fcfcfd;
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f2f4f7;
-  --color-gray-200: #e4e7ec;
-  --color-gray-300: #d0d5dd;
-  --color-gray-400: #98a2b3;
-  --color-gray-500: #667085;
-  --color-gray-600: #475467;
-  --color-gray-700: #344054;
-  --color-gray-800: #1d2939;
-  --color-gray-900: #101828;
-  --color-gray-950: #0c111d;
+  --color-gray-25: #0d1726;
+  --color-gray-50: #0b1422;
+  --color-gray-100: #1b2a44;
+  --color-gray-200: #24344f;
+  --color-gray-300: #33476a;
+  --color-gray-400: #6e7f9c;
+  --color-gray-500: #93a3be;
+  --color-gray-600: #b4c0d3;
+  --color-gray-700: #cdd5e2;
+  --color-gray-800: #e6e1d6;
+  --color-gray-900: #f3eee3;
+  --color-gray-950: #fffdf8;
 
-  --color-orange-25: #fffaf5;
-  --color-orange-50: #fff6ed;
-  --color-orange-100: #ffead5;
-  --color-orange-200: #fddcab;
-  --color-orange-300: #feb273;
-  --color-orange-400: #fd853a;
-  --color-orange-500: #fb6514;
-  --color-orange-600: #ec4a0a;
-  --color-orange-700: #c4320a;
-  --color-orange-800: #9c2a10;
-  --color-orange-900: #7e2410;
-  --color-orange-950: #511c10;
+  --color-orange-25: #1d1610;
+  --color-orange-50: #2a1a10;
+  --color-orange-100: #3a2112;
+  --color-orange-200: #5a2c14;
+  --color-orange-300: #8c3f18;
+  --color-orange-400: #c2541e;
+  --color-orange-500: #d9652b;
+  --color-orange-600: #e57c42;
+  --color-orange-700: #ee9461;
+  --color-orange-800: #f4b08a;
+  --color-orange-900: #f8cdb4;
+  --color-orange-950: #fbe3d5;
 
-  --color-success-25: #f6fef9;
-  --color-success-50: #ecfdf3;
-  --color-success-100: #d1fadf;
-  --color-success-200: #a6f4c5;
-  --color-success-300: #6ce9a6;
-  --color-success-400: #32d583;
-  --color-success-500: #12b76a;
-  --color-success-600: #039855;
-  --color-success-700: #027a48;
-  --color-success-800: #05603a;
-  --color-success-900: #054f31;
-  --color-success-950: #053321;
+  --color-success-25: #0f1f17;
+  --color-success-50: #12261b;
+  --color-success-100: #173322;
+  --color-success-200: #1f4a30;
+  --color-success-300: #2c6b42;
+  --color-success-400: #3e8f5a;
+  --color-success-500: #4fae70;
+  --color-success-600: #6cc48a;
+  --color-success-700: #8ad3a3;
+  --color-success-800: #a9e0bc;
+  --color-success-900: #c8edd5;
+  --color-success-950: #e2f6e8;
 
-  --color-error-25: #fffbfa;
-  --color-error-50: #fef3f2;
-  --color-error-100: #fee4e2;
-  --color-error-200: #fecdca;
-  --color-error-300: #fda29b;
-  --color-error-400: #f97066;
-  --color-error-500: #f04438;
-  --color-error-600: #d92d20;
-  --color-error-700: #b42318;
-  --color-error-800: #912018;
-  --color-error-900: #7a271a;
-  --color-error-950: #55160c;
+  --color-error-25: #241311;
+  --color-error-50: #2c1513;
+  --color-error-100: #3a1a16;
+  --color-error-200: #5a231c;
+  --color-error-300: #8a2f23;
+  --color-error-400: #c4473a;
+  --color-error-500: #e0604f;
+  --color-error-600: #ea7a6b;
+  --color-error-700: #f09a8e;
+  --color-error-800: #f5b9b0;
+  --color-error-900: #f9d5cf;
+  --color-error-950: #fce8e5;
 
-  --color-warning-25: #fffcf5;
-  --color-warning-50: #fffaeb;
-  --color-warning-100: #fef0c7;
-  --color-warning-200: #fedf89;
-  --color-warning-300: #fec84b;
-  --color-warning-400: #fdb022;
-  --color-warning-500: #f79009;
-  --color-warning-600: #dc6803;
-  --color-warning-700: #b54708;
-  --color-warning-800: #93370d;
-  --color-warning-900: #7a2e0e;
-  --color-warning-950: #4e1d09;
+  --color-warning-25: #221a0a;
+  --color-warning-50: #2a200c;
+  --color-warning-100: #3a2c10;
+  --color-warning-200: #5a4416;
+  --color-warning-300: #8c6a1f;
+  --color-warning-400: #c0922b;
+  --color-warning-500: #d9a63a;
+  --color-warning-600: #e5b95a;
+  --color-warning-700: #edcb80;
+  --color-warning-800: #f3dba6;
+  --color-warning-900: #f8eacb;
+  --color-warning-950: #fcf5e5;
 
-  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  /* Flat look: cards are a border, not a shadow; only floating things (dropdowns, modals) cast one. */
+  /* Flat, squarer corners (8-10 px) everywhere TailAdmin used 12-24 px. */
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --radius-3xl: 12px;
+
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
   --shadow-theme-sm:
-    0px 1px 3px 0px rgba(16, 24, 40, 0.1),
-    0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+    0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 1px 2px 0px rgba(0, 0, 0, 0.06);
   --shadow-theme-md:
-    0px 4px 8px -2px rgba(16, 24, 40, 0.1),
-    0px 2px 4px -2px rgba(16, 24, 40, 0.06);
+    0px 4px 8px -2px rgba(0, 0, 0, 0.1), 0px 2px 4px -2px rgba(0, 0, 0, 0.06);
   --shadow-theme-lg:
-    0px 12px 16px -4px rgba(16, 24, 40, 0.08),
-    0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+    0px 12px 16px -4px rgba(0, 0, 0, 0.4), 0px 4px 6px -2px rgba(0, 0, 0, 0.25);
   --shadow-theme-xl:
-    0px 20px 24px -4px rgba(16, 24, 40, 0.08),
-    0px 8px 8px -4px rgba(16, 24, 40, 0.03);
-  --shadow-focus-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
+    0px 20px 34px -4px rgba(0, 0, 0, 0.55), 0px 8px 8px -4px rgba(0, 0, 0, 0.3);
+  --shadow-focus-ring: 0px 0px 0px 3px rgba(217, 101, 43, 0.25);
 
   --z-index-1: 1;
   --z-index-9: 9;
@@ -176,8 +189,27 @@ layer(base);
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  :root {
+    /* Native controls (date inputs, scrollbars, <select> lists) draw dark too. */
+    color-scheme: dark;
+  }
   body {
-    @apply relative font-normal font-outfit z-1 bg-gray-50;
+    @apply relative font-normal font-body z-1 bg-gray-50 text-gray-700;
+  }
+  /* Native dropdown lists (<select>): the open list takes these colours, not the page's, on Windows. */
+  select,
+  option,
+  optgroup {
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-800);
+  }
+  option:disabled {
+    color: var(--color-gray-400);
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
   }
 }
 
@@ -187,11 +219,11 @@ layer(base);
 }
 
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-500;
+  @apply bg-brand-50 text-brand-600 shadow-[inset_3px_0_0_var(--color-brand-500)];
 }
 
 @utility menu-item-inactive {
-  @apply text-gray-700 hover:bg-gray-100 group-hover:text-gray-700;
+  @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900;
 }
 
 @utility menu-item-icon-size {
@@ -201,11 +233,20 @@ layer(base);
 }
 
 @utility menu-item-icon-active {
-  @apply text-brand-500;
+  @apply text-brand-600;
 }
 
 @utility menu-item-icon-inactive {
-  @apply text-gray-500 group-hover:text-gray-700;
+  @apply text-gray-500 group-hover:text-gray-900;
+}
+
+/* Money, ids and references: monospaced with figures of equal width, so amounts line up (B112). */
+@utility num {
+  @apply font-mono tabular-nums;
+}
+/* Small spaced capitals for section and card labels (B112). */
+@utility eyebrow {
+  @apply text-[11px] font-bold uppercase tracking-[0.09em] text-gray-500;
 }
 
 /* Hides the scrollbar but keeps scrolling (sidebar). */
@@ -223,7 +264,7 @@ layer(base);
   @apply w-full;
 }
 .flatpickr-calendar {
-  @apply mt-2 !bg-white !rounded-xl !p-5 !border !border-gray-200 !text-gray-500 2xsm:!w-auto;
+  @apply mt-2 !bg-gray-100 !rounded-xl !p-5 !border !border-gray-300 !text-gray-500 !shadow-theme-xl 2xsm:!w-auto;
 }
 
 .flatpickr-months .flatpickr-prev-month:hover svg,

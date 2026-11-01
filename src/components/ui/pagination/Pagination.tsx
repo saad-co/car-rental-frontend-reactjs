@@ -76,7 +76,7 @@ export default function Pagination({
   };
 
   const arrowButtonClass =
-    "flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed";
+    "flex items-center gap-2 rounded-lg border border-gray-300 bg-surface px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
     <div className="flex items-center justify-between gap-2 px-6 py-4">

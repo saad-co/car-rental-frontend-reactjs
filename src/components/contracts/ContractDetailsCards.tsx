@@ -249,7 +249,7 @@ export default function ContractDetailsCards({
           {readLicence.isPending && (
             <div
               role="status"
-              className="absolute inset-0 z-10 flex items-center justify-center gap-3 rounded-lg bg-white/80 text-sm font-medium text-gray-700"
+              className="absolute inset-0 z-10 flex items-center justify-center gap-3 rounded-lg bg-surface/80 text-sm font-medium text-gray-700"
             >
               <Spinner />
               Extracting text from licence...

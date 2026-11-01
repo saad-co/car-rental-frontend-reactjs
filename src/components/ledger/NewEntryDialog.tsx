@@ -355,7 +355,7 @@ export default function NewEntryDialog({
                     "rounded-lg border px-3 py-2 text-start",
                     presetId === preset.id
                       ? "border-brand-500 bg-brand-50"
-                      : "border-gray-200 bg-white hover:bg-gray-50",
+                      : "border-gray-200 bg-surface hover:bg-gray-50",
                   )}
                 >
                   <span

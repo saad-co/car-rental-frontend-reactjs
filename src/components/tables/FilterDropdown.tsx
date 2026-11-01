@@ -58,7 +58,7 @@ export default function FilterDropdown({
         type="button"
         onClick={() => (isOpen ? setIsOpen(false) : open())}
         aria-expanded={isOpen}
-        className="dropdown-toggle flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 sm:w-auto sm:min-w-[100px]"
+        className="dropdown-toggle flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-surface px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 sm:w-auto sm:min-w-[100px]"
       >
         <svg
           width="20"
@@ -122,7 +122,7 @@ export default function FilterDropdown({
             onClick={() =>
               apply(Object.fromEntries(groups.map((g) => [g.key, undefined])))
             }
-            className="h-10 flex-1 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="h-10 flex-1 rounded-lg border border-gray-300 bg-surface px-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Clear
           </button>

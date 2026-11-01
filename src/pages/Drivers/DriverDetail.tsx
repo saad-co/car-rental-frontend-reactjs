@@ -1,3 +1,4 @@
+import BackLink from "../../components/ui/button/BackLink";
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import {
@@ -56,7 +57,7 @@ import {
 /** A white card with a title, the same look as the application page. */
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6">
+    <div className="rounded-2xl border border-gray-200 bg-surface p-6">
       <h2 className="mb-4 text-base font-semibold text-gray-800">{title}</h2>
       {children}
     </div>
@@ -161,7 +162,7 @@ function OnboardingCard({
 
 /** The same look as the "View ledger" button, for a link that opens another page. */
 const LINK_BUTTON =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-surface px-4 py-2.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50";
 
 /** The date that goes with a contract's status: when it was sent, opened, signed, declined, expired or cancelled. */
 function contractWhen(contract: ContractDraft): string {
@@ -302,9 +303,7 @@ export default function DriverDetail() {
   if (isError) {
     return (
       <div className="space-y-4">
-        <Link to="/admin/drivers" className="text-sm text-brand-500">
-          ← Back to drivers
-        </Link>
+        <BackLink to="/admin/drivers">Back to drivers</BackLink>
         <p role="alert" className="text-sm text-error-600">
           {error.message}
         </p>
@@ -318,20 +317,19 @@ export default function DriverDetail() {
     <div className="space-y-6">
       {/* Someone still in onboarding is not a driver yet: one who came from an application goes back to Approved
           applications; one added directly (no application, D85) is listed on Drivers under "Onboarding". */}
-      <Link
+      <BackLink
         to={
           driver.status === "onboarding" && driver.applicationId
             ? "/admin/approved-applications"
             : "/admin/drivers"
         }
-        className="inline-block text-sm text-gray-500 hover:text-gray-700"
       >
         {driver.status === "onboarding" && driver.applicationId
-          ? "← Back to approved applications"
-          : "← Back to drivers"}
-      </Link>
+          ? "Back to approved applications"
+          : "Back to drivers"}
+      </BackLink>
 
-      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-surface px-6 py-5 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>
@@ -348,7 +346,7 @@ export default function DriverDetail() {
           {driver.applicationId && (
             <Link
               to={`/admin/applications/${driver.applicationId}`}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-surface px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
             >
               View application
             </Link>
@@ -356,7 +354,7 @@ export default function DriverDetail() {
           {/* The one ledger lives on its own page (B86); this page only links to it. */}
           <Link
             to={`/admin/drivers/${driver.id}/ledger`}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-surface px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
           >
             View ledger
           </Link>

@@ -29,7 +29,7 @@ export default function LedgerHeader({
   const last = overview?.lastPayment;
 
   return (
-    <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-start">
+    <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-surface px-6 py-5 sm:flex-row sm:items-start">
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>

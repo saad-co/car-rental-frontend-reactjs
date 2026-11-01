@@ -23,7 +23,7 @@ function Tile({
         "rounded-2xl border px-5 py-4",
         active === "hot"
           ? "border-error-200 bg-error-50"
-          : "border-gray-200 bg-white",
+          : "border-gray-200 bg-surface",
       )}
     >
       <p className="text-theme-xs font-medium text-gray-500">{label}</p>

@@ -33,7 +33,7 @@ export default function LedgerPresetsSettings() {
   const [adding, setAdding] = useState<LedgerPresetKind | null>(null);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6">
+    <div className="rounded-2xl border border-gray-200 bg-surface p-6">
       <h2 className="text-lg font-semibold text-gray-800">Ledger presets</h2>
       <p className="mt-1 mb-6 text-sm text-gray-500">
         The quick-pick cards in the "New ledger entry" window. Changing them
