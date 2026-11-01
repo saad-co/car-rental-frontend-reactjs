@@ -118,10 +118,6 @@ export default function LeaseDisclosureSummary({
           value={formatCents(numbers.paymentCents)}
         />
         <Line
-          label="Excess mileage (per mile)"
-          value={formatCents(input.excessMileageCents)}
-        />
-        <Line
           label="Insurance excess (per month)"
           value={formatCents(input.insuranceExcessCents)}
         />
@@ -130,6 +126,11 @@ export default function LeaseDisclosureSummary({
           label="Total"
           value={formatCents(numbers.recurringTotalCents)}
           strong
+        />
+        {/* Not in the total: charged only when used, added to the ledger by hand (B119). */}
+        <Line
+          label="Excess mileage (per mile, not in total)"
+          value={formatCents(input.excessMileageCents)}
         />
       </Section>
     </div>

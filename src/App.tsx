@@ -15,6 +15,7 @@ import DriversList from "./pages/Drivers/DriversList";
 import ContractDraft from "./pages/Drivers/ContractDraft";
 import DriverDetail from "./pages/Drivers/DriverDetail";
 import DriverLedger from "./pages/Drivers/DriverLedger";
+import NewDriver from "./pages/Drivers/NewDriver";
 import LedgerStatement from "./pages/Drivers/LedgerStatement";
 import PaymentsList from "./pages/Payments/PaymentsList";
 import EmailLogList from "./pages/EmailLog/EmailLogList";
@@ -49,7 +50,7 @@ export default function App() {
               element={<ApprovedApplicationsList />}
             />
             <Route path="drivers" element={<DriversList />} />
-            <Route path="drivers/new" element={<NewApplication addDriver />} />
+            <Route path="drivers/new" element={<NewDriver />} />
             <Route path="drivers/:id" element={<DriverDetail />} />
             <Route path="drivers/:id/ledger" element={<DriverLedger />} />
             <Route path="drivers/:id/contract" element={<ContractDraft />} />

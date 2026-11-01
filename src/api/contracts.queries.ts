@@ -30,6 +30,12 @@ export type ContractNumbersInput =
 /** One company of the Lessor list: its name is also printed as the company's signature. */
 export type ContractCompany = components["schemas"]["ContractCompanyDto"];
 
+/** The driver details the AI read from the licence (B121); null for what it could not read. */
+export type LicenceDetails = components["schemas"]["LicenceDetailsDto"];
+
+/** One of the business's vehicles (B120). */
+export type FleetVehicle = components["schemas"]["FleetVehicleDto"];
+
 /** The calculated numbers (rate breakdown, totals, end date). */
 export type ContractNumbers = components["schemas"]["ContractNumbersDto"];
 
@@ -85,6 +91,27 @@ export function useContractCompanies() {
             apiErrorMessage(
               error,
               `Loading the companies failed (${response.status}).`,
+            ),
+          );
+        }
+        return data;
+      },
+    }),
+  );
+}
+
+/** The business's vehicles, offered on the contract's Vehicle card (B120). Picking one fills the vehicle boxes. */
+export function useFleetVehicles() {
+  return useQuery(
+    queryOptions({
+      queryKey: queryKeys.contracts.vehicles,
+      queryFn: async () => {
+        const { data, error, response } = await api.GET("/contracts/vehicles");
+        if (!data) {
+          throw new Error(
+            apiErrorMessage(
+              error,
+              `Loading the vehicles failed (${response.status}).`,
             ),
           );
         }
@@ -201,6 +228,30 @@ export class SendContractError extends Error {
     this.name = "SendContractError";
     this.missing = missing;
   }
+}
+
+/**
+ * Reads address, licence number, state and date of birth from the driver's licence with the AI (B121). Nothing is saved
+ * and nothing is cached: the page puts the answer in the draft's boxes, where the admin can change it.
+ */
+export function useReadLicence(driverId: string) {
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.POST(
+        "/drivers/{driverId}/contract/licence-details",
+        { params: { path: { driverId } } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Reading the licence failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+  });
 }
 
 /** Sends the driver's draft to the driver to sign (firma); the contract query then shows it as sent. */

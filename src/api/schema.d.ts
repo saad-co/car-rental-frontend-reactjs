@@ -246,9 +246,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /applications/:id/approve`: marks the application approved and texts the applicant. No driver is created
-         *     (D80); "Start onboarding" does that. Optional body `{ "message": "..." }` is the approval text the admin picked and edited (B81); without
-         *     it the first approved template is sent. `400` for an unknown placeholder in it.
+         * `POST /applications/:id/approve`: marks the application approved, texts the applicant and starts onboarding (creates
+         *     the driver, B116). Optional body `{ "message": "..." }` is the approval text the admin picked and edited (B81); without
+         *     it the first approved template is sent. `{ "sendText": false }` approves without any text (B111). `400` for an
+         *     unknown placeholder in it.
          *
          *     POST because it is an action with side effects, not an edit of a field. `@HttpCode(200)`
          *     because it returns the updated application rather than creating a resource at this URL.
@@ -310,7 +311,7 @@ export interface paths {
         /**
          * `POST /applications/:id/start-onboarding`: for an approved application, creates the driver (in onboarding) and
          *     their login (D80). `409` if it is not approved, is archived, already has its driver, or a driver or login already
-         *     has this email or phone.
+         *     has this email.
          */
         post: operations["ApplicationsController_startOnboarding"];
         delete?: never;
@@ -387,6 +388,43 @@ export interface paths {
          *     Returns the slot. PUT because the slot ends up holding exactly this file however many times it is sent.
          */
         put: operations["ApplicationDocumentsController_upload"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers/:id/documents`: the driver's files, each with a short-lived link to open it. */
+        get: operations["DriverDocumentsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/documents/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * `PUT /drivers/:id/documents/:kind`: puts one file (multipart field `file`) in the licence, rating or earnings slot,
+         *     replacing what is there. JPG, PNG or PDF, at most 10 MB; `400` otherwise. Returns the slot.
+         */
+        put: operations["DriverDocumentsController_upload"];
         post?: never;
         delete?: never;
         options?: never;
@@ -653,6 +691,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /contracts/vehicles`: the business's vehicles to pick on the Vehicle card (B120; not paginated: about 40). */
+        get: operations["ContractsController_listVehicles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{driverId}/contract/licence-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:driverId/contract/licence-details`: reads address, licence number, state and date of birth from the
+         *     driver's licence file with the AI (B121, D86). Nothing is saved: the page puts the values in the draft's boxes.
+         *     POST because every call asks the AI again. `404` unknown driver, `409` no licence on file or none found in it,
+         *     `502` the AI or the bucket failed, `503` the AI is not set up.
+         */
+        post: operations["ContractsController_readLicence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{driverId}/contract": {
         parameters: {
             query?: never;
@@ -771,7 +848,17 @@ export interface paths {
         /** `GET /drivers`: one page of drivers, newest first. */
         get: operations["DriversController_list"];
         put?: never;
-        post?: never;
+        /**
+         * `POST /drivers`: an admin adds a driver directly, without an application (D85). Multipart form data: the text fields
+         *     (name, email and phone are required; the profile and `aliases`, a JSON list of `{type, value}`, are optional) and the
+         *     optional files `licenseFile` and `earningsFile` (JPG, PNG or PDF, at most 10 MB each). The driver starts in
+         *     onboarding with no login, and nothing is texted. `409` when a driver already has the email, or an alias
+         *     already belongs to another driver; nothing is saved then. Answers with the new driver.
+         *
+         *     The interceptor is multer, the library you would mount as `upload.fields([...])` in Express: it reads the multipart
+         *     body, keeps the files in memory and leaves the text fields in `@Body()`, where the global ValidationPipe checks them.
+         */
+        post: operations["DriversController_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -793,6 +880,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * `PATCH /drivers/:id/profile`: changes the profile fields (middle name, address, date of birth, insurance, D85). A
+         *     field left out stays; one sent empty is cleared. Returns the updated driver.
+         */
+        patch: operations["DriversController_updateProfile"];
         trace?: never;
     };
     "/drivers/{id}/onboarding": {
@@ -1421,6 +1528,16 @@ export interface components {
             /** @description The admin who added it by hand (D68). Null for applications that came from the website form. */
             createdBy: components["schemas"]["ApplicationCreatedByDto"] | null;
         };
+        ApproveApplicationDto: {
+            /** @description `false` approves without texting the applicant (`message` is then ignored). Default `true`. */
+            sendText?: boolean;
+            /**
+             * @description The text, with `{firstName}` / `{lastName}` placeholders (filled in by the API; unknown ones are refused, 400).
+             *     1 to 1000 characters after trimming. Approve without it sends the first approved template; decline without it
+             *     sends no text.
+             */
+            message?: string;
+        };
         ReviewMessageDto: {
             /**
              * @description The text, with `{firstName}` / `{lastName}` placeholders (filled in by the API; unknown ones are refused, 400).
@@ -1695,7 +1812,7 @@ export interface components {
             oneTimeTotalCents: number;
             /** @description First payment + one-time charges. */
             amountDueAtPickupCents: number;
-            /** @description Payment + excess mileage + insurance excess + other recurring (the sheet's recurring Total row). */
+            /** @description Payment + insurance excess + other recurring (the recurring Total row). Excess mileage is not in it (B119). */
             recurringTotalCents: number;
             /** @description Last day of the term, `YYYY-MM-DD` (start date + term months, clamped to the month's last day). */
             endDate: string;
@@ -1706,6 +1823,25 @@ export interface components {
             name: string;
             /** @description The address on one line, as printed on the contract. */
             address: string;
+        };
+        FleetVehicleDto: {
+            /** @description Year, make and model, e.g. "2015 Toyota Prius Hybrid". */
+            model: string;
+            /** @description Shown in the list to tell cars apart; not part of the contract (it has no colour). */
+            color: string;
+            vin: string;
+            plate: string;
+            /** @description The fleet area from the client's list (IL, CA or TN). */
+            plateState: string;
+        };
+        LicenceDetailsDto: {
+            /** @description One line: street, city, state and ZIP. */
+            address: string | null;
+            licenseNumber: string | null;
+            /** @description Two-letter code of the issuing state. */
+            licenseState: string | null;
+            /** @description `YYYY-MM-DD`. */
+            dateOfBirth: string | null;
         };
         /** @enum {string} */
         ContractStatus: "draft" | "sent" | "viewed" | "signed" | "declined" | "expired" | "cancelled";
@@ -1952,6 +2088,88 @@ export interface components {
             total: number;
             page: number;
             limit: number;
+        };
+        DriverProfileDto: {
+            middleName: string | null;
+            street: string | null;
+            /** @description Apartment or unit. */
+            apt: string | null;
+            city: string | null;
+            state: string | null;
+            zip: string | null;
+            /** @description `YYYY-MM-DD`; null = not known. */
+            dateOfBirth: string | null;
+            /** @description Whole years today (Chicago day), worked out from the date of birth and never stored; null without a date of birth. */
+            age: number | null;
+            /** @description Current auto insurance; null = not known. */
+            hasInsurance: boolean | null;
+        };
+        DriverDetailDto: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+            /** @description E.164, e.g. `+13125550123`. */
+            phone: string;
+            /**
+             * @description `onboarding` until all three steps are done, then `active`; `inactive` when the driver left (D56).
+             * @enum {string}
+             */
+            status: "onboarding" | "active" | "inactive";
+            onboarding: components["schemas"]["DriverOnboardingDto"];
+            /**
+             * Format: date-time
+             * @description When the driver was created (when onboarding was started on the approved application, D80).
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When an admin archived the driver (D80); null = not archived.
+             */
+            archivedAt: string | null;
+            /**
+             * @description How the driver left (D81); null if not inactive, or deactivated before reasons existed ("reason not recorded").
+             * @enum {string|null}
+             */
+            leftReason: "contract_ended" | "bad_driver" | "cooperative_returned_car" | null;
+            /**
+             * Format: date-time
+             * @description When the reason was noted; null with no reason.
+             */
+            leftAt: string | null;
+            /**
+             * Format: date-time
+             * @description When an admin sent the driver to collections (D81); null = not in collections.
+             */
+            sentToCollectionsAt: string | null;
+            /** @description Every payment alias of the driver, grouped by payment method then by value. Empty if none yet. */
+            aliases: components["schemas"]["DriverAliasDto"][];
+            /** @description Number of payments assigned to this driver. */
+            paymentCount: number;
+            /**
+             * Format: date-time
+             * @description When the driver's most recent payment happened; null if none.
+             */
+            lastPaymentAt: string | null;
+            /** @description Ledger balance in cents: credits minus debits (D60). Negative = the driver owes money; 0 with no entries. */
+            balanceCents: number;
+            /** @description The application this driver came from (D84), for the link between the two pages; null for imported drivers. */
+            applicationId: string | null;
+            profile: components["schemas"]["DriverProfileDto"];
+        };
+        UpdateDriverProfileDto: {
+            middleName?: string | null;
+            street?: string | null;
+            /** @description Apartment or unit. */
+            apt?: string | null;
+            city?: string | null;
+            /** @description As typed ("IL" or "Illinois"). */
+            state?: string | null;
+            zip?: string | null;
+            /** @description `YYYY-MM-DD`, a real day that is not in the future. The age is worked out from it. */
+            dateOfBirth?: string | null;
+            /** @description Current auto insurance: `true` / `false`; empty = not known. */
+            hasInsurance?: boolean | null;
         };
         SetOnboardingStepDto: {
             /** @enum {string} */
@@ -2714,7 +2932,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ReviewMessageDto"];
+                "application/json": components["schemas"]["ApproveApplicationDto"];
             };
         };
         responses: {
@@ -2859,6 +3077,56 @@ export interface operations {
         };
     };
     ApplicationDocumentsController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDocumentDto"];
+                };
+            };
+        };
+    };
+    DriverDocumentsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDocumentListDto"];
+                };
+            };
+        };
+    };
+    DriverDocumentsController_upload: {
         parameters: {
             query?: never;
             header?: never;
@@ -3331,6 +3599,46 @@ export interface operations {
             };
         };
     };
+    ContractsController_listVehicles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetVehicleDto"][];
+                };
+            };
+        };
+    };
+    ContractsController_readLicence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                driverId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenceDetailsDto"];
+                };
+            };
+        };
+    };
     ContractsController_getCurrent: {
         parameters: {
             query?: never;
@@ -3510,6 +3818,12 @@ export interface operations {
                  *     assignable to them).
                  */
                 collections?: boolean;
+                /**
+                 * @description `true` lists only drivers with no application: the ones an admin added directly (D85). With `status=onboarding` it
+                 *     is the Drivers page's "Onboarding (added directly)" view; a driver in onboarding who came from an application is
+                 *     on the Approved applications page instead. Omitted or `false`: no filter.
+                 */
+                withoutApplication?: boolean;
                 /** @description `true` = only archived, otherwise only not archived. */
                 archived?: boolean;
                 /** @description First day to include, e.g. `2026-10-01`. */
@@ -3535,6 +3849,50 @@ export interface operations {
             };
         };
     };
+    DriversController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    firstName: string;
+                    middleName?: string;
+                    lastName: string;
+                    email: string;
+                    phone: string;
+                    street?: string;
+                    apt?: string;
+                    city?: string;
+                    state?: string;
+                    zip?: string;
+                    /** @description YYYY-MM-DD */
+                    dateOfBirth?: string;
+                    /** @description true or false */
+                    hasInsurance?: string;
+                    /** @description JSON list, e.g. [{"type":"zelle","value":"Pat Example"}] */
+                    aliases?: string;
+                    /** Format: binary */
+                    licenseFile?: string;
+                    /** Format: binary */
+                    earningsFile?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDetailDto"];
+                };
+            };
+        };
+    };
     DriversController_findOne: {
         parameters: {
             query?: never;
@@ -3551,7 +3909,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
+                };
+            };
+        };
+    };
+    DriversController_updateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDriverProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3576,7 +3959,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3601,7 +3984,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3623,7 +4006,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3648,7 +4031,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3673,7 +4056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3694,7 +4077,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3715,7 +4098,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3736,7 +4119,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };
@@ -3757,7 +4140,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DriverDto"];
+                    "application/json": components["schemas"]["DriverDetailDto"];
                 };
             };
         };

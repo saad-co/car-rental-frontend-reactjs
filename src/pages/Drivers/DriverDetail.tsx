@@ -20,7 +20,9 @@ import ContractDocumentLinks from "../../components/contracts/ContractDocumentLi
 import { CONTRACT_STATUS } from "../../components/contracts/contractStatus";
 import BalanceText from "../../components/drivers/BalanceText";
 import DepositDialog from "../../components/drivers/DepositDialog";
+import { DriverDocuments } from "../../components/applications/ApplicationDocuments";
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
+import DriverProfileCard from "../../components/drivers/DriverProfileCard";
 import LeavingDialog from "../../components/drivers/LeavingDialog";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
 import {
@@ -314,16 +316,17 @@ export default function DriverDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Someone still in onboarding is not a driver yet: they came from, and go back to, Approved applications. */}
+      {/* Someone still in onboarding is not a driver yet: one who came from an application goes back to Approved
+          applications; one added directly (no application, D85) is listed on Drivers under "Onboarding". */}
       <Link
         to={
-          driver.status === "onboarding"
+          driver.status === "onboarding" && driver.applicationId
             ? "/admin/approved-applications"
             : "/admin/drivers"
         }
         className="inline-block text-sm text-gray-500 hover:text-gray-700"
       >
-        {driver.status === "onboarding"
+        {driver.status === "onboarding" && driver.applicationId
           ? "← Back to approved applications"
           : "← Back to drivers"}
       </Link>
@@ -589,6 +592,10 @@ export default function DriverDetail() {
                 ["Phone", formatUsPhone(driver.phone)],
               ]}
             />
+          </Card>
+          <DriverProfileCard driverId={driver.id} profile={driver.profile} />
+          <Card title="Documents">
+            <DriverDocuments driverId={driver.id} />
           </Card>
           <Card title="Payments">
             <Rows
