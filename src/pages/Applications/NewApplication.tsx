@@ -32,8 +32,8 @@ type TextKey = Exclude<keyof FormValues, "platforms">;
 
 /**
  * Adds an application by hand (B85, D68): one page with the questions of the gonzocar.com form, in its three
- * sections and with its rules, plus the documents. Saving also approves it (D79) and sends the approval text; approving
- * creates no driver (D80), so the application ends approved, and the driver is created later by "Start onboarding".
+ * sections and with its rules, plus the documents. Saving also approves it (D79) without any text and starts onboarding
+ * (creates the driver), so there is no "Start onboarding" step to press (Abulkalam, 2026-11-01, B115, B116).
  * Adding a driver directly, without an application, is `NewDriver` (D85).
  *
  * A problem shows right under its field as soon as the field has been visited (left, or changed for a list or a
@@ -102,7 +102,7 @@ export default function NewApplication() {
       return;
     }
     create.mutate(
-      { body: toFormData(requestId, values, files), startOnboarding: false },
+      { body: toFormData(requestId, values, files), startOnboarding: true },
       {
         onSuccess: (result) =>
           void navigate(`/admin/applications/${result.id}`),
@@ -151,8 +151,8 @@ export default function NewApplication() {
           Add application
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          The same questions as the website form. Saving approves it and sends
-          the approval text.
+          The same questions as the website form. Saving approves it and starts
+          onboarding. No text is sent.
         </p>
       </div>
 

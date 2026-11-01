@@ -246,8 +246,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /applications/:id/approve`: marks the application approved and texts the applicant. No driver is created
-         *     (D80); "Start onboarding" does that. Optional body `{ "message": "..." }` is the approval text the admin picked and edited (B81); without
+         * `POST /applications/:id/approve`: marks the application approved, texts the applicant and starts onboarding (creates
+         *     the driver, B116). Optional body `{ "message": "..." }` is the approval text the admin picked and edited (B81); without
          *     it the first approved template is sent. `{ "sendText": false }` approves without any text (B111). `400` for an
          *     unknown placeholder in it.
          *
@@ -311,7 +311,7 @@ export interface paths {
         /**
          * `POST /applications/:id/start-onboarding`: for an approved application, creates the driver (in onboarding) and
          *     their login (D80). `409` if it is not approved, is archived, already has its driver, or a driver or login already
-         *     has this email or phone.
+         *     has this email.
          */
         post: operations["ApplicationsController_startOnboarding"];
         delete?: never;
@@ -691,6 +691,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /contracts/vehicles`: the business's vehicles to pick on the Vehicle card (B120; not paginated: about 40). */
+        get: operations["ContractsController_listVehicles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{driverId}/contract/licence-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:driverId/contract/licence-details`: reads address, licence number, state and date of birth from the
+         *     driver's licence file with the AI (B121, D86). Nothing is saved: the page puts the values in the draft's boxes.
+         *     POST because every call asks the AI again. `404` unknown driver, `409` no licence on file or none found in it,
+         *     `502` the AI or the bucket failed, `503` the AI is not set up.
+         */
+        post: operations["ContractsController_readLicence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{driverId}/contract": {
         parameters: {
             query?: never;
@@ -813,7 +852,7 @@ export interface paths {
          * `POST /drivers`: an admin adds a driver directly, without an application (D85). Multipart form data: the text fields
          *     (name, email and phone are required; the profile and `aliases`, a JSON list of `{type, value}`, are optional) and the
          *     optional files `licenseFile` and `earningsFile` (JPG, PNG or PDF, at most 10 MB each). The driver starts in
-         *     onboarding with no login, and nothing is texted. `409` when a driver already has the email or phone, or an alias
+         *     onboarding with no login, and nothing is texted. `409` when a driver already has the email, or an alias
          *     already belongs to another driver; nothing is saved then. Answers with the new driver.
          *
          *     The interceptor is multer, the library you would mount as `upload.fields([...])` in Express: it reads the multipart
@@ -1773,7 +1812,7 @@ export interface components {
             oneTimeTotalCents: number;
             /** @description First payment + one-time charges. */
             amountDueAtPickupCents: number;
-            /** @description Payment + excess mileage + insurance excess + other recurring (the sheet's recurring Total row). */
+            /** @description Payment + insurance excess + other recurring (the recurring Total row). Excess mileage is not in it (B119). */
             recurringTotalCents: number;
             /** @description Last day of the term, `YYYY-MM-DD` (start date + term months, clamped to the month's last day). */
             endDate: string;
@@ -1784,6 +1823,25 @@ export interface components {
             name: string;
             /** @description The address on one line, as printed on the contract. */
             address: string;
+        };
+        FleetVehicleDto: {
+            /** @description Year, make and model, e.g. "2015 Toyota Prius Hybrid". */
+            model: string;
+            /** @description Shown in the list to tell cars apart; not part of the contract (it has no colour). */
+            color: string;
+            vin: string;
+            plate: string;
+            /** @description The fleet area from the client's list (IL, CA or TN). */
+            plateState: string;
+        };
+        LicenceDetailsDto: {
+            /** @description One line: street, city, state and ZIP. */
+            address: string | null;
+            licenseNumber: string | null;
+            /** @description Two-letter code of the issuing state. */
+            licenseState: string | null;
+            /** @description `YYYY-MM-DD`. */
+            dateOfBirth: string | null;
         };
         /** @enum {string} */
         ContractStatus: "draft" | "sent" | "viewed" | "signed" | "declined" | "expired" | "cancelled";
@@ -3537,6 +3595,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContractCompanyDto"][];
+                };
+            };
+        };
+    };
+    ContractsController_listVehicles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetVehicleDto"][];
+                };
+            };
+        };
+    };
+    ContractsController_readLicence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                driverId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenceDetailsDto"];
                 };
             };
         };

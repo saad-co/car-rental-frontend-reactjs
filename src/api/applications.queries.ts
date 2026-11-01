@@ -184,6 +184,8 @@ function useReviewApplication(action: ReviewAction) {
       });
       // Approve and decline may have texted the applicant (B71, B72): the chat on the page shows it right away.
       void queryClient.invalidateQueries({ queryKey: queryKeys.sms.all });
+      // Approve also starts onboarding (B116): the driver now exists.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
     },
   });
 }

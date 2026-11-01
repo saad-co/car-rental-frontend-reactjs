@@ -381,9 +381,8 @@ export default function ApplicationDetail() {
         >
           This marks the application approved and sends the text below from the
           business number to {application.phone}, or approve it without texting
-          them. No driver is created yet: press Start onboarding when{" "}
-          {application.firstName} wants to go ahead. An approved application
-          cannot be changed.
+          them. Onboarding starts right away: {application.firstName} is added
+          to Drivers as Onboarding. An approved application cannot be changed.
         </ReviewTextDialog>
       )}
 

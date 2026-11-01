@@ -333,7 +333,13 @@ function ContractEditor({
             </div>
           </Card>
 
-          <ContractDetailsCards values={values} problems={problems} set={set} />
+          <ContractDetailsCards
+            driverId={driverId}
+            readOnly={sent}
+            values={values}
+            problems={problems}
+            set={set}
+          />
         </div>
 
         <div>
