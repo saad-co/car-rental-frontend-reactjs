@@ -21,6 +21,7 @@ import {
 } from "../../components/contracts/contractForm";
 import Card from "../../components/contracts/ContractCard";
 import ContractDetailsCards from "../../components/contracts/ContractDetailsCards";
+import DriverDetailsCard from "../../components/contracts/DriverDetailsCard";
 import ContractStatusBanner from "../../components/contracts/ContractStatusBanner";
 import LeaseDisclosureSummary from "../../components/contracts/LeaseDisclosureSummary";
 import Input from "../../components/form/input/InputField";
@@ -333,16 +334,10 @@ function ContractEditor({
             </div>
           </Card>
 
-          <ContractDetailsCards
-            driverId={driverId}
-            readOnly={sent}
-            values={values}
-            problems={problems}
-            set={set}
-          />
+          <ContractDetailsCards values={values} problems={problems} set={set} />
         </div>
 
-        <div>
+        <div className="space-y-6">
           <Card
             title="Lease disclosure summary"
             note="Calculated from the total rate. Nothing here is typed by hand."
@@ -370,6 +365,14 @@ function ContractEditor({
               </div>
             )}
           </Card>
+
+          {/* Under the summary, so the two columns are about the same length (Abulkalam, 2026-11-02). */}
+          <DriverDetailsCard
+            driverId={driverId}
+            readOnly={sent}
+            values={values}
+            set={set}
+          />
         </div>
       </fieldset>
     </div>
