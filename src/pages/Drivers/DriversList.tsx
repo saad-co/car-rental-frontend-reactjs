@@ -36,12 +36,15 @@ const LISTED_LABELS = {
 /**
  * The Status filter: Active is the default (nothing in the URL), Inactive is `?status=inactive`, and `?status=all` lists
  * both. "Driver" means an active or inactive person; people still in onboarding are not drivers yet (Abulkalam, 2026-10-26).
+ * The one exception is `?status=onboarding`: drivers an admin added directly (D85) have no application, so they are not on
+ * the Approved applications page and are listed here until their three steps are done.
  */
-const STATUS_URL_VALUES = ["inactive", "all"];
+const STATUS_URL_VALUES = ["inactive", "all", "onboarding"];
 const STATUS_OPTIONS = [
   { label: LISTED_LABELS.active, value: undefined },
   { label: LISTED_LABELS.inactive, value: "inactive" },
   { label: "All", value: "all" },
+  { label: "Onboarding (added directly)", value: "onboarding" },
 ];
 
 /** The table's columns; `onArchive` archives or unarchives the row's driver (the "⋯" menu). */
@@ -127,6 +130,7 @@ export default function DriversList() {
   });
   const statusParam = view.filters.status;
   /** What the API is asked for: Active unless the URL says otherwise; undefined (both) for "all". */
+  const onboardingView = statusParam === "onboarding";
   const status: DriverStatus | undefined =
     statusParam === "all"
       ? undefined
@@ -136,7 +140,9 @@ export default function DriversList() {
 
   const { data, isPending, isError, error, isPlaceholderData } = useDrivers({
     status,
-    onboarding: false,
+    // The onboarding view lists the drivers with no application; every other view leaves onboarding people out.
+    onboarding: onboardingView ? undefined : false,
+    withoutApplication: onboardingView || undefined,
     // Drivers in collections are on the Collections page (D81).
     collections: false,
     archived: archivedOnly || undefined,

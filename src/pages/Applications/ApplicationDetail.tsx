@@ -128,9 +128,13 @@ export default function ApplicationDetail() {
   const actionError = mutations.find((m) => m.isError)?.error;
 
   /** Clears the previous action's error, then runs this one. `message` is the text to send (approve, decline). */
-  const run = (mutation: typeof approve, message?: string) => {
+  const run = (
+    mutation: typeof approve,
+    message?: string,
+    sendText?: boolean,
+  ) => {
     mutations.forEach((m) => m.reset());
-    mutation.mutate({ id, message });
+    mutation.mutate({ id, message, sendText });
   };
 
   /** Deletes this application, then goes back to the list, which shows what was removed. */
@@ -367,11 +371,19 @@ export default function ApplicationDetail() {
             setConfirmingApprove(false);
             run(approve, message);
           }}
+          secondary={{
+            label: "Approve without text",
+            onClick: () => {
+              setConfirmingApprove(false);
+              run(approve, undefined, false);
+            },
+          }}
         >
           This marks the application approved and sends the text below from the
-          business number to {application.phone}. No driver is created yet:
-          press Start onboarding when {application.firstName} wants to go ahead.
-          An approved application cannot be changed.
+          business number to {application.phone}, or approve it without texting
+          them. No driver is created yet: press Start onboarding when{" "}
+          {application.firstName} wants to go ahead. An approved application
+          cannot be changed.
         </ReviewTextDialog>
       )}
 
