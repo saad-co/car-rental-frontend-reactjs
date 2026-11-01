@@ -205,7 +205,7 @@ export default function PaymentsList() {
               onClick={() => setAssigning(payment)}
               className={cn(
                 smallButtonClass,
-                "bg-white text-gray-700 ring-gray-300 hover:bg-gray-50",
+                "bg-surface text-gray-700 ring-gray-300 hover:bg-gray-50",
               )}
             >
               {payment.driver ? "Change" : "Assign"}

@@ -157,7 +157,12 @@ export default function ApplicationsList() {
         );
       },
     },
-    { key: "phone", header: "Phone", render: (a) => a.phone },
+    {
+      key: "phone",
+      header: "Phone",
+      className: "num whitespace-nowrap",
+      render: (a) => a.phone,
+    },
     { key: "city", header: "City", render: (a) => a.city ?? "—" },
     {
       key: "status",
@@ -169,6 +174,7 @@ export default function ApplicationsList() {
     {
       key: "received",
       header: "Received",
+      className: "num whitespace-nowrap text-gray-500",
       render: (a) => formatDateTime(a.receivedAt),
     },
     {

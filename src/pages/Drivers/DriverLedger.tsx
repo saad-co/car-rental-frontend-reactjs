@@ -1,3 +1,4 @@
+import BackLink from "../../components/ui/button/BackLink";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useDriver } from "../../api/drivers.queries";
@@ -82,9 +83,7 @@ export default function DriverLedger() {
   if (driver.isError) {
     return (
       <div className="space-y-4">
-        <Link to="/admin/drivers" className="text-sm text-brand-500">
-          ← Back to drivers
-        </Link>
+        <BackLink to="/admin/drivers">Back to drivers</BackLink>
         <p role="alert" className="text-sm text-error-600">
           {driver.error.message}
         </p>
@@ -102,18 +101,17 @@ export default function DriverLedger() {
 
   return (
     <div className="space-y-6">
-      <Link
+      <BackLink
         to={
           driver.data.status === "onboarding"
             ? "/admin/approved-applications"
             : "/admin/drivers"
         }
-        className="inline-block text-sm text-gray-500 hover:text-gray-700"
       >
         {driver.data.status === "onboarding"
-          ? "← Back to approved applications"
-          : "← Back to drivers"}
-      </Link>
+          ? "Back to approved applications"
+          : "Back to drivers"}
+      </BackLink>
 
       <LedgerHeader driver={driver.data} overview={overview.data} />
 
@@ -141,7 +139,7 @@ export default function DriverLedger() {
         </Button>
         <Link
           to={statementLink}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-surface px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50"
         >
           Statement
         </Link>

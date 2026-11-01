@@ -53,8 +53,9 @@ interface DataTableProps<T> {
   dimmed?: boolean;
 }
 
+// The "ledger" look (B112): a dark header row with small spaced capitals, zebra rows, a warm hover.
 const headerCellClass =
-  "px-4 py-3 text-start text-theme-xs font-medium text-gray-500 sm:px-6";
+  "px-4 py-2.5 text-start text-[10.5px] font-bold uppercase tracking-[0.09em] text-gray-500 whitespace-nowrap sm:px-6";
 const cellClass = "px-4 py-3.5 text-start text-theme-sm text-gray-700 sm:px-6";
 
 /**
@@ -88,7 +89,7 @@ export default function DataTable<T>({
   return (
     <div className={cn("max-w-full overflow-x-auto", dimmed && "opacity-60")}>
       <Table>
-        <TableHeader className="border-y border-gray-100 bg-gray-50">
+        <TableHeader className="border-y border-gray-200 bg-gray-25">
           <TableRow>
             {selection && (
               <TableCell isHeader className="w-px py-3 pr-0 pl-4 sm:pl-6">
@@ -118,14 +119,14 @@ export default function DataTable<T>({
             ))}
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-gray-100">
+        <TableBody className="divide-y divide-gray-100 [&>tr:nth-child(even)]:bg-gray-25/40">
           {rows.map((row) => {
             const id = rowKey(row);
             const canTick = selection?.canSelect?.(row) ?? true;
             return (
               <TableRow
                 key={id}
-                className={cn(onRowClick && "cursor-pointer hover:bg-gray-50")}
+                className={cn(onRowClick && "cursor-pointer hover:bg-brand-25")}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 {selection && (

@@ -1,4 +1,5 @@
-import { Link, useParams, useSearchParams } from "react-router";
+import BackLink from "../../components/ui/button/BackLink";
+import { useParams, useSearchParams } from "react-router";
 import { useDriver } from "../../api/drivers.queries";
 import {
   useLedgerOverview,
@@ -66,12 +67,9 @@ export default function LedgerStatement() {
   if (error || !driver.data || !statement.data) {
     return (
       <div className="space-y-4">
-        <Link
-          to={`/admin/drivers/${id}/ledger`}
-          className="text-sm text-brand-500"
-        >
-          ← Back to the ledger
-        </Link>
+        <BackLink to={`/admin/drivers/${id}/ledger`}>
+          Back to the ledger
+        </BackLink>
         <p role="alert" className="text-sm text-error-600">
           {error?.message ?? "Loading the statement failed."}
         </p>
@@ -90,13 +88,10 @@ export default function LedgerStatement() {
   return (
     <div className="space-y-6">
       <div className="space-y-4 print:hidden">
-        <Link
-          to={`/admin/drivers/${id}/ledger`}
-          className="inline-block text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Back to the ledger
-        </Link>
-        <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5">
+        <BackLink to={`/admin/drivers/${id}/ledger`}>
+          Back to the ledger
+        </BackLink>
+        <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-gray-200 bg-surface px-6 py-5">
           <div>
             <Label htmlFor="statement-from">From</Label>
             <Input
@@ -127,7 +122,7 @@ export default function LedgerStatement() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 print:rounded-none print:border-0 print:p-0">
+      <div className="rounded-2xl border border-gray-200 bg-surface p-6 print:rounded-none print:border-0 print:p-0">
         <h1 className="text-xl font-semibold text-gray-800">
           Gonzo Mobility LLC · GonzoCar
         </h1>

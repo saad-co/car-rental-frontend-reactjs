@@ -20,4 +20,4 @@ export const CONTRACT_STATUS: Record<
 
 /** The same look as the "View ledger" button, for a link that opens a file. */
 export const FILE_LINK_BUTTON =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-surface px-4 py-2.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50";

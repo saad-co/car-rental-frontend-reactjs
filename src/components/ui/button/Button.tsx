@@ -46,7 +46,7 @@ const Button: React.FC<ButtonProps> = ({
     primary:
       "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
     outline:
-      "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50",
+      "bg-surface text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50",
     danger:
       "bg-error-500 text-white shadow-theme-xs hover:bg-error-600 disabled:bg-error-300",
   };

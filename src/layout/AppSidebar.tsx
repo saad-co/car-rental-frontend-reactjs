@@ -57,7 +57,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`print:hidden fixed top-0 left-0 z-50 flex flex-col h-screen px-5 text-gray-900 transition-all duration-300 ease-in-out bg-white border-r border-gray-200
+      className={`print:hidden fixed top-0 left-0 z-50 flex flex-col h-screen px-5 text-gray-900 transition-all duration-300 ease-in-out bg-gray-25 border-r border-gray-200
         ${showLabels ? "w-72.5" : "w-22.5"}
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         xl:translate-x-0`}
@@ -70,7 +70,11 @@ const AppSidebar: React.FC = () => {
         }`}
       >
         {/* Text logo placeholder until the client provides a real one. */}
-        <Link to="/admin" className="text-xl font-semibold text-gray-900">
+        <Link
+          to="/admin"
+          className="flex items-center gap-2.5 font-display text-[15px] font-extrabold uppercase tracking-[0.04em] text-gray-900"
+        >
+          <i aria-hidden="true" className="inline-block size-3 bg-brand-500" />
           {showLabels ? BRAND_NAME : BRAND_INITIALS}
         </Link>
       </div>

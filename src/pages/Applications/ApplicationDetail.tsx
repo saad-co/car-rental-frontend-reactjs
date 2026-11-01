@@ -1,3 +1,4 @@
+import BackLink from "../../components/ui/button/BackLink";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -31,13 +32,11 @@ import {
   type Payload,
 } from "./applicationFields";
 
-/** A white card with a title, the look of TailAdmin's transaction page cards. */
+/** A card with a title in small spaced capitals (the "ledger" look, B112). */
 function Card({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6">
-      {title && (
-        <h2 className="mb-4 text-base font-semibold text-gray-800">{title}</h2>
-      )}
+    <div className="rounded-2xl border border-gray-200 bg-surface p-6">
+      {title && <h2 className="eyebrow mb-4">{title}</h2>}
       {children}
     </div>
   );
@@ -49,7 +48,9 @@ function Rows({ rows }: { rows: [label: string, value: ReactNode][] }) {
     <ul className="divide-y divide-gray-100">
       {rows.map(([label, value]) => (
         <li key={label} className="flex items-start gap-5 py-2.5">
-          <span className="w-1/2 text-sm text-gray-500 sm:w-2/5">{label}</span>
+          <span className="w-1/2 text-sm font-medium text-gray-500 sm:w-2/5">
+            {label}
+          </span>
           <span className="w-1/2 text-sm wrap-break-word text-gray-800 sm:w-3/5">
             {value}
           </span>
@@ -158,9 +159,7 @@ export default function ApplicationDetail() {
   if (isError) {
     return (
       <div className="space-y-4">
-        <Link to="/admin/applications" className="text-sm text-brand-500">
-          ← Back to applications
-        </Link>
+        <BackLink to="/admin/applications">Back to applications</BackLink>
         <p role="alert" className="text-sm text-error-600">
           {error.message}
         </p>
@@ -205,17 +204,14 @@ export default function ApplicationDetail() {
 
   return (
     <div className="space-y-6">
-      <Link
-        to="/admin/applications"
-        className="inline-block text-sm text-gray-500 hover:text-gray-700"
-      >
-        ← Back to applications
-      </Link>
+      <BackLink to="/admin/applications">Back to applications</BackLink>
 
-      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-surface px-6 py-5 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold text-gray-800">{fullName}</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+              {fullName}
+            </h1>
             <ApplicationStatusBadge
               status={application.status}
               archivedAt={application.archivedAt}

@@ -1,5 +1,6 @@
+import BackLink from "../../components/ui/button/BackLink";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { useCreateDriver, type AliasType } from "../../api/drivers.queries";
 import DatePicker from "../../components/form/DatePicker";
 import {
@@ -141,13 +142,8 @@ export default function NewDriver() {
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6">
       <div>
-        <Link
-          to="/admin/drivers"
-          className="text-sm text-gray-500 hover:text-brand-500"
-        >
-          ← Drivers
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold text-gray-800">Add driver</h1>
+        <BackLink to="/admin/drivers">Drivers</BackLink>
+        <h1 className="mt-4 text-xl font-semibold text-gray-800">Add driver</h1>
         <p className="mt-1 text-sm text-gray-500">
           Adds a driver straight away, without an application. They start in
           onboarding; no login is created and no text is sent. Only the name,

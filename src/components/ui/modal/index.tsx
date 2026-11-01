@@ -55,7 +55,7 @@ export const Modal: React.FC<ModalProps> = ({
   // moves. Without a cap, a tall dialog was centred and cut off at the top, out of reach of any scroll.
   const contentClasses = isFullscreen
     ? "w-full h-full"
-    : "relative flex max-h-[90dvh] w-full flex-col rounded-3xl bg-white";
+    : "relative flex max-h-[90dvh] w-full flex-col rounded-3xl bg-surface";
 
   return (
     <div
@@ -63,7 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
     >
       {!isFullscreen && (
         <div
-          className="fixed inset-0 h-full w-full bg-gray-400/50 backdrop-blur-[32px]"
+          className="fixed inset-0 h-full w-full bg-scrim/70 backdrop-blur-sm"
           onClick={onClose}
         ></div>
       )}

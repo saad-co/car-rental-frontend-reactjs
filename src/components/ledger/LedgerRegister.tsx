@@ -24,7 +24,7 @@ import Button from "../ui/button/Button";
 
 /** A compact outline button for the actions at the end of a row (the shared Button is too big for a table row). */
 const ROW_BUTTON =
-  "rounded-lg bg-white px-3 py-1.5 text-theme-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50";
+  "rounded-lg bg-surface px-3 py-1.5 text-theme-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50";
 
 /** A small grey tag in the Item column, e.g. "Reversed · RV-1101". */
 function Tag({ children }: { children: string }) {

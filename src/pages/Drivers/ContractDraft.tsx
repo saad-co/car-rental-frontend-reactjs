@@ -1,5 +1,6 @@
+import BackLink from "../../components/ui/button/BackLink";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import {
   SendContractError,
   useContractNumbers,
@@ -111,14 +112,11 @@ function ContractEditor({
 
   return (
     <div className="space-y-6">
-      <Link
-        to={`/admin/drivers/${driverId}`}
-        className="inline-block text-sm text-gray-500 hover:text-gray-700"
-      >
-        ← Back to {driverName}
-      </Link>
+      <BackLink to={`/admin/drivers/${driverId}`}>
+        Back to {driverName}
+      </BackLink>
 
-      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-surface px-6 py-5 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-xl font-semibold text-gray-800">
             {sent ? "Contract" : "Contract draft"} for {driverName}
@@ -394,9 +392,7 @@ export default function ContractDraftPage() {
   if (loadError || !driver.data || !draft.data) {
     return (
       <div className="space-y-4">
-        <Link to="/admin/drivers" className="text-sm text-brand-500">
-          ← Back to drivers
-        </Link>
+        <BackLink to="/admin/drivers">Back to drivers</BackLink>
         <p role="alert" className="text-sm text-error-600">
           {loadError?.message ?? "Loading failed."}
         </p>

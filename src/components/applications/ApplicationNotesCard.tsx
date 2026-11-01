@@ -45,7 +45,7 @@ export default function ApplicationNotesCard({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6">
+    <div className="rounded-2xl border border-gray-200 bg-surface p-6">
       <h2 className="text-base font-semibold text-gray-800">Internal notes</h2>
       <p className="mt-1 mb-4 text-theme-xs text-gray-500">
         Staff only. Never sent to the applicant.

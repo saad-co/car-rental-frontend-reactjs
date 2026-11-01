@@ -3,6 +3,7 @@
 import { ReactComponent as AlertIcon } from "./alert.svg?react";
 import { ReactComponent as CalenderIcon } from "./calender-line.svg?react";
 import { ReactComponent as CheckCircleIcon } from "./check-circle.svg?react";
+import { ReactComponent as ChevronLeftIcon } from "./chevron-left.svg?react";
 import { ReactComponent as DocsIcon } from "./docs.svg?react";
 import { ReactComponent as DollarIcon } from "./dollar-line.svg?react";
 import { ReactComponent as GridIcon } from "./grid.svg?react";
@@ -17,6 +18,7 @@ export {
   AlertIcon,
   CalenderIcon,
   CheckCircleIcon,
+  ChevronLeftIcon,
   DocsIcon,
   DollarIcon,
   GridIcon,

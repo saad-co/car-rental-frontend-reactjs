@@ -116,7 +116,7 @@ function Bubble({
             className={cn(
               "text-theme-xs font-medium",
               note.bad
-                ? "rounded bg-white/90 px-1.5 text-error-600"
+                ? "rounded bg-surface/90 px-1.5 text-error-600"
                 : "text-white/90",
             )}
           >

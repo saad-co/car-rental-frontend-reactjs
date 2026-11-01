@@ -1,5 +1,6 @@
+import BackLink from "../../components/ui/button/BackLink";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { useCreateApplication } from "../../api/applications.queries";
 import DatePicker from "../../components/form/DatePicker";
 import Checkbox from "../../components/form/input/Checkbox";
@@ -141,13 +142,8 @@ export default function NewApplication() {
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6">
       <div>
-        <Link
-          to={backTo}
-          className="text-sm text-gray-500 hover:text-brand-500"
-        >
-          ← Applications
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold text-gray-800">
+        <BackLink to={backTo}>Applications</BackLink>
+        <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-gray-900">
           Add application
         </h1>
         <p className="mt-1 text-sm text-gray-500">

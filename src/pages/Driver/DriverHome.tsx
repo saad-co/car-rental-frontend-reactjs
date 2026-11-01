@@ -10,7 +10,7 @@ export default function DriverHome() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-md space-y-4 rounded-2xl border border-gray-200 bg-white p-8 shadow-theme-xs">
+      <div className="w-full max-w-md space-y-4 rounded-2xl border border-gray-200 bg-surface p-8 shadow-theme-xs">
         <h1 className="font-semibold text-gray-800 text-title-sm">
           Driver portal
         </h1>
