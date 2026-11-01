@@ -5,6 +5,10 @@ import {
   type ApplicationDocument,
   type ApplicationDocumentKind,
 } from "../../api/applications.queries";
+import {
+  useDriverDocuments,
+  useUploadDriverDocument,
+} from "../../api/drivers.queries";
 import { FILE_ACCEPT, fileProblem } from "../../pages/Applications/websiteForm";
 import ConfirmDialog from "../ui/modal/ConfirmDialog";
 import { formatBytes } from "../sms/formatBytes";
@@ -111,6 +115,28 @@ function DocumentTile({
   );
 }
 
+/** What the panel needs from a documents query (an application's or a driver's): the same shape either way. */
+interface DocumentsQuery {
+  isPending: boolean;
+  isError: boolean;
+  error: Error | null;
+  data?: {
+    items: ApplicationDocument[];
+    sourceConnected: boolean;
+    storageConnected: boolean;
+  };
+}
+
+/** What the panel needs from an upload mutation. */
+interface DocumentUpload {
+  mutate: (vars: { kind: ApplicationDocumentKind; file: File }) => void;
+  reset: () => void;
+  isPending: boolean;
+  isError: boolean;
+  error: Error | null;
+  variables?: { kind: ApplicationDocumentKind };
+}
+
 /**
  * The application's three documents (licence, rating and earnings screenshots): the website's files shown from our
  * own copies (D54) and files an admin uploaded (D68), each slot with Upload or Replace. Replacing asks first, since
@@ -122,8 +148,39 @@ export default function ApplicationDocuments({
 }: {
   applicationId: string;
 }) {
-  const documents = useApplicationDocuments(applicationId);
-  const upload = useUploadApplicationDocument(applicationId);
+  return (
+    <DocumentsPanel
+      documents={useApplicationDocuments(applicationId)}
+      upload={useUploadApplicationDocument(applicationId)}
+      kinds={KINDS}
+    />
+  );
+}
+
+/**
+ * The licence and earnings files of a driver (D85), on the driver page: the application's files for a driver who came
+ * from an application (the same slots, so both pages agree), the driver's own for one added directly.
+ */
+export function DriverDocuments({ driverId }: { driverId: string }) {
+  return (
+    <DocumentsPanel
+      documents={useDriverDocuments(driverId)}
+      upload={useUploadDriverDocument(driverId)}
+      kinds={["license", "earnings"]}
+    />
+  );
+}
+
+/** The slots of a documents query, each with Upload or Replace; shared by the application and driver pages. */
+function DocumentsPanel({
+  documents,
+  upload,
+  kinds,
+}: {
+  documents: DocumentsQuery;
+  upload: DocumentUpload;
+  kinds: ApplicationDocumentKind[];
+}) {
   /** A file chosen for a filled slot, waiting for the admin to confirm the replacement. */
   const [replacing, setReplacing] = useState<{
     kind: ApplicationDocumentKind;
@@ -132,14 +189,14 @@ export default function ApplicationDocuments({
   /** Why the chosen file was refused before it was sent. */
   const [pickError, setPickError] = useState<string | null>(null);
 
-  if (documents.isPending)
-    return <p className="text-sm text-gray-500">Loading documents…</p>;
   if (documents.isError)
     return (
       <p role="alert" className="text-sm text-error-600">
-        {documents.error.message}
+        {documents.error?.message}
       </p>
     );
+  if (documents.isPending || !documents.data)
+    return <p className="text-sm text-gray-500">Loading documents…</p>;
 
   const connected =
     documents.data.sourceConnected && documents.data.storageConnected;
@@ -169,13 +226,13 @@ export default function ApplicationDocuments({
         </p>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {KINDS.map((kind) => (
+        {kinds.map((kind) => (
           <DocumentTile
             key={kind}
             kind={kind}
             document={byKind.get(kind) ?? null}
             connected={connected}
-            busy={upload.isPending && upload.variables.kind === kind}
+            busy={upload.isPending && upload.variables?.kind === kind}
             onPick={(file) => onPick(kind, file)}
           />
         ))}

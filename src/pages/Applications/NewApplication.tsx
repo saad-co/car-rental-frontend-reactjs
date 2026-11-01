@@ -1,12 +1,15 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useCreateApplication } from "../../api/applications.queries";
 import DatePicker from "../../components/form/DatePicker";
 import Checkbox from "../../components/form/input/Checkbox";
 import FileInput from "../../components/form/input/FileInput";
 import Input from "../../components/form/input/InputField";
-import Radio from "../../components/form/input/Radio";
-import Label from "../../components/form/Label";
+import {
+  FormChoices as Choices,
+  FormField as Field,
+  FormSection as Section,
+} from "../../components/form/FormLayout";
 import Select from "../../components/form/Select";
 import Button from "../../components/ui/button/Button";
 import {
@@ -19,138 +22,27 @@ import {
   YES_NO,
   toFormData,
   validate,
-  type Choice,
   type DocumentKind,
   type FormErrors,
   type FormFiles,
   type FormValues,
 } from "./websiteForm";
 
-/**
- * One numbered section of the form, the same three as the website's steps (Basic info, About you, Final verification)
- * but all on one page.
- */
-function Section({
-  number,
-  title,
-  description,
-  children,
-}: {
-  number: number;
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6">
-      <div className="mb-6 flex items-start gap-4">
-        <span
-          aria-hidden="true"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-500"
-        >
-          {number}
-        </span>
-        <div>
-          <h2 className="text-base font-semibold text-gray-800">{title}</h2>
-          <p className="text-sm text-gray-500">{description}</p>
-        </div>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-/** A label, its control, and the problem with it right underneath. `data-invalid` lets Save find the first one. */
-function Field({
-  label,
-  htmlFor,
-  required = false,
-  error,
-  hint,
-  className,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  required?: boolean;
-  error?: string;
-  hint?: string;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className={className} data-invalid={error ? "true" : undefined}>
-      <Label htmlFor={htmlFor}>
-        {label}
-        {required && <span className="text-error-500"> *</span>}
-      </Label>
-      {children}
-      {error ? (
-        <p role="alert" className="mt-1.5 text-theme-xs text-error-500">
-          {error}
-        </p>
-      ) : (
-        hint && <p className="mt-1.5 text-theme-xs text-gray-500">{hint}</p>
-      )}
-    </div>
-  );
-}
-
-/** A group of radio buttons for one question. */
-function Choices({
-  name,
-  options,
-  value,
-  onChange,
-  stacked = false,
-}: {
-  name: string;
-  options: Choice[];
-  value: string;
-  onChange: (value: string) => void;
-  stacked?: boolean;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      className={
-        stacked ? "flex flex-col gap-3" : "flex flex-wrap gap-x-6 gap-y-3"
-      }
-    >
-      {options.map((option) => (
-        <Radio
-          key={option.value}
-          id={`${name}-${option.value}`}
-          name={name}
-          value={option.value}
-          label={option.label}
-          checked={value === option.value}
-          onChange={onChange}
-        />
-      ))}
-    </div>
-  );
-}
-
 type TextKey = Exclude<keyof FormValues, "platforms">;
 
 /**
  * Adds an application by hand (B85, D68): one page with the questions of the gonzocar.com form, in its three
  * sections and with its rules, plus the documents. Saving also approves it (D79) and sends the approval text; approving
- * creates no driver (D80), so "Add application" ends approved and "Add driver" (`addDriver`, on the Drivers page) also
- * starts onboarding, which creates the driver. Only the wording and where it goes afterwards differ.
+ * creates no driver (D80), so the application ends approved, and the driver is created later by "Start onboarding".
+ * Adding a driver directly, without an application, is `NewDriver` (D85).
  *
  * A problem shows right under its field as soon as the field has been visited (left, or changed for a list or a
  * button); Save marks everything not yet visited. Nothing is created until Save. The request id is made once when
  * the page opens, so a double click or a retry after a network error makes only one application.
  */
-export default function NewApplication({
-  addDriver = false,
-}: {
-  addDriver?: boolean;
-}) {
+export default function NewApplication() {
   const navigate = useNavigate();
-  const backTo = addDriver ? "/admin/drivers" : "/admin/applications";
+  const backTo = "/admin/applications";
   const create = useCreateApplication();
   const [requestId] = useState(() => crypto.randomUUID());
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
@@ -210,17 +102,10 @@ export default function NewApplication({
       return;
     }
     create.mutate(
-      {
-        body: toFormData(requestId, values, files),
-        startOnboarding: addDriver,
-      },
+      { body: toFormData(requestId, values, files), startOnboarding: false },
       {
         onSuccess: (result) =>
-          void navigate(
-            result.driverId
-              ? `/admin/drivers/${result.driverId}`
-              : `/admin/applications/${result.id}`,
-          ),
+          void navigate(`/admin/applications/${result.id}`),
       },
     );
   };
@@ -260,14 +145,14 @@ export default function NewApplication({
           to={backTo}
           className="text-sm text-gray-500 hover:text-brand-500"
         >
-          ← {addDriver ? "Drivers" : "Applications"}
+          ← Applications
         </Link>
         <h1 className="mt-1 text-xl font-semibold text-gray-800">
-          {addDriver ? "Add driver" : "Add application"}
+          Add application
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          The same questions as the website form. Saving approves it: the driver
-          is created and gets the approval text.
+          The same questions as the website form. Saving approves it and sends
+          the approval text.
         </p>
       </div>
 
@@ -583,11 +468,7 @@ export default function NewApplication({
           Cancel
         </Button>
         <Button type="submit" disabled={create.isPending}>
-          {create.isPending
-            ? "Saving..."
-            : addDriver
-              ? "Save driver"
-              : "Save and approve"}
+          {create.isPending ? "Saving..." : "Save and approve"}
         </Button>
       </div>
     </form>

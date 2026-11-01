@@ -126,14 +126,16 @@ export function useApplication(id: string) {
 export interface ReviewVars {
   id: string;
   message?: string;
+  /** Approve only: `false` approves without texting the applicant (B111). */
+  sendText?: boolean;
 }
 
 /** The three review requests. Each returns the updated application. */
 const reviewRequests = {
-  approve: ({ id, message }: ReviewVars) =>
+  approve: ({ id, message, sendText }: ReviewVars) =>
     api.POST("/applications/{id}/approve", {
       params: { path: { id } },
-      body: { message },
+      body: { message, sendText },
     }),
   // Shown as "Decline" (B69); the API action is still `reject`.
   reject: ({ id, message }: ReviewVars) =>

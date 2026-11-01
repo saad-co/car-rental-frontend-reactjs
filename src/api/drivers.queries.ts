@@ -10,8 +10,14 @@ import { apiErrorMessage } from "./errors";
 import { queryKeys, type DriversListParams } from "./queryClient";
 import type { components } from "./schema";
 
-/** A driver, exactly as the API returns it. */
+/** A driver as a list returns it (no profile), exactly as the API returns it. */
 export type Driver = components["schemas"]["DriverDto"];
+
+/** A driver as the detail page and every change returns it: the list item plus the profile (D85). */
+export type DriverDetail = components["schemas"]["DriverDetailDto"];
+
+/** The profile of a driver: address, date of birth, age, insurance. Sensitive: only on the detail. */
+export type DriverProfile = DriverDetail["profile"];
 
 /** One payment alias of a driver (a name or handle they pay from, per payment method). */
 export type DriverAlias = Driver["aliases"][number];
@@ -82,7 +88,7 @@ export function useDriver(id: string) {
 function useDriverMutation<V>(
   request: (
     vars: V,
-  ) => Promise<{ data?: Driver; error?: unknown; response: Response }>,
+  ) => Promise<{ data?: DriverDetail; error?: unknown; response: Response }>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -232,4 +238,115 @@ export function useRemoveDriverAlias(id: string) {
       params: { path: { id, aliasId } },
     }),
   );
+}
+
+/**
+ * Adds a driver directly, without an application (D85). The body is the multipart form (text fields, `aliases` as JSON
+ * text, `licenseFile`, `earningsFile`). The new driver is put in the detail cache, so the page the form goes to shows it
+ * at once, and every drivers list is refreshed.
+ */
+export function useCreateDriver() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: FormData) => {
+      const { data, error, response } = await api.POST("/drivers", {
+        body: body as never,
+      });
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Adding the driver failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    onSuccess: (driver) => {
+      queryClient.setQueryData(queryKeys.drivers.detail(driver.id), driver);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
+    },
+  });
+}
+
+/** The profile fields an admin can change (D85); a field left out stays, one sent empty is cleared. */
+export type ProfileChanges = components["schemas"]["UpdateDriverProfileDto"];
+
+/** Changes the driver's profile: middle name, address, date of birth, insurance. */
+export function useUpdateDriverProfile(id: string) {
+  return useDriverMutation((vars: ProfileChanges) =>
+    api.PATCH("/drivers/{id}/profile", {
+      params: { path: { id } },
+      body: vars,
+    }),
+  );
+}
+
+/** Definition of the driver documents query (D85). */
+const driverDocumentsOptions = (id: string) =>
+  queryOptions({
+    queryKey: queryKeys.drivers.documents(id),
+    queryFn: async () => {
+      const { data, error, response } = await api.GET(
+        "/drivers/{id}/documents",
+        { params: { path: { id } } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Loading documents failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    // A driver from an application can still have a website file being copied: keep checking until it is done.
+    refetchInterval: (query) =>
+      query.state.data?.items.some((d) => d.status === "pending") &&
+      query.state.data.sourceConnected &&
+      query.state.data.storageConnected
+        ? 5_000
+        : false,
+  });
+
+/** The driver's licence and earnings files, with short-lived links to open them. */
+export function useDriverDocuments(id: string) {
+  return useQuery(driverDocumentsOptions(id));
+}
+
+/** Puts a file in one of the driver's document slots, replacing what is there. */
+export function useUploadDriverDocument(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: {
+      kind: "license" | "rating" | "earnings";
+      file: File;
+    }) => {
+      const body = new FormData();
+      body.append("file", vars.file);
+      const { data, error, response } = await api.PUT(
+        "/drivers/{id}/documents/{kind}",
+        {
+          params: { path: { id, kind: vars.kind } },
+          body: body as never,
+        },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(error, `Uploading failed (${response.status}).`),
+        );
+      }
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.drivers.documents(id),
+      });
+      // The application page shows the same slots when the driver came from an application.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.all,
+      });
+    },
+  });
 }
