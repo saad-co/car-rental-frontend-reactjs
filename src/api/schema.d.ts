@@ -1294,6 +1294,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /dashboard`: every number on the dashboard in one response (money in cents, Chicago days). `401` no token. */
+        get: operations["DashboardController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2602,6 +2619,202 @@ export interface components {
              *     moved (one alias, one driver); the admin decides.
              */
             aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
+        };
+        DashboardPaymentsDto: {
+            /** @description Everything that came in: confirmed payments plus the unmatched queue (rejected ones left out), in cents. */
+            processedCents: number;
+            /** @description How many payments that is. */
+            processedCount: number;
+            /** @description Sum of the confirmed (matched) payments, in cents. */
+            grossCents: number;
+            /** @description How many confirmed payments. */
+            grossCount: number;
+            /** @description Confirmed payments as a share of (confirmed + unmatched), 0-100. Rejected payments are left out. */
+            matchedPercent: number;
+            /** @description Sum of the unmatched payments (the queue), in cents. */
+            queueCents: number;
+            /** @description How many unmatched payments. */
+            queueCount: number;
+            /** @description Of the unmatched ones, how many the matcher has already tried and a person must assign. */
+            needsReviewCount: number;
+            /** @description Confirmed payments on today's Chicago day, in cents. */
+            todayCents: number;
+            /** @description Today and the 6 days before it (Chicago days), in cents. */
+            last7DaysCents: number;
+            /** @description Today and the 29 days before it (Chicago days), in cents. */
+            last30DaysCents: number;
+            /** @description Monday to today (Chicago), in cents. */
+            thisWeekCents: number;
+            /** @description How many confirmed payments came in this week. */
+            thisWeekCount: number;
+            /** @description Average confirmed payment, in cents (rounded). 0 when there is none. */
+            averageCents: number;
+            /** @description The largest confirmed payment, in cents. */
+            largestCents: number;
+        };
+        DashboardTrendDayDto: {
+            /** @description Chicago day, `YYYY-MM-DD`. */
+            day: string;
+            /** @description Confirmed payments on that day, in cents. 0 for a quiet day. */
+            amountCents: number;
+        };
+        DashboardSourceDto: {
+            source: components["schemas"]["PaymentSource"];
+            /** @description Confirmed money from this source, in cents. */
+            amountCents: number;
+            /** @description Confirmed payments from this source. */
+            count: number;
+            /** @description Unmatched payments from this source. */
+            unmatchedCount: number;
+            /** @description This source's share of all confirmed money, 0-100 (rounded, so the shares may not add up to exactly 100). */
+            sharePercent: number;
+        };
+        DashboardDriversDto: {
+            /** @description Active, not archived drivers. */
+            active: number;
+            /** @description Of them, on a daily contract. */
+            daily: number;
+            /** @description Of them, on a weekly contract. */
+            weekly: number;
+            /** @description Of them, with no signed contract in force yet (nothing to bill). */
+            withoutContract: number;
+            /** @description `daily` as a share of daily + weekly, 0-100. */
+            dailyPercent: number;
+            /** @description `weekly` as a share of daily + weekly, 0-100. */
+            weeklyPercent: number;
+        };
+        /** @enum {string} */
+        DashboardWeekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+        DashboardWeekdayDto: {
+            weekday: components["schemas"]["DashboardWeekday"];
+            /** @description Active drivers on a weekly contract due that day. */
+            drivers: number;
+            /** @description Their weekly rent added up, in cents. */
+            expectedCents: number;
+        };
+        DashboardBillingDto: {
+            /** @description Rent that falls due today, in cents: exactly what the hourly rent job posts for today (daily + weekly). */
+            dueTodayCents: number;
+            /** @description Of it, from daily contracts, in cents. */
+            dailyDueCents: number;
+            /** @description Of it, from weekly contracts, in cents. */
+            weeklyDueCents: number;
+            /** @description Drivers with daily rent due today. */
+            dailyDueDrivers: number;
+            /** @description Drivers with weekly rent due today. */
+            weeklyDueDrivers: number;
+            /** @description What inactive drivers (not in collections) still owe, in cents. */
+            inactiveOwedCents: number;
+            /** @description What drivers sent to collections still owe, in cents. */
+            collectionsOwedCents: number;
+            /** @description The seven weekdays, Monday first. */
+            weeklyByDay: components["schemas"]["DashboardWeekdayDto"][];
+        };
+        DashboardWatchlistDriverDto: {
+            driverId: string;
+            /** @description First and last name. */
+            name: string;
+            /** @description Negative: the driver owes this much, in cents. */
+            balanceCents: number;
+        };
+        DashboardBalancesDto: {
+            /** @description How many drivers are counted. */
+            driverCount: number;
+            /** @description All their balances added up (credits minus debits), in cents. Negative: the fleet owes more than it holds. */
+            fleetBalanceCents: number;
+            /** @description Drivers with a credit balance. */
+            positiveCount: number;
+            /** @description Drivers at exactly zero. */
+            zeroCount: number;
+            /** @description Drivers who owe money. */
+            negativeCount: number;
+            /** @description The credits of the drivers in credit, added up, in cents. */
+            creditCents: number;
+            /** @description What the drivers who owe money owe, added up, in cents (a positive number): the total outstanding. */
+            outstandingCents: number;
+            /** @description The 8 drivers who owe the most, most first. */
+            watchlist: components["schemas"]["DashboardWatchlistDriverDto"][];
+        };
+        DashboardApplicationsDto: {
+            total: number;
+            pending: number;
+            approved: number;
+            rejected: number;
+            onHold: number;
+            /** @description Approved as a share of approved + rejected + on hold, 0-100. 0 when none was reviewed. */
+            approvalPercent: number;
+            /** @description Drivers whose onboarding is not finished (not archived). */
+            onboardingDrivers: number;
+        };
+        /** @enum {string} */
+        EmailIntakeOutcome: "ok" | "failed" | "off";
+        DashboardIntakeRunDto: {
+            outcome: components["schemas"]["EmailIntakeOutcome"];
+            /**
+             * Format: date-time
+             * @description When the latest run ended.
+             */
+            at: string;
+            /** @description Emails the latest run stored. */
+            stored: number;
+            /**
+             * Format: date-time
+             * @description When a run last worked; kept through later failures. Null: never.
+             */
+            lastSuccessAt: string | null;
+            /** @description Why the latest run failed. Set only when `outcome` is `failed`. */
+            error: string | null;
+        };
+        DashboardMailCountsDto: {
+            processed: number;
+            notPayment: number;
+            rejectedUnverified: number;
+            extractionFailed: number;
+            duplicatePayment: number;
+        };
+        DashboardIntakeDto: {
+            /** @description The latest run, or null when none has been recorded yet (a new database, or intake never started). */
+            lastRun: components["schemas"]["DashboardIntakeRunDto"] | null;
+            /** @description Mails stored in the last 24 hours, by outcome. */
+            last24Hours: components["schemas"]["DashboardMailCountsDto"];
+            /** @description Mails stored in the last 7 days, by outcome. */
+            last7Days: components["schemas"]["DashboardMailCountsDto"];
+            /**
+             * Format: date-time
+             * @description When the newest stored mail arrived, or null when there is none.
+             */
+            lastEmailAt: string | null;
+            /** @description Payments the matcher has not looked at yet. */
+            awaitingMatchCount: number;
+        };
+        /** @enum {string} */
+        SmsServiceMode: "off" | "dry_run" | "live";
+        DashboardSmsDto: {
+            mode: components["schemas"]["SmsServiceMode"];
+            /** @description Whether a Quo key and number are set. */
+            quoConfigured: boolean;
+            /** @description Texts sent in the last 7 days that failed or were not delivered. */
+            failedLast7Days: number;
+        };
+        DashboardDto: {
+            /**
+             * Format: date-time
+             * @description When this was worked out.
+             */
+            asOf: string;
+            /** @description Today's Chicago day, `YYYY-MM-DD`. */
+            today: string;
+            payments: components["schemas"]["DashboardPaymentsDto"];
+            /** @description The last 21 Chicago days, oldest first, quiet days included. */
+            trend: components["schemas"]["DashboardTrendDayDto"][];
+            /** @description Sources with confirmed money or unmatched payments, biggest first. */
+            sources: components["schemas"]["DashboardSourceDto"][];
+            drivers: components["schemas"]["DashboardDriversDto"];
+            billing: components["schemas"]["DashboardBillingDto"];
+            balances: components["schemas"]["DashboardBalancesDto"];
+            applications: components["schemas"]["DashboardApplicationsDto"];
+            intake: components["schemas"]["DashboardIntakeDto"];
+            sms: components["schemas"]["DashboardSmsDto"];
         };
     };
     responses: never;
@@ -4446,6 +4659,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssignPaymentResultDto"];
+                };
+            };
+        };
+    };
+    DashboardController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardDto"];
                 };
             };
         };
