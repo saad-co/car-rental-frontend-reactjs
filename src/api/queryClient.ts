@@ -112,6 +112,8 @@ export const queryKeys = {
     ledgerStatement: (id: string, from: string, to: string) =>
       ["drivers", "ledger", id, "statement", from, to] as const,
   },
+  /** The admin dashboard's figures (`GET /dashboard`, D88). */
+  dashboard: ["dashboard"] as const,
   payments: {
     all: ["payments"] as const,
     list: (params: PaymentsListParams) => ["payments", "list", params] as const,
