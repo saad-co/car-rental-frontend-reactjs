@@ -20,6 +20,7 @@ const KIND_LABEL: Record<ApplicationDocumentKind, string> = {
   license: "Driver's licence",
   rating: "Rating screenshot",
   earnings: "Earnings screenshot",
+  contract: "Signed contract",
 };
 
 /** What a document tile says when its file cannot be opened (yet). */
@@ -108,7 +109,9 @@ function DocumentTile({
           {" · "}
           {document.origin === "admin"
             ? `Uploaded by ${document.uploadedByEmail ?? "an admin"}`
-            : "From the website"}
+            : document.origin === "firma"
+              ? "Signed through our app"
+              : "From the website"}
         </p>
       )}
     </div>
@@ -158,15 +161,16 @@ export default function ApplicationDocuments({
 }
 
 /**
- * The licence and earnings files of a driver (D85), on the driver page: the application's files for a driver who came
- * from an application (the same slots, so both pages agree), the driver's own for one added directly.
+ * The licence and earnings files of a driver (D85) and the driver's signed contract (D90), on the driver page: the
+ * application's files for a driver who came from an application (the same slots, so both pages agree), the driver's own
+ * for one added directly. The contract is always the driver's own, whatever the application does.
  */
 export function DriverDocuments({ driverId }: { driverId: string }) {
   return (
     <DocumentsPanel
       documents={useDriverDocuments(driverId)}
       upload={useUploadDriverDocument(driverId)}
-      kinds={["license", "earnings"]}
+      kinds={["license", "earnings", "contract"]}
     />
   );
 }
@@ -251,6 +255,13 @@ function DocumentsPanel({
         The current file is removed and replaced by{" "}
         <span className="font-medium">{replacing?.file.name}</span>. This cannot
         be undone.
+        {replacing && byKind.get(replacing.kind)?.origin === "firma" && (
+          <>
+            {" "}
+            The current file is the copy of the contract signed through our app;
+            the original stays on the contract page.
+          </>
+        )}
       </ConfirmDialog>
     </div>
   );
