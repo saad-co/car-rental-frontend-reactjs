@@ -421,8 +421,9 @@ export interface paths {
         };
         get?: never;
         /**
-         * `PUT /drivers/:id/documents/:kind`: puts one file (multipart field `file`) in the licence, rating or earnings slot,
-         *     replacing what is there. JPG, PNG or PDF, at most 10 MB; `400` otherwise. Returns the slot.
+         * `PUT /drivers/:id/documents/:kind`: puts one file (multipart field `file`) in the licence, rating, earnings or
+         *     contract slot, replacing what is there. The contract (D90) is always kept on the driver itself. JPG, PNG or PDF,
+         *     at most 10 MB; `400` otherwise. Returns the slot.
          */
         put: operations["DriverDocumentsController_upload"];
         post?: never;
@@ -1569,7 +1570,7 @@ export interface components {
              * @description Which upload on the form: licence, rating screenshot or earnings screenshot.
              * @enum {string}
              */
-            kind: "license" | "rating" | "earnings";
+            kind: "license" | "rating" | "earnings" | "contract";
             /**
              * @description `stored`: our copy can be opened; `pending`: still being copied; `failed`: it cannot be copied (see `error`).
              * @enum {string}
@@ -1579,7 +1580,7 @@ export interface components {
              * @description `website`: copied from the website's storage; `admin`: uploaded by an admin (D68).
              * @enum {string}
              */
-            origin: "website" | "admin";
+            origin: "website" | "admin" | "firma";
             /** @description MIME type, e.g. `image/png`; null if unknown. */
             contentType: string | null;
             sizeBytes: number | null;

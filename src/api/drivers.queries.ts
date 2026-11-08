@@ -320,7 +320,7 @@ export function useUploadDriverDocument(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (vars: {
-      kind: "license" | "rating" | "earnings";
+      kind: "license" | "rating" | "earnings" | "contract";
       file: File;
     }) => {
       const body = new FormData();
