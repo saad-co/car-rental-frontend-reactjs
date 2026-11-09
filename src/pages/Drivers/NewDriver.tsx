@@ -317,7 +317,7 @@ export default function NewDriver() {
             {payments.map((row, index) => (
               <div
                 key={row.key}
-                className="grid grid-cols-1 gap-3 sm:grid-cols-[10rem_1fr_auto] sm:items-end"
+                className="grid grid-cols-1 gap-3 sm:grid-cols-[10rem_1fr_auto] sm:items-start"
               >
                 <Field label="Payment method" htmlFor={`method-${row.key}`}>
                   <Select
@@ -344,20 +344,23 @@ export default function NewDriver() {
                     }
                   />
                 </Field>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={payments.length === 1 && row.value === ""}
-                  onClick={() =>
-                    setPayments((rows) =>
-                      rows.length === 1
-                        ? [newRow()]
-                        : rows.filter((r) => r.key !== row.key),
-                    )
-                  }
-                >
-                  Remove
-                </Button>
+                {/* Same height as a label + its gap, so Remove lines up with the controls, not the hint. */}
+                <div className="sm:pt-[1.625rem]">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={payments.length === 1 && row.value === ""}
+                    onClick={() =>
+                      setPayments((rows) =>
+                        rows.length === 1
+                          ? [newRow()]
+                          : rows.filter((r) => r.key !== row.key),
+                      )
+                    }
+                  >
+                    Remove
+                  </Button>
+                </div>
               </div>
             ))}
             <Button
