@@ -24,8 +24,12 @@ type NavItem = {
 // Add a line here when a new screen exists (Drivers, Payments, ...).
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <GridIcon />, path: "/admin" },
-  // The statistics the dashboard showed before the daily operations page (D92); Page 2 will take them over.
-  { name: "Statistics", icon: <PieChartIcon />, path: "/admin/statistics" },
+  // Dashboard page 2 (D93): collections, revenue per driver and the statistics the dashboard showed before D92.
+  {
+    name: "Financial views",
+    icon: <PieChartIcon />,
+    path: "/admin/statistics",
+  },
   { name: "Applications", icon: <DocsIcon />, path: "/admin/applications" },
   {
     name: "Approved applications",

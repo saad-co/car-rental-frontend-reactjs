@@ -1353,6 +1353,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /dashboard/collections?view=monthly|weekly|daily`: confirmed payments received per month, Monday-to-Sunday week or
+         *     day (Chicago), newest first, paginated, with the total of the whole filter (page 2, D93). Optional `from` / `to` days
+         *     (a custom range). `400` a bad view or day, or `from` after `to`; `401` no token.
+         */
+        get: operations["DashboardController_collectionsPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/revenue-by-driver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /dashboard/revenue-by-driver`: confirmed payments received per driver, biggest first, paginated, with the total of
+         *     the whole filter (page 2, D93). Optional `from` / `to` days. `400` a bad day, or `from` after `to`; `401` no token.
+         */
+        get: operations["DashboardController_revenueByDriver"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3029,6 +3070,56 @@ export interface components {
             depositsCollected: components["schemas"]["DepositsCollectedDto"];
             depositsPending: components["schemas"]["DepositsPendingDto"];
             collections: components["schemas"]["CollectionsDto"];
+        };
+        /** @enum {string} */
+        CollectionView: "monthly" | "weekly" | "daily";
+        CollectionPeriodDto: {
+            /** @description First Chicago day of the period (the 1st, a Monday, or the day itself), `YYYY-MM-DD`. */
+            periodStart: string;
+            /** @description Last Chicago day of the period (the end of the month, a Sunday, or the day itself). */
+            periodEnd: string;
+            /** @description Confirmed payments received in the period, in cents. 0 for a quiet period. */
+            totalCents: number;
+            /** @description How many confirmed payments that is. */
+            paymentCount: number;
+        };
+        CollectionPeriodsDto: {
+            view: components["schemas"]["CollectionView"];
+            items: components["schemas"]["CollectionPeriodDto"][];
+            /** @description How many periods there are in all, so the page count can be worked out. */
+            total: number;
+            page: number;
+            limit: number;
+            /** @description Confirmed payments in the whole filter (every period, every page), in cents. */
+            totalCents: number;
+            /** @description How many confirmed payments that is. */
+            paymentCount: number;
+        };
+        DriverRevenueDto: {
+            status: components["schemas"]["DriverStatus"];
+            driverId: string;
+            name: string;
+            /** @description An archived driver is listed too: money received stays revenue (D93). */
+            archived: boolean;
+            /** @description Confirmed payments received from them in the filter, in cents. */
+            totalCents: number;
+            /** @description How many confirmed payments that is. */
+            paymentCount: number;
+            /**
+             * Format: date-time
+             * @description When the latest of those payments was received.
+             */
+            lastPaymentAt: string;
+        };
+        RevenueByDriverDto: {
+            items: components["schemas"]["DriverRevenueDto"][];
+            /** @description How many drivers have at least one payment in the filter. */
+            total: number;
+            page: number;
+            limit: number;
+            /** @description Confirmed payments of every driver in the filter, in cents (the same figure as the collections total). */
+            totalCents: number;
+            paymentCount: number;
         };
     };
     responses: never;
@@ -4938,6 +5029,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DailyOperationsDto"];
+                };
+            };
+        };
+    };
+    DashboardController_collectionsPage: {
+        parameters: {
+            query: {
+                /** @description How to group: one row per month, per Monday-to-Sunday week, or per day. */
+                view: components["schemas"]["CollectionView"];
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionPeriodsDto"];
+                };
+            };
+        };
+    };
+    DashboardController_revenueByDriver: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevenueByDriverDto"];
                 };
             };
         };

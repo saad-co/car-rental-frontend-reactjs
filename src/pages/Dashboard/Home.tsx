@@ -204,7 +204,7 @@ export default function Home() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-title-sm font-semibold text-gray-900">
-              Operations dashboard
+              Statistics
             </h1>
             <p className="mt-1 text-theme-sm text-gray-500">
               Chicago snapshot {formatDateTime(data.asOf)} ·{" "}
