@@ -104,6 +104,11 @@ function useDriverMutation<V>(
     onSuccess: (driver) => {
       queryClient.setQueryData(queryKeys.drivers.detail(driver.id), driver);
       void queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists });
+      // Any change to a driver (a step, leaving, the due time, the payment plan flag) can move them between the lists of
+      // the daily operations page.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dailyOperations,
+      });
     },
   });
 }
@@ -276,6 +281,20 @@ export type ProfileChanges = components["schemas"]["UpdateDriverProfileDto"];
 export function useUpdateDriverProfile(id: string) {
   return useDriverMutation((vars: ProfileChanges) =>
     api.PATCH("/drivers/{id}/profile", {
+      params: { path: { id } },
+      body: vars,
+    }),
+  );
+}
+
+/** What an admin can change in the rent settings (D92); a field left out stays, a due time of `null` is cleared. */
+export type RentSettingsChanges =
+  components["schemas"]["UpdateDriverRentSettingsDto"];
+
+/** Changes the time of day rent is due (Chicago time, `HH:MM`) and the "On Payment Plan" flag. */
+export function useUpdateDriverRentSettings(id: string) {
+  return useDriverMutation((vars: RentSettingsChanges) =>
+    api.PATCH("/drivers/{id}/rent-settings", {
       params: { path: { id } },
       body: vars,
     }),
