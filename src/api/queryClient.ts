@@ -114,6 +114,8 @@ export const queryKeys = {
   },
   /** The admin dashboard's figures (`GET /dashboard`, D88). */
   dashboard: ["dashboard"] as const,
+  /** The daily operations page (`GET /dashboard/daily-operations`, D92). Under `dashboard`, so one invalidation reaches both. */
+  dailyOperations: ["dashboard", "daily-operations"] as const,
   payments: {
     all: ["payments"] as const,
     list: (params: PaymentsListParams) => ["payments", "list", params] as const,

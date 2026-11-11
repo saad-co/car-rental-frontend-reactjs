@@ -30,6 +30,8 @@ export interface DriverFormValues {
   city: string;
   state: string;
   zip: string;
+  /** The time rent is due, Chicago `HH:MM`, or "" = not set (D92). */
+  rentDueTime: string;
 }
 
 export const EMPTY_DRIVER_VALUES: DriverFormValues = {
@@ -45,6 +47,7 @@ export const EMPTY_DRIVER_VALUES: DriverFormValues = {
   city: "",
   state: "",
   zip: "",
+  rentDueTime: "",
 };
 
 export interface DriverFormFiles {

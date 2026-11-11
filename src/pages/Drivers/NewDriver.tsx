@@ -2,6 +2,7 @@ import BackLink from "../../components/ui/button/BackLink";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { useCreateDriver, type AliasType } from "../../api/drivers.queries";
+import RentDueTimeSelect from "../../components/drivers/RentDueTimeSelect";
 import DatePicker from "../../components/form/DatePicker";
 import {
   FormChoices as Choices,
@@ -25,7 +26,10 @@ import {
   type PaymentRow,
 } from "./driverForm";
 
-type TextKey = Exclude<keyof DriverFormValues, "hasInsurance" | "dateOfBirth">;
+type TextKey = Exclude<
+  keyof DriverFormValues,
+  "hasInsurance" | "dateOfBirth" | "rentDueTime"
+>;
 
 /** The payment methods to choose from, in display order. */
 const METHOD_OPTIONS = (Object.keys(ALIAS_TYPE_LABEL) as AliasType[]).map(
@@ -245,6 +249,19 @@ export default function NewDriver() {
                 value={age === null ? "" : String(age)}
                 placeholder="—"
                 disabled
+              />
+            </Field>
+            <Field
+              label="Rent due time"
+              htmlFor="rentDueTime"
+              hint="Chicago time. Optional; can be set later on the driver page."
+            >
+              <RentDueTimeSelect
+                id="rentDueTime"
+                value={values.rentDueTime}
+                onChange={(time) =>
+                  setValues((current) => ({ ...current, rentDueTime: time }))
+                }
               />
             </Field>
             <Field label="Do they currently have auto insurance?">

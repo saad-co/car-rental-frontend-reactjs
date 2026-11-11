@@ -24,6 +24,7 @@ import DepositDialog from "../../components/drivers/DepositDialog";
 import { DriverDocuments } from "../../components/applications/ApplicationDocuments";
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
 import DriverProfileCard from "../../components/drivers/DriverProfileCard";
+import RentSettingsCard from "../../components/drivers/RentSettingsCard";
 import LeavingDialog from "../../components/drivers/LeavingDialog";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
 import {
@@ -583,6 +584,7 @@ export default function DriverDetail() {
             onEditDeposit={() => setDepositDialog("edit")}
           />
           <ContractCard driverId={driver.id} />
+          <RentSettingsCard driver={driver} />
           <Card title="Contact">
             <Rows
               rows={[

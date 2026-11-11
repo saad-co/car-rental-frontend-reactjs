@@ -140,3 +140,11 @@ export function formatDay(day: string): string {
 export function centsToDollars(cents: number): string {
   return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
 }
+
+/** A time of day written `HH:MM` (24 hours) as `6:00 PM`; `12:00` is `12:00 PM`, `00:30` is `12:30 AM`. */
+export function formatTimeOfDay(time: string): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const twelve = hours % 12 === 0 ? 12 : hours % 12;
+  return `${twelve}:${String(minutes).padStart(2, "0")} ${suffix}`;
+}

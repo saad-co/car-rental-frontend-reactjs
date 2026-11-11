@@ -32,3 +32,35 @@ const dashboardOptions = () =>
 export function useDashboard() {
   return useQuery(dashboardOptions());
 }
+
+/** The daily operations page, exactly as the API returns it (money in cents, Chicago days, nothing stored: D92). */
+export type DailyOperations = components["schemas"]["DailyOperationsDto"];
+
+/** Definition of the daily operations query: its key and how to fetch it. */
+const dailyOperationsOptions = () =>
+  queryOptions({
+    queryKey: queryKeys.dailyOperations,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET(
+        "/dashboard/daily-operations",
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Loading the daily operations failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+  });
+
+/**
+ * Who is due today, who is late, who should be deactivated, the weekly totals, deposits and collections: all worked out
+ * by the server when it is read. Refetched when the tab regains focus (the app-wide default), so the page is fresh when
+ * staff come back to it.
+ */
+export function useDailyOperations() {
+  return useQuery(dailyOperationsOptions());
+}

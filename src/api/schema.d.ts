@@ -903,6 +903,27 @@ export interface paths {
         patch: operations["DriversController_updateProfile"];
         trace?: never;
     };
+    "/drivers/{id}/rent-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * `PATCH /drivers/:id/rent-settings`: changes the time of day rent is due (Chicago time, `HH:MM`) and the "On Payment
+         *     Plan" flag (D92). A field left out stays; `rentDueTime: null` clears it. Returns the updated driver. `400` for a bad
+         *     time, `404` if unknown.
+         */
+        patch: operations["DriversController_updateRentSettings"];
+        trace?: never;
+    };
     "/drivers/{id}/onboarding": {
         parameters: {
             query?: never;
@@ -1304,6 +1325,26 @@ export interface paths {
         };
         /** `GET /dashboard`: every number on the dashboard in one response (money in cents, Chicago days). `401` no token. */
         get: operations["DashboardController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/daily-operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /dashboard/daily-operations`: the daily operations page (D92): payments due today, late payments, early warning.
+         *     Computed from the ledger and the signed contracts when read. `401` no token.
+         */
+        get: operations["DashboardController_dailyOperationsPage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2099,6 +2140,10 @@ export interface components {
             balanceCents: number;
             /** @description The application this driver came from (D84), for the link between the two pages; null for imported drivers. */
             applicationId: string | null;
+            /** @description The time of day rent is due, Chicago time as `HH:MM` (24 hours), or null = not set (D92). */
+            rentDueTime: string | null;
+            /** @description Marked "On Payment Plan" by staff (D92): left out of the Should Be Deactivated list while true. */
+            onPaymentPlan: boolean;
         };
         DriverListDto: {
             items: components["schemas"]["DriverDto"][];
@@ -2173,6 +2218,10 @@ export interface components {
             balanceCents: number;
             /** @description The application this driver came from (D84), for the link between the two pages; null for imported drivers. */
             applicationId: string | null;
+            /** @description The time of day rent is due, Chicago time as `HH:MM` (24 hours), or null = not set (D92). */
+            rentDueTime: string | null;
+            /** @description Marked "On Payment Plan" by staff (D92): left out of the Should Be Deactivated list while true. */
+            onPaymentPlan: boolean;
             profile: components["schemas"]["DriverProfileDto"];
         };
         UpdateDriverProfileDto: {
@@ -2188,6 +2237,12 @@ export interface components {
             dateOfBirth?: string | null;
             /** @description Current auto insurance: `true` / `false`; empty = not known. */
             hasInsurance?: boolean | null;
+        };
+        UpdateDriverRentSettingsDto: {
+            /** @description The time of day rent is due, Chicago time, `HH:MM`; `null` = not set. */
+            rentDueTime?: string | null;
+            /** @description Staff marked the driver "On Payment Plan": left out of the Should Be Deactivated list while true. */
+            onPaymentPlan?: boolean;
         };
         SetOnboardingStepDto: {
             /** @enum {string} */
@@ -2816,6 +2871,164 @@ export interface components {
             applications: components["schemas"]["DashboardApplicationsDto"];
             intake: components["schemas"]["DashboardIntakeDto"];
             sms: components["schemas"]["DashboardSmsDto"];
+        };
+        DueTodayRowDto: {
+            /** @description Weekly or daily, from the contract in force; null if the driver has none (not expected: rent comes from a contract). */
+            schedule: components["schemas"]["ContractSchedule"] | null;
+            /**
+             * @description Paid: nothing open. Late: open and past the due time. Not yet paid: open, due time not reached.
+             * @enum {string}
+             */
+            status: "paid" | "not_yet_paid" | "late";
+            driverId: string;
+            name: string;
+            /** @description The vehicle of the contract in force, "Model (PLATE)"; null when the contract names none. */
+            vehicle: string | null;
+            /** @description The contract's rent per period in cents; null without a contract. */
+            rateCents: number | null;
+            /** @description The time rent is due, Chicago `HH:MM` (24 hours); null = not set (late when the due day ends). */
+            dueTime: string | null;
+            /** @description The rent charge due today, in cents. */
+            amountDueCents: number;
+            /** @description What is still unpaid of it after credits are applied oldest first; 0 = paid. */
+            openCents: number;
+            /** @description Staff marked the driver "On Payment Plan". */
+            onPaymentPlan: boolean;
+        };
+        LateDriverDto: {
+            /** @description Rate type: weekly or daily, from the contract in force. */
+            schedule: components["schemas"]["ContractSchedule"] | null;
+            driverId: string;
+            name: string;
+            /** @description The time rent is due, Chicago `HH:MM`; null = not set. */
+            dueTime: string | null;
+            /** @description The unpaid part of every late rent charge added up, in cents. */
+            pastDueCents: number;
+            /** @description How many rent charges are late. */
+            lateCount: number;
+            /** @description Whole days the oldest late charge is late, counted on the Chicago clock (1 = the same time on the next day has come). */
+            daysLate: number;
+            /** @description Real hours since the oldest late charge was due. */
+            hoursLate: number;
+            /** @description Staff marked the driver "On Payment Plan". */
+            onPaymentPlan: boolean;
+        };
+        /**
+         * @description Active, or onboarding (an unpaid deposit puts a driver who is still onboarding on the list).
+         * @enum {string}
+         */
+        DriverStatus: "onboarding" | "active" | "inactive";
+        ShouldBeDeactivatedRowDto: {
+            /** @description Weekly or daily, from the contract in force; null if the driver has none. */
+            schedule: components["schemas"]["ContractSchedule"] | null;
+            /** @description Active, or onboarding (an unpaid deposit puts a driver who is still onboarding on the list). */
+            driverStatus: components["schemas"]["DriverStatus"];
+            /**
+             * @description Why: `daily_late` (2 or more daily payments late), `weekly_late` (a weekly payment 2 days late), `deposit_unpaid`
+             *     (deposit still unpaid 7 days after its due date). At least one; the rows can show several.
+             */
+            reasons: ("daily_late" | "weekly_late" | "deposit_unpaid")[];
+            driverId: string;
+            name: string;
+            /** @description Ledger balance in cents: credits minus debits; negative = the driver owes. */
+            balanceCents: number;
+            /** @description Whole days the oldest late rent payment is late (Chicago clock); 0 when the reason is the deposit only. */
+            daysLate: number;
+            /** @description Days since the unpaid deposit was due (the contract start date); null when the deposit is not what is unpaid. */
+            depositDaysSinceDue: number | null;
+            /** @description The unpaid deposit in cents; null when the deposit is not what is unpaid. */
+            depositCents: number | null;
+        };
+        WeekTotalDto: {
+            /** @description The Monday, Chicago day `YYYY-MM-DD`. */
+            weekStart: string;
+            /** @description The Sunday, Chicago day `YYYY-MM-DD`. */
+            weekEnd: string;
+            /** @description Confirmed payments that came in that week, in cents; 0 for a quiet week. */
+            totalCents: number;
+            paymentCount: number;
+        };
+        DepositCollectedRowDto: {
+            driverId: string;
+            name: string;
+            /** @description The amount typed when the step was ticked (D82), in cents; null for a step ticked before amounts were recorded. */
+            amountCents: number | null;
+            /**
+             * Format: date-time
+             * @description When the step was ticked.
+             */
+            paidAt: string;
+        };
+        DepositsCollectedDto: {
+            /** @description The recorded amounts added up, in cents. */
+            totalCents: number;
+            /** @description How many drivers have no amount recorded; they are in the list and not in the total. */
+            withoutAmountCount: number;
+            /** @description Newest first. */
+            drivers: components["schemas"]["DepositCollectedRowDto"][];
+        };
+        DepositPendingRowDto: {
+            driverId: string;
+            name: string;
+            /** @description The deposit the signed contract asks for, in cents. */
+            amountCents: number;
+            /** @description The day it is due: the contract start date, `YYYY-MM-DD`. */
+            dueDate: string;
+            /** @description Days since the due date; negative before it. */
+            daysSinceDue: number;
+            /** @description 7 or more days since the due date: the driver is also on the Should Be Deactivated list (unless on a payment plan). */
+            overdue: boolean;
+            onPaymentPlan: boolean;
+        };
+        DepositsPendingDto: {
+            totalCents: number;
+            /** @description Longest overdue first. */
+            drivers: components["schemas"]["DepositPendingRowDto"][];
+        };
+        /**
+         * @description How the driver left (D81); null for a driver deactivated before reasons existed.
+         * @enum {string}
+         */
+        DriverLeftReason: "contract_ended" | "bad_driver" | "cooperative_returned_car";
+        CollectionsRowDto: {
+            /** @description How the driver left (D81); null for a driver deactivated before reasons existed. */
+            leftReason: components["schemas"]["DriverLeftReason"] | null;
+            driverId: string;
+            name: string;
+            /** @description Ledger balance in cents: credits minus debits; negative = the driver owes. */
+            balanceCents: number;
+            /**
+             * Format: date-time
+             * @description When an admin sent the driver to collections.
+             */
+            sentToCollectionsAt: string;
+        };
+        CollectionsDto: {
+            /** @description What is owed by the drivers in the list (only the ones with a negative balance count), in cents. */
+            totalOwedCents: number;
+            drivers: components["schemas"]["CollectionsRowDto"][];
+        };
+        DailyOperationsDto: {
+            /**
+             * Format: date-time
+             * @description When the figures were worked out.
+             */
+            asOf: string;
+            /** @description Today's Chicago day, `YYYY-MM-DD`. */
+            today: string;
+            /** @description Payments due today: weekly drivers first, then daily, then by name. */
+            dueToday: components["schemas"]["DueTodayRowDto"][];
+            /** @description Drivers with a late rent payment, the longest late first. */
+            late: components["schemas"]["LateDriverDto"][];
+            /** @description Drivers whose oldest late payment is a full day or more late, the longest late first. */
+            earlyWarning: components["schemas"]["LateDriverDto"][];
+            /** @description Drivers who meet a deactivation rule and are not on a payment plan, the longest overdue first. List only. */
+            shouldBeDeactivated: components["schemas"]["ShouldBeDeactivatedRowDto"][];
+            /** @description The current week and the 25 before it, newest first (D5). Monday to Sunday, Chicago days. */
+            weeks: components["schemas"]["WeekTotalDto"][];
+            depositsCollected: components["schemas"]["DepositsCollectedDto"];
+            depositsPending: components["schemas"]["DepositsPendingDto"];
+            collections: components["schemas"]["CollectionsDto"];
         };
     };
     responses: never;
@@ -4087,6 +4300,8 @@ export interface operations {
                     dateOfBirth?: string;
                     /** @description true or false */
                     hasInsurance?: string;
+                    /** @description Time rent is due, Chicago time, HH:MM (24 hours) */
+                    rentDueTime?: string;
                     /** @description JSON list, e.g. [{"type":"zelle","value":"Pat Example"}] */
                     aliases?: string;
                     /** Format: binary */
@@ -4140,6 +4355,31 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateDriverProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDetailDto"];
+                };
+            };
+        };
+    };
+    DriversController_updateRentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDriverRentSettingsDto"];
             };
         };
         responses: {
@@ -4679,6 +4919,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DashboardDto"];
+                };
+            };
+        };
+    };
+    DashboardController_dailyOperationsPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyOperationsDto"];
                 };
             };
         };
