@@ -7,7 +7,7 @@ import ApprovedApplicationsList from "./pages/Applications/ApprovedApplicationsL
 import ApplicationsList from "./pages/Applications/ApplicationsList";
 import SignIn from "./pages/AuthPages/SignIn";
 import DailyOperations from "./pages/Dashboard/DailyOperations";
-import Home from "./pages/Dashboard/Home";
+import FinancialViews from "./pages/Dashboard/FinancialViews";
 import ChangePassword from "./pages/Driver/ChangePassword";
 import DriverHome from "./pages/Driver/DriverHome";
 import VerifyEmail from "./pages/Driver/VerifyEmail";
@@ -43,7 +43,7 @@ export default function App() {
         <Route path="/admin" element={<RequireAuth role="admin" />}>
           <Route element={<AppLayout />}>
             <Route index element={<DailyOperations />} />
-            <Route path="statistics" element={<Home />} />
+            <Route path="statistics" element={<FinancialViews />} />
             <Route path="applications" element={<ApplicationsList />} />
             <Route path="applications/new" element={<NewApplication />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />

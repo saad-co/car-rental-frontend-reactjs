@@ -35,6 +35,14 @@ export type LedgerPageParams =
 export type PaymentsListParams =
   paths["/payments"]["get"]["parameters"]["query"];
 
+/** Query string of `GET /dashboard/collections` (view, page, limit, optional days), from the generated types. */
+export type CollectionsParams =
+  paths["/dashboard/collections"]["get"]["parameters"]["query"];
+
+/** Query string of `GET /dashboard/revenue-by-driver` (page, limit, optional days). */
+export type RevenueByDriverParams =
+  paths["/dashboard/revenue-by-driver"]["get"]["parameters"]["query"];
+
 /** Query string of `GET /inbound-emails` (status and provider filters, page, limit). */
 export type InboundEmailsListParams =
   paths["/inbound-emails"]["get"]["parameters"]["query"];
@@ -116,6 +124,12 @@ export const queryKeys = {
   dashboard: ["dashboard"] as const,
   /** The daily operations page (`GET /dashboard/daily-operations`, D92). Under `dashboard`, so one invalidation reaches both. */
   dailyOperations: ["dashboard", "daily-operations"] as const,
+  /** The collections of page 2 (`GET /dashboard/collections`, D93), under `dashboard` like the other two. */
+  collections: (params: CollectionsParams) =>
+    ["dashboard", "collections", params] as const,
+  /** Revenue per driver (`GET /dashboard/revenue-by-driver`, D93). */
+  revenueByDriver: (params: RevenueByDriverParams) =>
+    ["dashboard", "revenue-by-driver", params] as const,
   payments: {
     all: ["payments"] as const,
     list: (params: PaymentsListParams) => ["payments", "list", params] as const,
