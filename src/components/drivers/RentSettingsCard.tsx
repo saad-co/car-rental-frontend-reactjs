@@ -61,7 +61,9 @@ function EditDueTimeDialog({
 }
 
 /**
- * The driver's payment due time and the "On payment plan" switch (D92). The due day comes from the signed contract; the
+ * The driver's payment due time, the "On payment plan" switch (D92) and the two reminder switches (Fleet revisions
+ * section 6: the 48-hour text for a weekly driver, and the balance reminders). A driver who replied STOP is shown as
+ * opted out: no reminder reaches them whatever the switches say. The due day comes from the signed contract; the
  * time is set here (or when the driver is added). The switch saves at once: while it is on, the driver is left out of the
  * Should Be Deactivated list; staff switch it off when the plan is broken.
  */
@@ -107,6 +109,40 @@ export default function RentSettingsCard({ driver }: { driver: DriverDetail }) {
             While on, the driver is not listed under Should Be Deactivated.
             Switch it off if they miss a plan payment.
           </p>
+        </li>
+        <li className="py-3">
+          <Switch
+            label="Payment-due reminder (weekly drivers)"
+            checked={driver.upcomingRemindersEnabled}
+            disabled={update.isPending}
+            onChange={(upcomingRemindersEnabled) =>
+              update.mutate({ upcomingRemindersEnabled })
+            }
+          />
+          <p className="mt-2 text-xs text-gray-500">
+            A text 48 hours before the weekly rent is due. Switch it off for a
+            driver who should not get it.
+          </p>
+        </li>
+        <li className="py-3">
+          <Switch
+            label="Balance reminders"
+            checked={driver.balanceRemindersEnabled}
+            disabled={update.isPending}
+            onChange={(balanceRemindersEnabled) =>
+              update.mutate({ balanceRemindersEnabled })
+            }
+          />
+          <p className="mt-2 text-xs text-gray-500">
+            The texts about a balance over $100 and several payments behind.
+            Switch it off for a driver who should not get them.
+          </p>
+          {driver.smsOptedOut && (
+            <p className="mt-2 text-xs font-medium text-error-600">
+              This driver replied STOP: no reminder is sent until they reply
+              START.
+            </p>
+          )}
           {update.isError && (
             <p role="alert" className="mt-2 text-xs text-error-600">
               {update.error.message}

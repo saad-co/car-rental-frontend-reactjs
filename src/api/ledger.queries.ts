@@ -63,6 +63,41 @@ export function useAddLedgerEntry(driverId: string) {
   });
 }
 
+/** What an edit changes: any of the amount (cents), the day, the description and the staff memo. */
+export type EditLedgerEntryBody = components["schemas"]["EditLedgerEntryDto"];
+
+/**
+ * Corrects an entry (amount, date, description, memo). The ledger stays append-only: the API cancels the old entry with a
+ * reversal and writes the corrected one in its place, and logs who changed what.
+ */
+export function useEditLedgerEntry(driverId: string) {
+  const invalidate = useInvalidateLedger(driverId);
+  return useMutation({
+    mutationFn: async ({
+      entryId,
+      changes,
+    }: {
+      entryId: string;
+      changes: EditLedgerEntryBody;
+    }) => {
+      const { data, error, response } = await api.PATCH(
+        "/drivers/{id}/ledger/entries/{entryId}",
+        { params: { path: { id: driverId, entryId } }, body: changes },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Saving the change failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
 /** Cancels an entry with a reversal (same amount, opposite direction, dated today). */
 export function useReverseLedgerEntry(driverId: string) {
   const invalidate = useInvalidateLedger(driverId);

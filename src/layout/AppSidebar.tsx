@@ -7,6 +7,7 @@ import {
   DollarIcon,
   GridIcon,
   HorizontaLDots,
+  ListIcon,
   MailIcon,
   PieChartIcon,
   PlugInIcon,
@@ -39,6 +40,8 @@ const navItems: NavItem[] = [
   { name: "Drivers", icon: <UserIcon />, path: "/admin/drivers" },
   { name: "Collections", icon: <AlertIcon />, path: "/admin/collections" },
   { name: "Payments", icon: <DollarIcon />, path: "/admin/payments" },
+  // Every driver's ledger in one searchable list (Fleet revisions section 5).
+  { name: "Ledgers", icon: <ListIcon />, path: "/admin/ledgers" },
   { name: "Email log", icon: <MailIcon />, path: "/admin/email-log" },
   { name: "Settings", icon: <PlugInIcon />, path: "/admin/settings" },
 ];

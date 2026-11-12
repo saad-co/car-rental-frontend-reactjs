@@ -8,6 +8,8 @@ import { formatCents, formatDateTime, formatDay } from "../../utils";
 import type { AppliesTo } from "./NewEntryDialog";
 import { entryTypeColor, entryTypeLabel } from "../drivers/ledgerLabels";
 import { paymentSourceLabel } from "../payments/paymentLabels";
+import PaymentMethodLogo from "../payments/PaymentMethodLogo";
+import { logoMethodOf } from "../payments/logoMethod";
 import Badge from "../ui/badge/Badge";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal";
@@ -62,6 +64,8 @@ interface EntryDetailsDialogProps {
   onCredit: (charge: AppliesTo) => void;
   /** "Reverse...": the screen opens the reverse dialog. */
   onReverse: (entry: LedgerEntry) => void;
+  /** "Edit...": the screen opens the edit dialog. */
+  onEdit: (entry: LedgerEntry) => void;
   /** "Void payment...": the screen opens the void dialog. */
   onVoid: (paymentId: string) => void;
 }
@@ -69,7 +73,7 @@ interface EntryDetailsDialogProps {
 /**
  * One entry with everything that links to it (B86): what it reverses or was reversed by, the charge it is applied
  * against, the credits applied to it, and its payment. The buttons at the bottom are the actions that make sense for
- * this entry; nothing here edits it (entries are locked once written).
+ * this entry. Edit changes the entry itself (D99); the change is logged.
  */
 export default function EntryDetailsDialog({
   driverId,
@@ -78,6 +82,7 @@ export default function EntryDetailsDialog({
   onOpenEntry,
   onCredit,
   onReverse,
+  onEdit,
   onVoid,
 }: EntryDetailsDialogProps) {
   const details = useLedgerEntry(driverId, entryId);
@@ -102,6 +107,7 @@ export default function EntryDetailsDialog({
           onOpenEntry={onOpenEntry}
           onCredit={onCredit}
           onReverse={onReverse}
+          onEdit={onEdit}
           onVoid={onVoid}
         />
       )}
@@ -122,6 +128,7 @@ function Content({
   onOpenEntry,
   onCredit,
   onReverse,
+  onEdit,
   onVoid,
 }: {
   details: LedgerEntryDetails;
@@ -129,6 +136,7 @@ function Content({
   onOpenEntry: (entryId: string) => void;
   onCredit: (charge: AppliesTo) => void;
   onReverse: (entry: LedgerEntry) => void;
+  onEdit: (entry: LedgerEntry) => void;
   onVoid: (paymentId: string) => void;
 }) {
   const { entry, payment } = details;
@@ -214,6 +222,10 @@ function Content({
           <>
             <Row label="Paid by">
               {payment.senderName} via{" "}
+              <PaymentMethodLogo
+                method={logoMethodOf(payment.source, payment.manualMethod)}
+                size={16}
+              />{" "}
               {paymentSourceLabel(payment.source, payment.manualMethod)}
             </Row>
             {payment.transactionId && (
@@ -236,8 +248,9 @@ function Content({
       </dl>
 
       <p className="mt-4 rounded-lg bg-blue-light-50 px-4 py-3 text-theme-xs text-blue-light-500">
-        Amounts are locked once posted. To fix a mistake, reverse the entry or
-        add a credit; the history stays.
+        To fix a mistake, use Edit to change this entry (the change is logged
+        with the old and new values). Reverse cancels the entry and keeps it in
+        the history.
       </p>
 
       <div className="mt-6 flex flex-wrap justify-end gap-3">
@@ -258,6 +271,11 @@ function Content({
             }
           >
             Credit against this
+          </Button>
+        )}
+        {entry.canEdit && (
+          <Button variant="outline" size="sm" onClick={() => onEdit(entry)}>
+            Edit...
           </Button>
         )}
         {entry.canReverse && (

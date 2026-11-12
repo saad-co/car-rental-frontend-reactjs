@@ -12,6 +12,7 @@ import ChangePassword from "./pages/Driver/ChangePassword";
 import DriverHome from "./pages/Driver/DriverHome";
 import VerifyEmail from "./pages/Driver/VerifyEmail";
 import CollectionsList from "./pages/Drivers/CollectionsList";
+import LedgersList from "./pages/Drivers/LedgersList";
 import DriversList from "./pages/Drivers/DriversList";
 import ContractDraft from "./pages/Drivers/ContractDraft";
 import DriverDetail from "./pages/Drivers/DriverDetail";
@@ -62,6 +63,7 @@ export default function App() {
             />
             <Route path="collections" element={<CollectionsList />} />
             <Route path="payments" element={<PaymentsList />} />
+            <Route path="ledgers" element={<LedgersList />} />
             <Route path="email-log" element={<EmailLogList />} />
             <Route path="settings" element={<Settings />} />
           </Route>

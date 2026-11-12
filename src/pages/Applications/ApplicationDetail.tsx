@@ -78,14 +78,14 @@ function FieldRows({
   return <Rows rows={rows} />;
 }
 
-/** Which review buttons make sense in each status. Approved is final, and cannot be deleted (API rules). */
+/** Which review buttons make sense in each status. Approved is final, but can be deleted: the driver stays (Fleet revisions section 5). */
 function availableActions(status: ApplicationDetailData["status"]) {
   return {
     // "Start onboarding" (D80) is offered on an approved application that has no driver yet; the page checks that.
     approve: status !== "approved",
     hold: status === "pending" || status === "rejected",
     reject: status === "pending" || status === "on_hold",
-    delete: status !== "approved",
+    delete: true,
   };
 }
 
@@ -431,7 +431,10 @@ export default function ApplicationDetail() {
       >
         The application and its documents are removed for good, and its text
         history too, unless another application or a driver has the same phone.
-        This cannot be undone.
+        This cannot be undone. The deletion is logged with your name and the
+        time.
+        {application?.status === "approved" &&
+          " The driver this approval made stays, and keeps the documents."}
       </ConfirmDialog>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">

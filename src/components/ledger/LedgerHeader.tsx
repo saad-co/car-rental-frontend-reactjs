@@ -11,6 +11,8 @@ import {
 } from "../../utils";
 import DriverStatusBadge from "../drivers/DriverStatusBadge";
 import { paymentSourceLabel } from "../payments/paymentLabels";
+import PaymentMethodLogo from "../payments/PaymentMethodLogo";
+import { logoMethodOf } from "../payments/logoMethod";
 
 /**
  * The top card of the ledger page: who the driver is, their last payment, and the balance in big letters
@@ -53,7 +55,12 @@ export default function LedgerHeader({
               <span className="font-medium text-gray-800">
                 {formatCents(last.amountCents)}
               </span>{" "}
-              via {paymentSourceLabel(last.source, last.manualMethod)} on{" "}
+              via{" "}
+              <PaymentMethodLogo
+                method={logoMethodOf(last.source, last.manualMethod)}
+                size={16}
+              />{" "}
+              {paymentSourceLabel(last.source, last.manualMethod)} on{" "}
               {formatDay(chicagoToday(new Date(last.occurredAt)))}
             </>
           ) : overview ? (
