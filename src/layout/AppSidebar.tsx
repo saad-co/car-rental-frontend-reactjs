@@ -13,13 +13,16 @@ import {
   PlugInIcon,
   UserIcon,
 } from "../icons";
-import { BRAND_INITIALS, BRAND_NAME } from "../brand";
+import BrandLogo, { BrandMark } from "../components/brand/BrandLogo";
+import { HIDE_FINANCIALS } from "../demoMode";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path: string;
+  /** Hidden while the investor-demo mode is on (`src/demoMode.ts`). */
+  money?: boolean;
 };
 
 // Add a line here when a new screen exists (Drivers, Payments, ...).
@@ -30,6 +33,7 @@ const navItems: NavItem[] = [
     name: "Financial views",
     icon: <PieChartIcon />,
     path: "/admin/statistics",
+    money: true,
   },
   { name: "Applications", icon: <DocsIcon />, path: "/admin/applications" },
   {
@@ -39,7 +43,12 @@ const navItems: NavItem[] = [
   },
   { name: "Drivers", icon: <UserIcon />, path: "/admin/drivers" },
   { name: "Collections", icon: <AlertIcon />, path: "/admin/collections" },
-  { name: "Payments", icon: <DollarIcon />, path: "/admin/payments" },
+  {
+    name: "Payments",
+    icon: <DollarIcon />,
+    path: "/admin/payments",
+    money: true,
+  },
   // Every driver's ledger in one searchable list (Fleet revisions section 5).
   { name: "Ledgers", icon: <ListIcon />, path: "/admin/ledgers" },
   { name: "Email log", icon: <MailIcon />, path: "/admin/email-log" },
@@ -79,13 +88,13 @@ const AppSidebar: React.FC = () => {
           !isExpanded && !isHovered ? "xl:justify-center" : "justify-start"
         }`}
       >
-        {/* Text logo placeholder until the client provides a real one. */}
+        {/* The client's logo; the collapsed sidebar is too narrow for the wordmark and shows its "G" and "C". */}
         <Link
           to="/admin"
+          aria-label="GonzoCar home"
           className="flex items-center gap-2.5 font-display text-[15px] font-extrabold uppercase tracking-[0.04em] text-gray-900"
         >
-          <i aria-hidden="true" className="inline-block size-3 bg-brand-500" />
-          {showLabels ? BRAND_NAME : BRAND_INITIALS}
+          {showLabels ? <BrandLogo height={26} /> : <BrandMark />}
         </Link>
       </div>
 
@@ -99,29 +108,31 @@ const AppSidebar: React.FC = () => {
             {showLabels ? "Menu" : <HorizontaLDots className="size-6" />}
           </h2>
           <ul className="flex flex-col gap-1">
-            {navItems.map((nav) => (
-              <li key={nav.name}>
-                <Link
-                  to={nav.path}
-                  className={`menu-item group ${
-                    isActive(nav.path)
-                      ? "menu-item-active"
-                      : "menu-item-inactive"
-                  }`}
-                >
-                  <span
-                    className={`menu-item-icon-size ${
+            {navItems
+              .filter((nav) => !(HIDE_FINANCIALS && nav.money))
+              .map((nav) => (
+                <li key={nav.name}>
+                  <Link
+                    to={nav.path}
+                    className={`menu-item group ${
                       isActive(nav.path)
-                        ? "menu-item-icon-active"
-                        : "menu-item-icon-inactive"
+                        ? "menu-item-active"
+                        : "menu-item-inactive"
                     }`}
                   >
-                    {nav.icon}
-                  </span>
-                  {showLabels && <span>{nav.name}</span>}
-                </Link>
-              </li>
-            ))}
+                    <span
+                      className={`menu-item-icon-size ${
+                        isActive(nav.path)
+                          ? "menu-item-icon-active"
+                          : "menu-item-icon-inactive"
+                      }`}
+                    >
+                      {nav.icon}
+                    </span>
+                    {showLabels && <span>{nav.name}</span>}
+                  </Link>
+                </li>
+              ))}
           </ul>
         </nav>
       </div>

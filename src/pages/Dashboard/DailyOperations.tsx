@@ -20,6 +20,7 @@ import Button from "../../components/ui/button/Button";
 import { PlusIcon } from "../../icons";
 import Spinner from "../../components/ui/spinner/Spinner";
 import StatTile from "../../components/ui/stat/StatTile";
+import { HIDE_FINANCIALS } from "../../demoMode";
 import { formatCents, formatDateTime } from "../../utils";
 
 /**
@@ -121,18 +122,22 @@ export default function DailyOperations() {
             to="#should-be-deactivated"
             tone={data.shouldBeDeactivated.length > 0 ? "hot" : "none"}
           />
-          <StatTile
-            label="Collected this week"
-            value={formatCents(thisWeek.totalCents)}
-            hint={plural(thisWeek.paymentCount, "payment")}
-            to="#weekly-total"
-          />
-          <StatTile
-            label="Deposits pending"
-            value={formatCents(data.depositsPending.totalCents)}
-            hint={plural(data.depositsPending.drivers.length, "driver")}
-            to="#deposits-pending"
-          />
+          {!HIDE_FINANCIALS && (
+            <StatTile
+              label="Collected this week"
+              value={formatCents(thisWeek.totalCents)}
+              hint={plural(thisWeek.paymentCount, "payment")}
+              to="#weekly-total"
+            />
+          )}
+          {!HIDE_FINANCIALS && (
+            <StatTile
+              label="Deposits pending"
+              value={formatCents(data.depositsPending.totalCents)}
+              hint={plural(data.depositsPending.drivers.length, "driver")}
+              to="#deposits-pending"
+            />
+          )}
         </div>
       </header>
 
@@ -149,16 +154,21 @@ export default function DailyOperations() {
       <div id="should-be-deactivated" className="scroll-mt-24">
         <ShouldBeDeactivatedCard rows={data.shouldBeDeactivated} />
       </div>
-      <div id="weekly-total" className="scroll-mt-24">
-        <WeeklyTotalCard weeks={data.weeks} />
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <DepositsCollectedCard data={data.depositsCollected} />
-        <div id="deposits-pending" className="scroll-mt-24">
-          <DepositsPendingCard data={data.depositsPending} />
-        </div>
-      </div>
-      <CollectionsCard data={data.collections} />
+      {/* Everything below is money: hidden in the investor-demo mode (src/demoMode.ts). */}
+      {!HIDE_FINANCIALS && (
+        <>
+          <div id="weekly-total" className="scroll-mt-24">
+            <WeeklyTotalCard weeks={data.weeks} />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <DepositsCollectedCard data={data.depositsCollected} />
+            <div id="deposits-pending" className="scroll-mt-24">
+              <DepositsPendingCard data={data.depositsPending} />
+            </div>
+          </div>
+          <CollectionsCard data={data.collections} />
+        </>
+      )}
     </div>
   );
 }

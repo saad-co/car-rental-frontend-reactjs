@@ -12,6 +12,7 @@ import ChangePassword from "./pages/Driver/ChangePassword";
 import DriverHome from "./pages/Driver/DriverHome";
 import VerifyEmail from "./pages/Driver/VerifyEmail";
 import CollectionsList from "./pages/Drivers/CollectionsList";
+import { HIDE_FINANCIALS } from "./demoMode";
 import LedgersList from "./pages/Drivers/LedgersList";
 import DriversList from "./pages/Drivers/DriversList";
 import ContractDraft from "./pages/Drivers/ContractDraft";
@@ -44,7 +45,17 @@ export default function App() {
         <Route path="/admin" element={<RequireAuth role="admin" />}>
           <Route element={<AppLayout />}>
             <Route index element={<DailyOperations />} />
-            <Route path="statistics" element={<FinancialViews />} />
+            {/* Investor-demo mode (src/demoMode.ts): the money pages send you to the dashboard. */}
+            <Route
+              path="statistics"
+              element={
+                HIDE_FINANCIALS ? (
+                  <Navigate to="/admin" replace />
+                ) : (
+                  <FinancialViews />
+                )
+              }
+            />
             <Route path="applications" element={<ApplicationsList />} />
             <Route path="applications/new" element={<NewApplication />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
@@ -62,7 +73,16 @@ export default function App() {
               element={<LedgerStatement />}
             />
             <Route path="collections" element={<CollectionsList />} />
-            <Route path="payments" element={<PaymentsList />} />
+            <Route
+              path="payments"
+              element={
+                HIDE_FINANCIALS ? (
+                  <Navigate to="/admin" replace />
+                ) : (
+                  <PaymentsList />
+                )
+              }
+            />
             <Route path="ledgers" element={<LedgersList />} />
             <Route path="email-log" element={<EmailLogList />} />
             <Route path="settings" element={<Settings />} />

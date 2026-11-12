@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import type { DailyOperations } from "../../../api/dashboard.queries";
+import { HIDE_FINANCIALS } from "../../../demoMode";
 import { formatCents } from "../../../utils";
 import type { Column } from "../../tables/DataTable";
 import Tabs from "../../ui/tabs/Tabs";
@@ -45,11 +46,13 @@ const COLUMNS: Column<Row>[] = [
     render: (row) => (
       <span className="inline-flex flex-wrap items-center gap-2">
         <DueStatusBadge status={row.status} />
-        {row.status === "late" && row.openCents < row.amountDueCents && (
-          <span className="num text-theme-xs text-gray-500">
-            {formatCents(row.openCents)} left
-          </span>
-        )}
+        {!HIDE_FINANCIALS &&
+          row.status === "late" &&
+          row.openCents < row.amountDueCents && (
+            <span className="num text-theme-xs text-gray-500">
+              {formatCents(row.openCents)} left
+            </span>
+          )}
       </span>
     ),
   },

@@ -189,6 +189,23 @@ layer(base);
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  /*
+   * The keyboard focus ring (the outline that appears when you move with Tab). The browser's default is a white ring, which
+   * the client read as a stray white line. It stays (people who use the keyboard need to see where they are), in the brand
+   * orange. Only for keyboard focus: a mouse click shows nothing. Text fields keep their own focus border.
+   */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  summary:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+  /* The sidebar list scrolls, which clips anything drawn outside its edges: its ring is drawn inside the item instead. */
+  .menu-item:focus-visible {
+    outline-offset: -2px;
+  }
   :root {
     /* Native controls (date inputs, scrollbars, <select> lists) draw dark too. */
     color-scheme: dark;

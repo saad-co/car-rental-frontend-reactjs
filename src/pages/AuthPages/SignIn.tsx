@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router";
+import BrandLogo from "../../components/brand/BrandLogo";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
@@ -60,66 +61,76 @@ export default function SignIn({ role }: { role: AuthUser["role"] }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-surface p-8 shadow-theme-xs">
-        <div className="mb-5 sm:mb-8">
-          <h1 className="mb-2 font-semibold text-gray-800 text-title-sm">
-            {role === "admin" ? "Admin sign in" : "Driver sign in"}
-          </h1>
-          <p className="text-sm text-gray-500">
-            Enter your email and password to sign in.
-          </p>
-        </div>
-
-        {error && (
-          <p
-            role="alert"
-            className="mb-6 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-600"
-          >
-            {error}
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="email">
-                Email <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="password">
-                Password <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full"
-              size="sm"
-              disabled={submitting}
-            >
-              {submitting ? "Signing in..." : "Sign in"}
-            </Button>
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 p-6">
+      {/* The client's logo, upper left. */}
+      <div className="absolute top-6 left-6">
+        <BrandLogo height={30} />
+      </div>
+      <div className="w-full max-w-md">
+        {/* The product name above the card, as in the client's mock-up of the sign-in page. */}
+        <p className="mb-8 text-center text-title-md text-gray-800">
+          Fleet Command Center
+        </p>
+        <div className="rounded-2xl border border-gray-200 bg-surface p-8 shadow-theme-xs">
+          <div className="mb-5 sm:mb-8">
+            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm">
+              {role === "admin" ? "Admin sign in" : "Driver sign in"}
+            </h1>
+            <p className="text-sm text-gray-500">
+              Enter your email and password to sign in.
+            </p>
           </div>
-        </form>
+
+          {error && (
+            <p
+              role="alert"
+              className="mb-6 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-600"
+            >
+              {error}
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-6">
+              <div>
+                <Label htmlFor="email">
+                  Email <span className="text-error-500">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">
+                  Password <span className="text-error-500">*</span>
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                size="sm"
+                disabled={submitting}
+              >
+                {submitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
