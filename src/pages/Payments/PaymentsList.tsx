@@ -6,6 +6,9 @@ import {
   type Payment,
   type PaymentSource,
 } from "../../api/payments.queries";
+import { Link } from "react-router";
+import PaymentMethodLogo from "../../components/payments/PaymentMethodLogo";
+import { logoMethodOf } from "../../components/payments/logoMethod";
 import AssignDriverDialog from "../../components/payments/AssignDriverDialog";
 import {
   MATCH_METHOD_LABEL,
@@ -161,6 +164,10 @@ export default function PaymentsList() {
             {payment.senderName}
           </span>
           <span className="block text-theme-xs text-gray-500">
+            <PaymentMethodLogo
+              method={logoMethodOf(payment.source, payment.manualMethod)}
+              size={16}
+            />{" "}
             {paymentSourceLabel(payment.source, payment.manualMethod)}
             {payment.senderHandle && ` · ${payment.senderHandle}`}
           </span>
@@ -186,7 +193,16 @@ export default function PaymentsList() {
       render: (payment) => {
         const suggested = payment.suggestedDriver;
         return (
-          <div className="flex justify-end gap-2">
+          <div className="flex items-center justify-end gap-2">
+            {/* Fleet revisions section 5: from a payment straight to the driver's ledger. */}
+            {payment.driver && (
+              <Link
+                to={`/admin/drivers/${payment.driver.id}/ledger`}
+                className="mr-1 text-theme-xs font-medium text-brand-500 hover:text-brand-600"
+              >
+                View ledger
+              </Link>
+            )}
             {!payment.driver && suggested && (
               <button
                 type="button"

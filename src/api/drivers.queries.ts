@@ -339,15 +339,27 @@ export function useUploadDriverDocument(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (vars: {
-      kind: "license" | "rating" | "earnings" | "contract";
+      kind:
+        | "license"
+        | "license_back"
+        | "rating"
+        | "earnings"
+        | "contract"
+        | "other";
       file: File;
+      /** An "Other" document: which of the 5 slots, and the name staff typed for it. */
+      slot?: number;
+      label?: string;
     }) => {
       const body = new FormData();
       body.append("file", vars.file);
       const { data, error, response } = await api.PUT(
         "/drivers/{id}/documents/{kind}",
         {
-          params: { path: { id, kind: vars.kind } },
+          params: {
+            path: { id, kind: vars.kind },
+            query: { slot: vars.slot, label: vars.label },
+          },
           body: body as never,
         },
       );

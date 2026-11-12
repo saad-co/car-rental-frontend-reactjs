@@ -108,6 +108,250 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /settings/reminders`: the switch, the payment link, and how texting is set up. */
+        get: operations["RemindersController_getSettings"];
+        /**
+         * `PUT /settings/reminders`: turns the automatic reminders on or off and sets the payment link. Off by default: nothing is
+         *     texted until an admin turns it on. `400` for a link that is not an http(s) address.
+         */
+        put: operations["RemindersController_saveSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers/:id/reminders`: the reminders sent to the driver, newest first. `404` unknown driver. */
+        get: operations["RemindersController_listForDriver"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /dashboard`: every number on the dashboard in one response (money in cents, Chicago days). `401` no token. */
+        get: operations["DashboardController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/daily-operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /dashboard/daily-operations`: the daily operations page (D92): payments due today, late payments, early warning.
+         *     Computed from the ledger and the signed contracts when read. `401` no token.
+         */
+        get: operations["DashboardController_dailyOperationsPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /dashboard/collections?view=monthly|weekly|daily`: confirmed payments received per month, Monday-to-Sunday week or
+         *     day (Chicago), newest first, paginated, with the total of the whole filter (page 2, D93). Optional `from` / `to` days
+         *     (a custom range). `400` a bad view or day, or `from` after `to`; `401` no token.
+         */
+        get: operations["DashboardController_collectionsPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/revenue-by-driver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /dashboard/revenue-by-driver`: confirmed payments received per driver, biggest first, paginated, with the total of
+         *     the whole filter (page 2, D93). Optional `from` / `to` days. `400` a bad day, or `from` after `to`; `401` no token.
+         */
+        get: operations["DashboardController_revenueByDriver"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sms/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /sms/status`: SMS mode and what is connected. */
+        get: operations["SmsController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sms/{kind}/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /sms/:kind/:id/messages`: one page of the chat, newest first. */
+        get: operations["SmsController_list"];
+        put?: never;
+        /**
+         * `POST /sms/:kind/:id/messages`: sends a text, according to SMS_MODE.
+         *     `409` texting is off, `502` Quo refused (the failure is saved and shown in the chat),
+         *     `400` the application's phone is not a US number, `404` unknown record.
+         */
+        post: operations["SmsController_send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sms/{kind}/{id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /sms/:kind/:id/sync`: pulls this contact's history from Quo (texts sent from the Quo app too). */
+        post: operations["SmsController_sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sms/{kind}/{id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /sms/:kind/:id/files`: the files in this contact's conversation, newest first. */
+        get: operations["SmsController_files"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/quo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["QuoWebhookController_receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/message-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /message-templates`: every template, grouped by kind, with its placeholders and last edit. */
+        get: operations["MessageTemplatesController_list"];
+        put?: never;
+        /** `POST /message-templates`: adds a template. `400` empty, too long or unknown placeholder; `409` name taken. */
+        post: operations["MessageTemplatesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/message-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * `PUT /message-templates/:id`: replaces a template's name and text. PUT because both are replaced. `400` empty,
+         *     too long or unknown placeholder; `404` unknown id; `409` name taken.
+         */
+        put: operations["MessageTemplatesController_update"];
+        post?: never;
+        /** `DELETE /message-templates/:id`: `404` unknown id; `409` if it is the last template of its kind. */
+        delete: operations["MessageTemplatesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications": {
         parameters: {
             query?: never;
@@ -422,8 +666,9 @@ export interface paths {
         get?: never;
         /**
          * `PUT /drivers/:id/documents/:kind`: puts one file (multipart field `file`) in the licence, rating, earnings or
-         *     contract slot, replacing what is there. The contract (D90) is always kept on the driver itself. JPG, PNG or PDF,
-         *     at most 10 MB; `400` otherwise. Returns the slot.
+         *     contract slot, replacing what is there. The contract (D90), the back of the licence (`license_back`) and the
+         *     "Other" files (`other`, with `?slot=1..5&label=...`) are always kept on the driver itself. JPG, PNG or PDF, at most
+         *     10 MB; `400` otherwise. Returns the slot.
          */
         put: operations["DriverDocumentsController_upload"];
         post?: never;
@@ -466,134 +711,6 @@ export interface paths {
          *     else's note; `404` unknown note.
          */
         delete: operations["ApplicationNotesController_remove"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sms/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /sms/status`: SMS mode and what is connected. */
-        get: operations["SmsController_status"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sms/{kind}/{id}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /sms/:kind/:id/messages`: one page of the chat, newest first. */
-        get: operations["SmsController_list"];
-        put?: never;
-        /**
-         * `POST /sms/:kind/:id/messages`: sends a text, according to SMS_MODE.
-         *     `409` texting is off, `502` Quo refused (the failure is saved and shown in the chat),
-         *     `400` the application's phone is not a US number, `404` unknown record.
-         */
-        post: operations["SmsController_send"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sms/{kind}/{id}/sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** `POST /sms/:kind/:id/sync`: pulls this contact's history from Quo (texts sent from the Quo app too). */
-        post: operations["SmsController_sync"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sms/{kind}/{id}/files": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /sms/:kind/:id/files`: the files in this contact's conversation, newest first. */
-        get: operations["SmsController_files"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks/quo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["QuoWebhookController_receive"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/message-templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /message-templates`: every template, grouped by kind, with its placeholders and last edit. */
-        get: operations["MessageTemplatesController_list"];
-        put?: never;
-        /** `POST /message-templates`: adds a template. `400` empty, too long or unknown placeholder; `409` name taken. */
-        post: operations["MessageTemplatesController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/message-templates/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * `PUT /message-templates/:id`: replaces a template's name and text. PUT because both are replaced. `400` empty,
-         *     too long or unknown placeholder; `404` unknown id; `409` name taken.
-         */
-        put: operations["MessageTemplatesController_update"];
-        post?: never;
-        /** `DELETE /message-templates/:id`: `404` unknown id; `409` if it is the last template of its kind. */
-        delete: operations["MessageTemplatesController_remove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -917,8 +1034,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * `PATCH /drivers/:id/rent-settings`: changes the time of day rent is due (Chicago time, `HH:MM`) and the "On Payment
-         *     Plan" flag (D92). A field left out stays; `rentDueTime: null` clears it. Returns the updated driver. `400` for a bad
+         * `PATCH /drivers/:id/rent-settings`: changes the time of day rent is due (Chicago time, `HH:MM`), the "On Payment
+         *     Plan" flag (D92) and the two reminder switches (`upcomingRemindersEnabled`, `balanceRemindersEnabled`). A field left out stays; `rentDueTime: null` clears it. Returns the updated driver. `400` for a bad
          *     time, `404` if unknown.
          */
         patch: operations["DriversController_updateRentSettings"];
@@ -1095,6 +1212,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /drivers/:id/notes`: one page of notes, newest first. `404` unknown driver. */
+        get: operations["DriverNotesController_list"];
+        put?: never;
+        /** `POST /drivers/:id/notes`: adds a note by the logged-in admin. `400` empty or too long; `404` unknown driver. */
+        post: operations["DriverNotesController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * `DELETE /drivers/:id/notes/:noteId`: deletes one of your own notes. `204` with no body; `403` someone else's note;
+         *     `404` unknown note.
+         */
+        delete: operations["DriverNotesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{id}/ledger": {
         parameters: {
             query?: never;
@@ -1173,7 +1328,14 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * `PATCH /drivers/:id/ledger/entries/:entryId`: corrects an entry's amount, date, description or memo IN PLACE (D99): the
+         *     entry itself changes, nothing is added (a payment is changed on the payment itself too, so the two never disagree), and
+         *     the audit trail records who, when and the before and after values. `200` the entry; `400` nothing changed, a future
+         *     date, an amount below the credits applied to a charge or above what is left on its charge, or a field a payment from
+         *     an email cannot take; `404` no such entry on this driver; `409` a reversal or an entry that was reversed.
+         */
+        patch: operations["LedgerController_edit"];
         trace?: never;
     };
     "/drivers/{id}/ledger/entries": {
@@ -1316,84 +1478,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dashboard": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** `GET /dashboard`: every number on the dashboard in one response (money in cents, Chicago days). `401` no token. */
-        get: operations["DashboardController_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dashboard/daily-operations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * `GET /dashboard/daily-operations`: the daily operations page (D92): payments due today, late payments, early warning.
-         *     Computed from the ledger and the signed contracts when read. `401` no token.
-         */
-        get: operations["DashboardController_dailyOperationsPage"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dashboard/collections": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * `GET /dashboard/collections?view=monthly|weekly|daily`: confirmed payments received per month, Monday-to-Sunday week or
-         *     day (Chicago), newest first, paginated, with the total of the whole filter (page 2, D93). Optional `from` / `to` days
-         *     (a custom range). `400` a bad view or day, or `from` after `to`; `401` no token.
-         */
-        get: operations["DashboardController_collectionsPage"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dashboard/revenue-by-driver": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * `GET /dashboard/revenue-by-driver`: confirmed payments received per driver, biggest first, paginated, with the total of
-         *     the whole filter (page 2, D93). Optional `from` / `to` days. `400` a bad day, or `from` after `to`; `401` no token.
-         */
-        get: operations["DashboardController_revenueByDriver"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1435,6 +1519,597 @@ export interface components {
              *     service, since characters outside English can take more than one byte.
              */
             newPassword: string;
+        };
+        ReminderSettingsDto: {
+            /** @description The master switch for all automatic reminders. Off until turned on. */
+            enabled: boolean;
+            /**
+             * Format: date-time
+             * @description When it was last turned on; null if never.
+             */
+            enabledAt: string | null;
+            /** @description Where drivers pay: put in the texts as `{paymentLink}`; null = none (the line with it is left out). */
+            paymentLink: string | null;
+            /**
+             * @description How texting is set up on the server: `off` composes nothing, `dry_run` only saves texts, `live` sends them.
+             * @enum {string}
+             */
+            smsMode: "off" | "dry_run" | "live";
+            /** @description Whether a Quo key is set (needed for `live`). */
+            quoConfigured: boolean;
+        };
+        UpdateReminderSettingsDto: {
+            enabled: boolean;
+            /**
+             * Format: uri
+             * @description An http or https address, up to 300 characters; empty or null clears it.
+             */
+            paymentLink?: string | null;
+        };
+        /** @enum {string} */
+        ReminderKind: "upcoming" | "late" | "high_balance" | "balance" | "payment_received";
+        /** @enum {string} */
+        ReminderStatus: "sent" | "composed" | "failed";
+        ReminderLogDto: {
+            kind: components["schemas"]["ReminderKind"];
+            status: components["schemas"]["ReminderStatus"];
+            id: string;
+            /** @description For a high-balance reminder: how many payments behind. */
+            tier: number | null;
+            /**
+             * @description `live`: really texted. `dry_run`: composed and saved only.
+             * @enum {string}
+             */
+            mode: "dry_run" | "live";
+            /** @description Why a send failed, in plain words; null unless `failed`. */
+            error: string | null;
+            /** @description The text as composed. */
+            body: string;
+            /** @description What was past due when it was composed, in cents. */
+            pastDueCents: number;
+            /** @description The ledger balance when it was composed, in cents. */
+            balanceCents: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ReminderLogListDto: {
+            items: components["schemas"]["ReminderLogDto"][];
+            total: number;
+            page: number;
+            limit: number;
+        };
+        DashboardPaymentsDto: {
+            /** @description Everything that came in: confirmed payments plus the unmatched queue (rejected ones left out), in cents. */
+            processedCents: number;
+            /** @description How many payments that is. */
+            processedCount: number;
+            /** @description Sum of the confirmed (matched) payments, in cents. */
+            grossCents: number;
+            /** @description How many confirmed payments. */
+            grossCount: number;
+            /** @description Confirmed payments as a share of (confirmed + unmatched), 0-100. Rejected payments are left out. */
+            matchedPercent: number;
+            /** @description Sum of the unmatched payments (the queue), in cents. */
+            queueCents: number;
+            /** @description How many unmatched payments. */
+            queueCount: number;
+            /** @description Of the unmatched ones, how many the matcher has already tried and a person must assign. */
+            needsReviewCount: number;
+            /** @description Confirmed payments on today's Chicago day, in cents. */
+            todayCents: number;
+            /** @description Today and the 6 days before it (Chicago days), in cents. */
+            last7DaysCents: number;
+            /** @description Today and the 29 days before it (Chicago days), in cents. */
+            last30DaysCents: number;
+            /** @description Monday to today (Chicago), in cents. */
+            thisWeekCents: number;
+            /** @description How many confirmed payments came in this week. */
+            thisWeekCount: number;
+            /** @description Average confirmed payment, in cents (rounded). 0 when there is none. */
+            averageCents: number;
+            /** @description The largest confirmed payment, in cents. */
+            largestCents: number;
+        };
+        DashboardTrendDayDto: {
+            /** @description Chicago day, `YYYY-MM-DD`. */
+            day: string;
+            /** @description Confirmed payments on that day, in cents. 0 for a quiet day. */
+            amountCents: number;
+        };
+        /** @enum {string} */
+        PaymentSource: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
+        DashboardSourceDto: {
+            source: components["schemas"]["PaymentSource"];
+            /** @description Confirmed money from this source, in cents. */
+            amountCents: number;
+            /** @description Confirmed payments from this source. */
+            count: number;
+            /** @description Unmatched payments from this source. */
+            unmatchedCount: number;
+            /** @description This source's share of all confirmed money, 0-100 (rounded, so the shares may not add up to exactly 100). */
+            sharePercent: number;
+        };
+        DashboardDriversDto: {
+            /** @description Active, not archived drivers. */
+            active: number;
+            /** @description Of them, on a daily contract. */
+            daily: number;
+            /** @description Of them, on a weekly contract. */
+            weekly: number;
+            /** @description Of them, with no signed contract in force yet (nothing to bill). */
+            withoutContract: number;
+            /** @description `daily` as a share of daily + weekly, 0-100. */
+            dailyPercent: number;
+            /** @description `weekly` as a share of daily + weekly, 0-100. */
+            weeklyPercent: number;
+        };
+        /** @enum {string} */
+        DashboardWeekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+        DashboardWeekdayDto: {
+            weekday: components["schemas"]["DashboardWeekday"];
+            /** @description Active drivers on a weekly contract due that day. */
+            drivers: number;
+            /** @description Their weekly rent added up, in cents. */
+            expectedCents: number;
+        };
+        DashboardBillingDto: {
+            /** @description Rent that falls due today, in cents: exactly what the hourly rent job posts for today (daily + weekly). */
+            dueTodayCents: number;
+            /** @description Of it, from daily contracts, in cents. */
+            dailyDueCents: number;
+            /** @description Of it, from weekly contracts, in cents. */
+            weeklyDueCents: number;
+            /** @description Drivers with daily rent due today. */
+            dailyDueDrivers: number;
+            /** @description Drivers with weekly rent due today. */
+            weeklyDueDrivers: number;
+            /** @description What inactive drivers (not in collections) still owe, in cents. */
+            inactiveOwedCents: number;
+            /** @description What drivers sent to collections still owe, in cents. */
+            collectionsOwedCents: number;
+            /** @description The seven weekdays, Monday first. */
+            weeklyByDay: components["schemas"]["DashboardWeekdayDto"][];
+        };
+        DashboardWatchlistDriverDto: {
+            driverId: string;
+            /** @description First and last name. */
+            name: string;
+            /** @description Negative: the driver owes this much, in cents. */
+            balanceCents: number;
+        };
+        DashboardBalancesDto: {
+            /** @description How many drivers are counted. */
+            driverCount: number;
+            /** @description All their balances added up (credits minus debits), in cents. Negative: the fleet owes more than it holds. */
+            fleetBalanceCents: number;
+            /** @description Drivers with a credit balance. */
+            positiveCount: number;
+            /** @description Drivers at exactly zero. */
+            zeroCount: number;
+            /** @description Drivers who owe money. */
+            negativeCount: number;
+            /** @description The credits of the drivers in credit, added up, in cents. */
+            creditCents: number;
+            /** @description What the drivers who owe money owe, added up, in cents (a positive number): the total outstanding. */
+            outstandingCents: number;
+            /** @description The 8 drivers who owe the most, most first. */
+            watchlist: components["schemas"]["DashboardWatchlistDriverDto"][];
+        };
+        DashboardApplicationsDto: {
+            total: number;
+            pending: number;
+            approved: number;
+            rejected: number;
+            onHold: number;
+            /** @description Approved as a share of approved + rejected + on hold, 0-100. 0 when none was reviewed. */
+            approvalPercent: number;
+            /** @description Drivers whose onboarding is not finished (not archived). */
+            onboardingDrivers: number;
+        };
+        /** @enum {string} */
+        EmailIntakeOutcome: "ok" | "failed" | "off";
+        DashboardIntakeRunDto: {
+            outcome: components["schemas"]["EmailIntakeOutcome"];
+            /**
+             * Format: date-time
+             * @description When the latest run ended.
+             */
+            at: string;
+            /** @description Emails the latest run stored. */
+            stored: number;
+            /**
+             * Format: date-time
+             * @description When a run last worked; kept through later failures. Null: never.
+             */
+            lastSuccessAt: string | null;
+            /** @description Why the latest run failed. Set only when `outcome` is `failed`. */
+            error: string | null;
+        };
+        DashboardMailCountsDto: {
+            processed: number;
+            notPayment: number;
+            rejectedUnverified: number;
+            extractionFailed: number;
+            duplicatePayment: number;
+        };
+        DashboardIntakeDto: {
+            /** @description The latest run, or null when none has been recorded yet (a new database, or intake never started). */
+            lastRun: components["schemas"]["DashboardIntakeRunDto"] | null;
+            /** @description Mails stored in the last 24 hours, by outcome. */
+            last24Hours: components["schemas"]["DashboardMailCountsDto"];
+            /** @description Mails stored in the last 7 days, by outcome. */
+            last7Days: components["schemas"]["DashboardMailCountsDto"];
+            /**
+             * Format: date-time
+             * @description When the newest stored mail arrived, or null when there is none.
+             */
+            lastEmailAt: string | null;
+            /** @description Payments the matcher has not looked at yet. */
+            awaitingMatchCount: number;
+        };
+        /** @enum {string} */
+        SmsServiceMode: "off" | "dry_run" | "live";
+        DashboardSmsDto: {
+            mode: components["schemas"]["SmsServiceMode"];
+            /** @description Whether a Quo key and number are set. */
+            quoConfigured: boolean;
+            /** @description Texts sent in the last 7 days that failed or were not delivered. */
+            failedLast7Days: number;
+        };
+        DashboardDto: {
+            /**
+             * Format: date-time
+             * @description When this was worked out.
+             */
+            asOf: string;
+            /** @description Today's Chicago day, `YYYY-MM-DD`. */
+            today: string;
+            payments: components["schemas"]["DashboardPaymentsDto"];
+            /** @description The last 21 Chicago days, oldest first, quiet days included. */
+            trend: components["schemas"]["DashboardTrendDayDto"][];
+            /** @description Sources with confirmed money or unmatched payments, biggest first. */
+            sources: components["schemas"]["DashboardSourceDto"][];
+            drivers: components["schemas"]["DashboardDriversDto"];
+            billing: components["schemas"]["DashboardBillingDto"];
+            balances: components["schemas"]["DashboardBalancesDto"];
+            applications: components["schemas"]["DashboardApplicationsDto"];
+            intake: components["schemas"]["DashboardIntakeDto"];
+            sms: components["schemas"]["DashboardSmsDto"];
+        };
+        /**
+         * @description Weekly or daily, from the contract in force; null if the driver has none (not expected: rent comes from a contract).
+         * @enum {string}
+         */
+        ContractSchedule: "weekly" | "daily";
+        DueTodayRowDto: {
+            /** @description Weekly or daily, from the contract in force; null if the driver has none (not expected: rent comes from a contract). */
+            schedule: components["schemas"]["ContractSchedule"] | null;
+            /**
+             * @description Paid: nothing open. Late: open and past the due time. Not yet paid: open, due time not reached.
+             * @enum {string}
+             */
+            status: "paid" | "not_yet_paid" | "late";
+            driverId: string;
+            name: string;
+            /** @description The vehicle of the contract in force, "Model (PLATE)"; null when the contract names none. */
+            vehicle: string | null;
+            /** @description The contract's rent per period in cents; null without a contract. */
+            rateCents: number | null;
+            /** @description The time rent is due, Chicago `HH:MM` (24 hours); null = not set (late when the due day ends). */
+            dueTime: string | null;
+            /** @description The rent charge due today, in cents. */
+            amountDueCents: number;
+            /** @description What is still unpaid of it after credits are applied oldest first; 0 = paid. */
+            openCents: number;
+            /** @description Staff marked the driver "On Payment Plan". */
+            onPaymentPlan: boolean;
+        };
+        LateDriverDto: {
+            /** @description Rate type: weekly or daily, from the contract in force. */
+            schedule: components["schemas"]["ContractSchedule"] | null;
+            driverId: string;
+            name: string;
+            /** @description The time rent is due, Chicago `HH:MM`; null = not set. */
+            dueTime: string | null;
+            /** @description The unpaid part of every late rent charge added up, in cents. */
+            pastDueCents: number;
+            /** @description How many rent charges are late. */
+            lateCount: number;
+            /** @description Whole days the oldest late charge is late, counted on the Chicago clock (1 = the same time on the next day has come). */
+            daysLate: number;
+            /** @description Real hours since the oldest late charge was due. */
+            hoursLate: number;
+            /** @description Staff marked the driver "On Payment Plan". */
+            onPaymentPlan: boolean;
+        };
+        /**
+         * @description Active, or onboarding (an unpaid deposit puts a driver who is still onboarding on the list).
+         * @enum {string}
+         */
+        DriverStatus: "onboarding" | "active" | "inactive";
+        ShouldBeDeactivatedRowDto: {
+            /** @description Weekly or daily, from the contract in force; null if the driver has none. */
+            schedule: components["schemas"]["ContractSchedule"] | null;
+            /** @description Active, or onboarding (an unpaid deposit puts a driver who is still onboarding on the list). */
+            driverStatus: components["schemas"]["DriverStatus"];
+            /**
+             * @description Why: `daily_late` (2 or more daily payments late), `weekly_late` (a weekly payment 2 days late), `deposit_unpaid`
+             *     (deposit still unpaid 7 days after its due date). At least one; the rows can show several.
+             */
+            reasons: ("daily_late" | "weekly_late" | "deposit_unpaid")[];
+            driverId: string;
+            name: string;
+            /** @description Ledger balance in cents: credits minus debits; negative = the driver owes. */
+            balanceCents: number;
+            /** @description Whole days the oldest late rent payment is late (Chicago clock); 0 when the reason is the deposit only. */
+            daysLate: number;
+            /** @description Days since the unpaid deposit was due (the contract start date); null when the deposit is not what is unpaid. */
+            depositDaysSinceDue: number | null;
+            /** @description The unpaid deposit in cents; null when the deposit is not what is unpaid. */
+            depositCents: number | null;
+        };
+        WeekTotalDto: {
+            /** @description The Monday, Chicago day `YYYY-MM-DD`. */
+            weekStart: string;
+            /** @description The Sunday, Chicago day `YYYY-MM-DD`. */
+            weekEnd: string;
+            /** @description Confirmed payments that came in that week, in cents; 0 for a quiet week. */
+            totalCents: number;
+            paymentCount: number;
+        };
+        DepositCollectedRowDto: {
+            driverId: string;
+            name: string;
+            /** @description The amount typed when the step was ticked (D82), in cents; null for a step ticked before amounts were recorded. */
+            amountCents: number | null;
+            /**
+             * Format: date-time
+             * @description When the step was ticked.
+             */
+            paidAt: string;
+        };
+        DepositsCollectedDto: {
+            /** @description The recorded amounts added up, in cents. */
+            totalCents: number;
+            /** @description How many drivers have no amount recorded; they are in the list and not in the total. */
+            withoutAmountCount: number;
+            /** @description Newest first. */
+            drivers: components["schemas"]["DepositCollectedRowDto"][];
+        };
+        DepositPendingRowDto: {
+            driverId: string;
+            name: string;
+            /** @description The deposit the signed contract asks for, in cents. */
+            amountCents: number;
+            /** @description The day it is due: the contract start date, `YYYY-MM-DD`. */
+            dueDate: string;
+            /** @description Days since the due date; negative before it. */
+            daysSinceDue: number;
+            /** @description 7 or more days since the due date: the driver is also on the Should Be Deactivated list (unless on a payment plan). */
+            overdue: boolean;
+            onPaymentPlan: boolean;
+        };
+        DepositsPendingDto: {
+            totalCents: number;
+            /** @description Longest overdue first. */
+            drivers: components["schemas"]["DepositPendingRowDto"][];
+        };
+        /**
+         * @description How the driver left (D81); null for a driver deactivated before reasons existed.
+         * @enum {string}
+         */
+        DriverLeftReason: "contract_ended" | "bad_driver" | "cooperative_returned_car";
+        CollectionsRowDto: {
+            /** @description How the driver left (D81); null for a driver deactivated before reasons existed. */
+            leftReason: components["schemas"]["DriverLeftReason"] | null;
+            driverId: string;
+            name: string;
+            /** @description Ledger balance in cents: credits minus debits; negative = the driver owes. */
+            balanceCents: number;
+            /**
+             * Format: date-time
+             * @description When an admin sent the driver to collections.
+             */
+            sentToCollectionsAt: string;
+        };
+        CollectionsDto: {
+            /** @description What is owed by the drivers in the list (only the ones with a negative balance count), in cents. */
+            totalOwedCents: number;
+            drivers: components["schemas"]["CollectionsRowDto"][];
+        };
+        DailyOperationsDto: {
+            /**
+             * Format: date-time
+             * @description When the figures were worked out.
+             */
+            asOf: string;
+            /** @description Today's Chicago day, `YYYY-MM-DD`. */
+            today: string;
+            /** @description Payments due today: weekly drivers first, then daily, then by name. */
+            dueToday: components["schemas"]["DueTodayRowDto"][];
+            /** @description Drivers with a late rent payment, the longest late first. */
+            late: components["schemas"]["LateDriverDto"][];
+            /** @description Drivers whose oldest late payment is a full day or more late, the longest late first. */
+            earlyWarning: components["schemas"]["LateDriverDto"][];
+            /** @description Drivers who meet a deactivation rule and are not on a payment plan, the longest overdue first. List only. */
+            shouldBeDeactivated: components["schemas"]["ShouldBeDeactivatedRowDto"][];
+            /** @description The current week and the 25 before it, newest first (D5). Monday to Sunday, Chicago days. */
+            weeks: components["schemas"]["WeekTotalDto"][];
+            depositsCollected: components["schemas"]["DepositsCollectedDto"];
+            depositsPending: components["schemas"]["DepositsPendingDto"];
+            collections: components["schemas"]["CollectionsDto"];
+        };
+        /** @enum {string} */
+        CollectionView: "monthly" | "weekly" | "daily";
+        CollectionPeriodDto: {
+            /** @description First Chicago day of the period (the 1st, a Monday, or the day itself), `YYYY-MM-DD`. */
+            periodStart: string;
+            /** @description Last Chicago day of the period (the end of the month, a Sunday, or the day itself). */
+            periodEnd: string;
+            /** @description Confirmed payments received in the period, in cents. 0 for a quiet period. */
+            totalCents: number;
+            /** @description How many confirmed payments that is. */
+            paymentCount: number;
+        };
+        CollectionPeriodsDto: {
+            view: components["schemas"]["CollectionView"];
+            items: components["schemas"]["CollectionPeriodDto"][];
+            /** @description How many periods there are in all, so the page count can be worked out. */
+            total: number;
+            page: number;
+            limit: number;
+            /** @description Confirmed payments in the whole filter (every period, every page), in cents. */
+            totalCents: number;
+            /** @description How many confirmed payments that is. */
+            paymentCount: number;
+        };
+        DriverRevenueDto: {
+            status: components["schemas"]["DriverStatus"];
+            driverId: string;
+            name: string;
+            /** @description An archived driver is listed too: money received stays revenue (D93). */
+            archived: boolean;
+            /** @description Confirmed payments received from them in the filter, in cents. */
+            totalCents: number;
+            /** @description How many confirmed payments that is. */
+            paymentCount: number;
+            /**
+             * Format: date-time
+             * @description When the latest of those payments was received.
+             */
+            lastPaymentAt: string;
+        };
+        RevenueByDriverDto: {
+            items: components["schemas"]["DriverRevenueDto"][];
+            /** @description How many drivers have at least one payment in the filter. */
+            total: number;
+            page: number;
+            limit: number;
+            /** @description Confirmed payments of every driver in the filter, in cents (the same figure as the collections total). */
+            totalCents: number;
+            paymentCount: number;
+        };
+        SmsStatusDto: {
+            /**
+             * @description `off`: sending refused. `dry_run`: texts are saved, not sent. `live`: really sent.
+             * @enum {string}
+             */
+            mode: "off" | "dry_run" | "live";
+            /** @description Whether the Quo API key and number are set, which syncing the history needs. */
+            quoConfigured: boolean;
+            /** @description Whether the file bucket is set; without it files stay pending. */
+            filesConfigured: boolean;
+        };
+        SmsAttachmentDto: {
+            id: string;
+            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
+            contentType: string | null;
+            sizeBytes: number | null;
+            /**
+             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
+             * @enum {string}
+             */
+            status: "pending" | "stored" | "failed";
+            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
+            url: string | null;
+        };
+        SmsMessageDto: {
+            id: string;
+            /** @enum {string} */
+            direction: "inbound" | "outbound";
+            /** @description The words; empty for a text that is only a file. */
+            body: string;
+            /**
+             * @description Null for inbound texts. `dry_run` texts were never sent.
+             * @enum {string|null}
+             */
+            mode: "dry_run" | "live" | null;
+            /** @enum {string} */
+            status: "composed" | "queued" | "sent" | "delivered" | "undelivered" | "failed" | "received";
+            /** @description Why it failed, when it did. */
+            error: string | null;
+            /** @description The admin who sent it from this app; null for inbound texts and texts sent from the Quo app. */
+            sentByEmail: string | null;
+            /**
+             * Format: date-time
+             * @description When it happened (Quo's time).
+             */
+            occurredAt: string;
+            attachments: components["schemas"]["SmsAttachmentDto"][];
+        };
+        SmsMessageListDto: {
+            items: components["schemas"]["SmsMessageDto"][];
+            /** @description Pass as `before` to get the next, older page. Null when there is nothing older. */
+            nextCursor: string | null;
+            /** @description The contact's number the chat is with (E.164). */
+            contactPhone: string;
+            /** @description Why no text can be sent to this number (for example it cannot exist in the US); null when it can. */
+            contactPhoneProblem: string | null;
+        };
+        SendSmsDto: {
+            /** @description The words to send, 1 to 1600 characters (Quo's limit). Plain text only: Quo's API cannot send files. */
+            text: string;
+        };
+        SmsSyncResultDto: {
+            /** @description Texts Quo returned. */
+            fetched: number;
+            /** @description Of those, how many were new to us. */
+            added: number;
+        };
+        SmsFileDto: {
+            id: string;
+            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
+            contentType: string | null;
+            sizeBytes: number | null;
+            /**
+             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
+             * @enum {string}
+             */
+            status: "pending" | "stored" | "failed";
+            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
+            url: string | null;
+            /**
+             * @description Who sent it: `inbound` = the contact texted it to us.
+             * @enum {string}
+             */
+            direction: "inbound" | "outbound";
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        SmsFileListDto: {
+            items: components["schemas"]["SmsFileDto"][];
+            total: number;
+            page: number;
+            limit: number;
+        };
+        MessageTemplateDto: {
+            id: string;
+            /** @enum {string} */
+            kind: "application_approved" | "application_declined" | "reminder_upcoming" | "reminder_late" | "reminder_high_balance" | "reminder_balance" | "reminder_payment_received";
+            /** @description The label in the dropdown, e.g. "No valid licence". */
+            name: string;
+            /** @description The text with its placeholders, e.g. `Hi {firstName}, ...`. */
+            body: string;
+            /** @description The placeholders this template may use, e.g. `["firstName", "lastName"]`. */
+            placeholders: string[];
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Email of the admin who last edited it; null for the default text (or a removed account). */
+            updatedByEmail: string | null;
+        };
+        CreateMessageTemplateDto: {
+            /** @enum {string} */
+            kind: "application_approved" | "application_declined" | "reminder_upcoming" | "reminder_late" | "reminder_high_balance" | "reminder_balance" | "reminder_payment_received";
+            /** @description 1 to 60 characters after trimming. Two templates of a kind cannot share a name (409). */
+            name: string;
+            /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
+            body: string;
+        };
+        UpdateMessageTemplateDto: {
+            /** @description 1 to 60 characters after trimming. Two templates of a kind cannot share a name (409). */
+            name: string;
+            /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
+            body: string;
         };
         ApplicationReceivedDto: {
             /**
@@ -1652,7 +2327,11 @@ export interface components {
              * @description Which upload on the form: licence, rating screenshot or earnings screenshot.
              * @enum {string}
              */
-            kind: "license" | "rating" | "earnings" | "contract";
+            kind: "license" | "rating" | "earnings" | "contract" | "license_back" | "other";
+            /** @description 0 for every fixed kind; 1 to 5 for an "Other" file. */
+            slot: number;
+            /** @description The name staff gave an "Other" file; null for every fixed kind. */
+            label: string | null;
             /**
              * @description `stored`: our copy can be opened; `pending`: still being copied; `failed`: it cannot be copied (see `error`).
              * @enum {string}
@@ -1704,128 +2383,6 @@ export interface components {
              */
             body: string;
         };
-        SmsStatusDto: {
-            /**
-             * @description `off`: sending refused. `dry_run`: texts are saved, not sent. `live`: really sent.
-             * @enum {string}
-             */
-            mode: "off" | "dry_run" | "live";
-            /** @description Whether the Quo API key and number are set, which syncing the history needs. */
-            quoConfigured: boolean;
-            /** @description Whether the file bucket is set; without it files stay pending. */
-            filesConfigured: boolean;
-        };
-        SmsAttachmentDto: {
-            id: string;
-            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
-            contentType: string | null;
-            sizeBytes: number | null;
-            /**
-             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
-             * @enum {string}
-             */
-            status: "pending" | "stored" | "failed";
-            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
-            url: string | null;
-        };
-        SmsMessageDto: {
-            id: string;
-            /** @enum {string} */
-            direction: "inbound" | "outbound";
-            /** @description The words; empty for a text that is only a file. */
-            body: string;
-            /**
-             * @description Null for inbound texts. `dry_run` texts were never sent.
-             * @enum {string|null}
-             */
-            mode: "dry_run" | "live" | null;
-            /** @enum {string} */
-            status: "composed" | "queued" | "sent" | "delivered" | "undelivered" | "failed" | "received";
-            /** @description Why it failed, when it did. */
-            error: string | null;
-            /** @description The admin who sent it from this app; null for inbound texts and texts sent from the Quo app. */
-            sentByEmail: string | null;
-            /**
-             * Format: date-time
-             * @description When it happened (Quo's time).
-             */
-            occurredAt: string;
-            attachments: components["schemas"]["SmsAttachmentDto"][];
-        };
-        SmsMessageListDto: {
-            items: components["schemas"]["SmsMessageDto"][];
-            /** @description Pass as `before` to get the next, older page. Null when there is nothing older. */
-            nextCursor: string | null;
-            /** @description The contact's number the chat is with (E.164). */
-            contactPhone: string;
-            /** @description Why no text can be sent to this number (for example it cannot exist in the US); null when it can. */
-            contactPhoneProblem: string | null;
-        };
-        SendSmsDto: {
-            /** @description The words to send, 1 to 1600 characters (Quo's limit). Plain text only: Quo's API cannot send files. */
-            text: string;
-        };
-        SmsSyncResultDto: {
-            /** @description Texts Quo returned. */
-            fetched: number;
-            /** @description Of those, how many were new to us. */
-            added: number;
-        };
-        SmsFileDto: {
-            id: string;
-            /** @description MIME type, e.g. `image/jpeg`; null if unknown. */
-            contentType: string | null;
-            sizeBytes: number | null;
-            /**
-             * @description `stored` files can be opened; `pending` ones are still being copied; `failed` ones never will be.
-             * @enum {string}
-             */
-            status: "pending" | "stored" | "failed";
-            /** @description Short-lived link to open the file (about 10 minutes). Null unless `stored`. */
-            url: string | null;
-            /**
-             * @description Who sent it: `inbound` = the contact texted it to us.
-             * @enum {string}
-             */
-            direction: "inbound" | "outbound";
-            /** Format: date-time */
-            occurredAt: string;
-        };
-        SmsFileListDto: {
-            items: components["schemas"]["SmsFileDto"][];
-            total: number;
-            page: number;
-            limit: number;
-        };
-        MessageTemplateDto: {
-            id: string;
-            /** @enum {string} */
-            kind: "application_approved" | "application_declined";
-            /** @description The label in the dropdown, e.g. "No valid licence". */
-            name: string;
-            /** @description The text with its placeholders, e.g. `Hi {firstName}, ...`. */
-            body: string;
-            /** @description The placeholders this template may use, e.g. `["firstName", "lastName"]`. */
-            placeholders: string[];
-            /** Format: date-time */
-            updatedAt: string;
-            /** @description Email of the admin who last edited it; null for the default text (or a removed account). */
-            updatedByEmail: string | null;
-        };
-        CreateMessageTemplateDto: {
-            /** @enum {string} */
-            kind: "application_approved" | "application_declined";
-            /** @description 1 to 60 characters after trimming. Two templates of a kind cannot share a name (409). */
-            name: string;
-            /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
-            body: string;
-        };
-        UpdateMessageTemplateDto: {
-            /** @description 1 to 60 characters after trimming. Two templates of a kind cannot share a name (409). */
-            name: string;
-            /** @description The new text, 1 to 1000 characters after trimming; line breaks kept. Unknown placeholders are refused (400). */
-            body: string;
-        };
         /** @enum {string} */
         LedgerPresetKind: "charge" | "credit";
         LedgerPresetDto: {
@@ -1864,11 +2421,6 @@ export interface components {
             /** @description What the Description box is filled with: 1 to 500 characters after trimming. */
             description: string;
         };
-        /**
-         * @description How often the driver pays: weekly or daily.
-         * @enum {string}
-         */
-        ContractSchedule: "weekly" | "daily";
         ContractNumbersInputDto: {
             /** @description How often the driver pays: weekly or daily. */
             schedule: components["schemas"]["ContractSchedule"];
@@ -2185,6 +2737,12 @@ export interface components {
             rentDueTime: string | null;
             /** @description Marked "On Payment Plan" by staff (D92): left out of the Should Be Deactivated list while true. */
             onPaymentPlan: boolean;
+            /** @description The driver texted STOP: no text of any kind is sent to them until they text START (spec section 8). */
+            smsOptedOut: boolean;
+            /** @description Staff switch: the weekly driver gets the "payment due in 48 hours" text (Fleet revisions section 6). */
+            upcomingRemindersEnabled: boolean;
+            /** @description Staff switch: the driver gets balance reminders (Fleet revisions section 6). */
+            balanceRemindersEnabled: boolean;
         };
         DriverListDto: {
             items: components["schemas"]["DriverDto"][];
@@ -2263,6 +2821,12 @@ export interface components {
             rentDueTime: string | null;
             /** @description Marked "On Payment Plan" by staff (D92): left out of the Should Be Deactivated list while true. */
             onPaymentPlan: boolean;
+            /** @description The driver texted STOP: no text of any kind is sent to them until they text START (spec section 8). */
+            smsOptedOut: boolean;
+            /** @description Staff switch: the weekly driver gets the "payment due in 48 hours" text (Fleet revisions section 6). */
+            upcomingRemindersEnabled: boolean;
+            /** @description Staff switch: the driver gets balance reminders (Fleet revisions section 6). */
+            balanceRemindersEnabled: boolean;
             profile: components["schemas"]["DriverProfileDto"];
         };
         UpdateDriverProfileDto: {
@@ -2284,6 +2848,10 @@ export interface components {
             rentDueTime?: string | null;
             /** @description Staff marked the driver "On Payment Plan": left out of the Should Be Deactivated list while true. */
             onPaymentPlan?: boolean;
+            /** @description Send this weekly driver the "payment due in 48 hours" text (Fleet revisions section 6). */
+            upcomingRemindersEnabled?: boolean;
+            /** @description Send this driver balance reminders (Fleet revisions section 6). */
+            balanceRemindersEnabled?: boolean;
         };
         SetOnboardingStepDto: {
             /** @enum {string} */
@@ -2313,6 +2881,30 @@ export interface components {
             /** @enum {string} */
             reason?: "contract_ended" | "bad_driver" | "cooperative_returned_car";
         };
+        DriverNoteDto: {
+            id: string;
+            body: string;
+            /** @description The admin who wrote it; null if that account was removed since. */
+            authorId: string | null;
+            /** @description The author's email, shown as their name (admins have no name field). Null if the account was removed. */
+            authorEmail: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        DriverNoteListDto: {
+            items: components["schemas"]["DriverNoteDto"][];
+            /** @description All notes of the driver, across pages. */
+            total: number;
+            page: number;
+            limit: number;
+        };
+        CreateDriverNoteDto: {
+            /**
+             * @description The note, 1 to 2000 characters after trimming; line breaks are kept. `@Transform` trims it before the checks, so
+             *     a note of only spaces is refused (400) instead of saved empty.
+             */
+            body: string;
+        };
         /** @enum {string} */
         LedgerTypeFilter: "charges" | "credits" | "payments" | "reversals";
         /** @enum {string} */
@@ -2321,11 +2913,6 @@ export interface components {
         LedgerDirection: "debit" | "credit";
         /** @enum {string} */
         LedgerEntryKind: "rent" | "payment" | "adjustment" | "reversal" | "contract_charge";
-        /**
-         * @description For a payment row: where the payment came from.
-         * @enum {string}
-         */
-        PaymentSource: "email_zelle" | "email_cashapp" | "email_venmo" | "email_stripe" | "email_chime" | "plaid_zelle" | "manual";
         /**
          * @description For a payment row recorded by hand: how it was paid.
          * @enum {string}
@@ -2375,6 +2962,8 @@ export interface components {
             reversedById: string | null;
             /** @description True when an admin may reverse it here: not a reversal, not a payment credit, not reversed already. */
             canReverse: boolean;
+            /** @description True when an admin may correct it here: not a reversal and not reversed (a reversed entry is cancelled). */
+            canEdit: boolean;
             /** @description Null for entries made by the system (payment credits from matching). */
             createdById: string | null;
             createdByEmail: string | null;
@@ -2482,6 +3071,8 @@ export interface components {
             reversedById: string | null;
             /** @description True when an admin may reverse it here: not a reversal, not a payment credit, not reversed already. */
             canReverse: boolean;
+            /** @description True when an admin may correct it here: not a reversal and not reversed (a reversed entry is cancelled). */
+            canEdit: boolean;
             /** @description Null for entries made by the system (payment credits from matching). */
             createdById: string | null;
             createdByEmail: string | null;
@@ -2566,6 +3157,16 @@ export interface components {
              */
             appliesToId?: string;
             /** @description A note for staff only (optional, up to 500 characters). Typed once, never changed, never printed on a statement. */
+            internalNote?: string;
+        };
+        EditLedgerEntryDto: {
+            /** @description The new amount in whole cents, 1 to 1,000,000 ($10,000). */
+            amountCents?: number;
+            /** @description The new day the entry belongs to, `YYYY-MM-DD` in Chicago: a real day, not in the future. */
+            effectiveDate?: string;
+            /** @description The new description, 1 to 500 characters after trimming. */
+            description?: string;
+            /** @description The new staff-only memo, up to 500 characters; an empty string clears it. */
             internalNote?: string;
         };
         ReverseLedgerEntryDto: {
@@ -2717,410 +3318,6 @@ export interface components {
              */
             aliasOwnedBy: components["schemas"]["PaymentDriverDto"] | null;
         };
-        DashboardPaymentsDto: {
-            /** @description Everything that came in: confirmed payments plus the unmatched queue (rejected ones left out), in cents. */
-            processedCents: number;
-            /** @description How many payments that is. */
-            processedCount: number;
-            /** @description Sum of the confirmed (matched) payments, in cents. */
-            grossCents: number;
-            /** @description How many confirmed payments. */
-            grossCount: number;
-            /** @description Confirmed payments as a share of (confirmed + unmatched), 0-100. Rejected payments are left out. */
-            matchedPercent: number;
-            /** @description Sum of the unmatched payments (the queue), in cents. */
-            queueCents: number;
-            /** @description How many unmatched payments. */
-            queueCount: number;
-            /** @description Of the unmatched ones, how many the matcher has already tried and a person must assign. */
-            needsReviewCount: number;
-            /** @description Confirmed payments on today's Chicago day, in cents. */
-            todayCents: number;
-            /** @description Today and the 6 days before it (Chicago days), in cents. */
-            last7DaysCents: number;
-            /** @description Today and the 29 days before it (Chicago days), in cents. */
-            last30DaysCents: number;
-            /** @description Monday to today (Chicago), in cents. */
-            thisWeekCents: number;
-            /** @description How many confirmed payments came in this week. */
-            thisWeekCount: number;
-            /** @description Average confirmed payment, in cents (rounded). 0 when there is none. */
-            averageCents: number;
-            /** @description The largest confirmed payment, in cents. */
-            largestCents: number;
-        };
-        DashboardTrendDayDto: {
-            /** @description Chicago day, `YYYY-MM-DD`. */
-            day: string;
-            /** @description Confirmed payments on that day, in cents. 0 for a quiet day. */
-            amountCents: number;
-        };
-        DashboardSourceDto: {
-            source: components["schemas"]["PaymentSource"];
-            /** @description Confirmed money from this source, in cents. */
-            amountCents: number;
-            /** @description Confirmed payments from this source. */
-            count: number;
-            /** @description Unmatched payments from this source. */
-            unmatchedCount: number;
-            /** @description This source's share of all confirmed money, 0-100 (rounded, so the shares may not add up to exactly 100). */
-            sharePercent: number;
-        };
-        DashboardDriversDto: {
-            /** @description Active, not archived drivers. */
-            active: number;
-            /** @description Of them, on a daily contract. */
-            daily: number;
-            /** @description Of them, on a weekly contract. */
-            weekly: number;
-            /** @description Of them, with no signed contract in force yet (nothing to bill). */
-            withoutContract: number;
-            /** @description `daily` as a share of daily + weekly, 0-100. */
-            dailyPercent: number;
-            /** @description `weekly` as a share of daily + weekly, 0-100. */
-            weeklyPercent: number;
-        };
-        /** @enum {string} */
-        DashboardWeekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
-        DashboardWeekdayDto: {
-            weekday: components["schemas"]["DashboardWeekday"];
-            /** @description Active drivers on a weekly contract due that day. */
-            drivers: number;
-            /** @description Their weekly rent added up, in cents. */
-            expectedCents: number;
-        };
-        DashboardBillingDto: {
-            /** @description Rent that falls due today, in cents: exactly what the hourly rent job posts for today (daily + weekly). */
-            dueTodayCents: number;
-            /** @description Of it, from daily contracts, in cents. */
-            dailyDueCents: number;
-            /** @description Of it, from weekly contracts, in cents. */
-            weeklyDueCents: number;
-            /** @description Drivers with daily rent due today. */
-            dailyDueDrivers: number;
-            /** @description Drivers with weekly rent due today. */
-            weeklyDueDrivers: number;
-            /** @description What inactive drivers (not in collections) still owe, in cents. */
-            inactiveOwedCents: number;
-            /** @description What drivers sent to collections still owe, in cents. */
-            collectionsOwedCents: number;
-            /** @description The seven weekdays, Monday first. */
-            weeklyByDay: components["schemas"]["DashboardWeekdayDto"][];
-        };
-        DashboardWatchlistDriverDto: {
-            driverId: string;
-            /** @description First and last name. */
-            name: string;
-            /** @description Negative: the driver owes this much, in cents. */
-            balanceCents: number;
-        };
-        DashboardBalancesDto: {
-            /** @description How many drivers are counted. */
-            driverCount: number;
-            /** @description All their balances added up (credits minus debits), in cents. Negative: the fleet owes more than it holds. */
-            fleetBalanceCents: number;
-            /** @description Drivers with a credit balance. */
-            positiveCount: number;
-            /** @description Drivers at exactly zero. */
-            zeroCount: number;
-            /** @description Drivers who owe money. */
-            negativeCount: number;
-            /** @description The credits of the drivers in credit, added up, in cents. */
-            creditCents: number;
-            /** @description What the drivers who owe money owe, added up, in cents (a positive number): the total outstanding. */
-            outstandingCents: number;
-            /** @description The 8 drivers who owe the most, most first. */
-            watchlist: components["schemas"]["DashboardWatchlistDriverDto"][];
-        };
-        DashboardApplicationsDto: {
-            total: number;
-            pending: number;
-            approved: number;
-            rejected: number;
-            onHold: number;
-            /** @description Approved as a share of approved + rejected + on hold, 0-100. 0 when none was reviewed. */
-            approvalPercent: number;
-            /** @description Drivers whose onboarding is not finished (not archived). */
-            onboardingDrivers: number;
-        };
-        /** @enum {string} */
-        EmailIntakeOutcome: "ok" | "failed" | "off";
-        DashboardIntakeRunDto: {
-            outcome: components["schemas"]["EmailIntakeOutcome"];
-            /**
-             * Format: date-time
-             * @description When the latest run ended.
-             */
-            at: string;
-            /** @description Emails the latest run stored. */
-            stored: number;
-            /**
-             * Format: date-time
-             * @description When a run last worked; kept through later failures. Null: never.
-             */
-            lastSuccessAt: string | null;
-            /** @description Why the latest run failed. Set only when `outcome` is `failed`. */
-            error: string | null;
-        };
-        DashboardMailCountsDto: {
-            processed: number;
-            notPayment: number;
-            rejectedUnverified: number;
-            extractionFailed: number;
-            duplicatePayment: number;
-        };
-        DashboardIntakeDto: {
-            /** @description The latest run, or null when none has been recorded yet (a new database, or intake never started). */
-            lastRun: components["schemas"]["DashboardIntakeRunDto"] | null;
-            /** @description Mails stored in the last 24 hours, by outcome. */
-            last24Hours: components["schemas"]["DashboardMailCountsDto"];
-            /** @description Mails stored in the last 7 days, by outcome. */
-            last7Days: components["schemas"]["DashboardMailCountsDto"];
-            /**
-             * Format: date-time
-             * @description When the newest stored mail arrived, or null when there is none.
-             */
-            lastEmailAt: string | null;
-            /** @description Payments the matcher has not looked at yet. */
-            awaitingMatchCount: number;
-        };
-        /** @enum {string} */
-        SmsServiceMode: "off" | "dry_run" | "live";
-        DashboardSmsDto: {
-            mode: components["schemas"]["SmsServiceMode"];
-            /** @description Whether a Quo key and number are set. */
-            quoConfigured: boolean;
-            /** @description Texts sent in the last 7 days that failed or were not delivered. */
-            failedLast7Days: number;
-        };
-        DashboardDto: {
-            /**
-             * Format: date-time
-             * @description When this was worked out.
-             */
-            asOf: string;
-            /** @description Today's Chicago day, `YYYY-MM-DD`. */
-            today: string;
-            payments: components["schemas"]["DashboardPaymentsDto"];
-            /** @description The last 21 Chicago days, oldest first, quiet days included. */
-            trend: components["schemas"]["DashboardTrendDayDto"][];
-            /** @description Sources with confirmed money or unmatched payments, biggest first. */
-            sources: components["schemas"]["DashboardSourceDto"][];
-            drivers: components["schemas"]["DashboardDriversDto"];
-            billing: components["schemas"]["DashboardBillingDto"];
-            balances: components["schemas"]["DashboardBalancesDto"];
-            applications: components["schemas"]["DashboardApplicationsDto"];
-            intake: components["schemas"]["DashboardIntakeDto"];
-            sms: components["schemas"]["DashboardSmsDto"];
-        };
-        DueTodayRowDto: {
-            /** @description Weekly or daily, from the contract in force; null if the driver has none (not expected: rent comes from a contract). */
-            schedule: components["schemas"]["ContractSchedule"] | null;
-            /**
-             * @description Paid: nothing open. Late: open and past the due time. Not yet paid: open, due time not reached.
-             * @enum {string}
-             */
-            status: "paid" | "not_yet_paid" | "late";
-            driverId: string;
-            name: string;
-            /** @description The vehicle of the contract in force, "Model (PLATE)"; null when the contract names none. */
-            vehicle: string | null;
-            /** @description The contract's rent per period in cents; null without a contract. */
-            rateCents: number | null;
-            /** @description The time rent is due, Chicago `HH:MM` (24 hours); null = not set (late when the due day ends). */
-            dueTime: string | null;
-            /** @description The rent charge due today, in cents. */
-            amountDueCents: number;
-            /** @description What is still unpaid of it after credits are applied oldest first; 0 = paid. */
-            openCents: number;
-            /** @description Staff marked the driver "On Payment Plan". */
-            onPaymentPlan: boolean;
-        };
-        LateDriverDto: {
-            /** @description Rate type: weekly or daily, from the contract in force. */
-            schedule: components["schemas"]["ContractSchedule"] | null;
-            driverId: string;
-            name: string;
-            /** @description The time rent is due, Chicago `HH:MM`; null = not set. */
-            dueTime: string | null;
-            /** @description The unpaid part of every late rent charge added up, in cents. */
-            pastDueCents: number;
-            /** @description How many rent charges are late. */
-            lateCount: number;
-            /** @description Whole days the oldest late charge is late, counted on the Chicago clock (1 = the same time on the next day has come). */
-            daysLate: number;
-            /** @description Real hours since the oldest late charge was due. */
-            hoursLate: number;
-            /** @description Staff marked the driver "On Payment Plan". */
-            onPaymentPlan: boolean;
-        };
-        /**
-         * @description Active, or onboarding (an unpaid deposit puts a driver who is still onboarding on the list).
-         * @enum {string}
-         */
-        DriverStatus: "onboarding" | "active" | "inactive";
-        ShouldBeDeactivatedRowDto: {
-            /** @description Weekly or daily, from the contract in force; null if the driver has none. */
-            schedule: components["schemas"]["ContractSchedule"] | null;
-            /** @description Active, or onboarding (an unpaid deposit puts a driver who is still onboarding on the list). */
-            driverStatus: components["schemas"]["DriverStatus"];
-            /**
-             * @description Why: `daily_late` (2 or more daily payments late), `weekly_late` (a weekly payment 2 days late), `deposit_unpaid`
-             *     (deposit still unpaid 7 days after its due date). At least one; the rows can show several.
-             */
-            reasons: ("daily_late" | "weekly_late" | "deposit_unpaid")[];
-            driverId: string;
-            name: string;
-            /** @description Ledger balance in cents: credits minus debits; negative = the driver owes. */
-            balanceCents: number;
-            /** @description Whole days the oldest late rent payment is late (Chicago clock); 0 when the reason is the deposit only. */
-            daysLate: number;
-            /** @description Days since the unpaid deposit was due (the contract start date); null when the deposit is not what is unpaid. */
-            depositDaysSinceDue: number | null;
-            /** @description The unpaid deposit in cents; null when the deposit is not what is unpaid. */
-            depositCents: number | null;
-        };
-        WeekTotalDto: {
-            /** @description The Monday, Chicago day `YYYY-MM-DD`. */
-            weekStart: string;
-            /** @description The Sunday, Chicago day `YYYY-MM-DD`. */
-            weekEnd: string;
-            /** @description Confirmed payments that came in that week, in cents; 0 for a quiet week. */
-            totalCents: number;
-            paymentCount: number;
-        };
-        DepositCollectedRowDto: {
-            driverId: string;
-            name: string;
-            /** @description The amount typed when the step was ticked (D82), in cents; null for a step ticked before amounts were recorded. */
-            amountCents: number | null;
-            /**
-             * Format: date-time
-             * @description When the step was ticked.
-             */
-            paidAt: string;
-        };
-        DepositsCollectedDto: {
-            /** @description The recorded amounts added up, in cents. */
-            totalCents: number;
-            /** @description How many drivers have no amount recorded; they are in the list and not in the total. */
-            withoutAmountCount: number;
-            /** @description Newest first. */
-            drivers: components["schemas"]["DepositCollectedRowDto"][];
-        };
-        DepositPendingRowDto: {
-            driverId: string;
-            name: string;
-            /** @description The deposit the signed contract asks for, in cents. */
-            amountCents: number;
-            /** @description The day it is due: the contract start date, `YYYY-MM-DD`. */
-            dueDate: string;
-            /** @description Days since the due date; negative before it. */
-            daysSinceDue: number;
-            /** @description 7 or more days since the due date: the driver is also on the Should Be Deactivated list (unless on a payment plan). */
-            overdue: boolean;
-            onPaymentPlan: boolean;
-        };
-        DepositsPendingDto: {
-            totalCents: number;
-            /** @description Longest overdue first. */
-            drivers: components["schemas"]["DepositPendingRowDto"][];
-        };
-        /**
-         * @description How the driver left (D81); null for a driver deactivated before reasons existed.
-         * @enum {string}
-         */
-        DriverLeftReason: "contract_ended" | "bad_driver" | "cooperative_returned_car";
-        CollectionsRowDto: {
-            /** @description How the driver left (D81); null for a driver deactivated before reasons existed. */
-            leftReason: components["schemas"]["DriverLeftReason"] | null;
-            driverId: string;
-            name: string;
-            /** @description Ledger balance in cents: credits minus debits; negative = the driver owes. */
-            balanceCents: number;
-            /**
-             * Format: date-time
-             * @description When an admin sent the driver to collections.
-             */
-            sentToCollectionsAt: string;
-        };
-        CollectionsDto: {
-            /** @description What is owed by the drivers in the list (only the ones with a negative balance count), in cents. */
-            totalOwedCents: number;
-            drivers: components["schemas"]["CollectionsRowDto"][];
-        };
-        DailyOperationsDto: {
-            /**
-             * Format: date-time
-             * @description When the figures were worked out.
-             */
-            asOf: string;
-            /** @description Today's Chicago day, `YYYY-MM-DD`. */
-            today: string;
-            /** @description Payments due today: weekly drivers first, then daily, then by name. */
-            dueToday: components["schemas"]["DueTodayRowDto"][];
-            /** @description Drivers with a late rent payment, the longest late first. */
-            late: components["schemas"]["LateDriverDto"][];
-            /** @description Drivers whose oldest late payment is a full day or more late, the longest late first. */
-            earlyWarning: components["schemas"]["LateDriverDto"][];
-            /** @description Drivers who meet a deactivation rule and are not on a payment plan, the longest overdue first. List only. */
-            shouldBeDeactivated: components["schemas"]["ShouldBeDeactivatedRowDto"][];
-            /** @description The current week and the 25 before it, newest first (D5). Monday to Sunday, Chicago days. */
-            weeks: components["schemas"]["WeekTotalDto"][];
-            depositsCollected: components["schemas"]["DepositsCollectedDto"];
-            depositsPending: components["schemas"]["DepositsPendingDto"];
-            collections: components["schemas"]["CollectionsDto"];
-        };
-        /** @enum {string} */
-        CollectionView: "monthly" | "weekly" | "daily";
-        CollectionPeriodDto: {
-            /** @description First Chicago day of the period (the 1st, a Monday, or the day itself), `YYYY-MM-DD`. */
-            periodStart: string;
-            /** @description Last Chicago day of the period (the end of the month, a Sunday, or the day itself). */
-            periodEnd: string;
-            /** @description Confirmed payments received in the period, in cents. 0 for a quiet period. */
-            totalCents: number;
-            /** @description How many confirmed payments that is. */
-            paymentCount: number;
-        };
-        CollectionPeriodsDto: {
-            view: components["schemas"]["CollectionView"];
-            items: components["schemas"]["CollectionPeriodDto"][];
-            /** @description How many periods there are in all, so the page count can be worked out. */
-            total: number;
-            page: number;
-            limit: number;
-            /** @description Confirmed payments in the whole filter (every period, every page), in cents. */
-            totalCents: number;
-            /** @description How many confirmed payments that is. */
-            paymentCount: number;
-        };
-        DriverRevenueDto: {
-            status: components["schemas"]["DriverStatus"];
-            driverId: string;
-            name: string;
-            /** @description An archived driver is listed too: money received stays revenue (D93). */
-            archived: boolean;
-            /** @description Confirmed payments received from them in the filter, in cents. */
-            totalCents: number;
-            /** @description How many confirmed payments that is. */
-            paymentCount: number;
-            /**
-             * Format: date-time
-             * @description When the latest of those payments was received.
-             */
-            lastPaymentAt: string;
-        };
-        RevenueByDriverDto: {
-            items: components["schemas"]["DriverRevenueDto"][];
-            /** @description How many drivers have at least one payment in the filter. */
-            total: number;
-            page: number;
-            limit: number;
-            /** @description Confirmed payments of every driver in the filter, in cents (the same figure as the collections total). */
-            totalCents: number;
-            paymentCount: number;
-        };
     };
     responses: never;
     parameters: never;
@@ -3235,9 +3432,401 @@ export interface operations {
             };
         };
     };
+    RemindersController_getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReminderSettingsDto"];
+                };
+            };
+        };
+    };
+    RemindersController_saveSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateReminderSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReminderSettingsDto"];
+                };
+            };
+        };
+    };
+    RemindersController_listForDriver: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReminderLogListDto"];
+                };
+            };
+        };
+    };
+    DashboardController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardDto"];
+                };
+            };
+        };
+    };
+    DashboardController_dailyOperationsPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyOperationsDto"];
+                };
+            };
+        };
+    };
+    DashboardController_collectionsPage: {
+        parameters: {
+            query: {
+                /** @description How to group: one row per month, per Monday-to-Sunday week, or per day. */
+                view: components["schemas"]["CollectionView"];
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionPeriodsDto"];
+                };
+            };
+        };
+    };
+    DashboardController_revenueByDriver: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+                /** @description First day to include, e.g. `2026-10-01`. */
+                from?: string;
+                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevenueByDriverDto"];
+                };
+            };
+        };
+    };
+    SmsController_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsStatusDto"];
+                };
+            };
+        };
+    };
+    SmsController_list: {
+        parameters: {
+            query: {
+                /** @description Texts per page (1 to 100), newest first. */
+                limit: number;
+                /** @description The `nextCursor` of the previous page, to get the texts before it. Omit for the newest. */
+                before?: string;
+            };
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsMessageListDto"];
+                };
+            };
+        };
+    };
+    SmsController_send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendSmsDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsMessageDto"];
+                };
+            };
+        };
+    };
+    SmsController_sync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsSyncResultDto"];
+                };
+            };
+        };
+    };
+    SmsController_files: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path: {
+                kind: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsFileListDto"];
+                };
+            };
+        };
+    };
+    QuoWebhookController_receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MessageTemplatesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplateDto"][];
+                };
+            };
+        };
+    };
+    MessageTemplatesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMessageTemplateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplateDto"];
+                };
+            };
+        };
+    };
+    MessageTemplatesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMessageTemplateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplateDto"];
+                };
+            };
+        };
+    };
+    MessageTemplatesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ApplicationsController_list: {
         parameters: {
             query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
                 /** @description `true` = only applications whose driver is active or inactive (D84). Not together with `archived=true`. */
@@ -3250,10 +3839,6 @@ export interface operations {
                 to?: string;
                 /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
                 search?: string;
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
             };
             header?: never;
             path?: never;
@@ -3362,6 +3947,10 @@ export interface operations {
     ApplicationsController_listApproved: {
         parameters: {
             query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
                 /** @description Only applications with this status. Omit for all. */
                 status?: "pending" | "approved" | "rejected" | "on_hold";
                 /** @description `true` = only applications whose driver is active or inactive (D84). Not together with `archived=true`. */
@@ -3374,10 +3963,6 @@ export interface operations {
                 to?: string;
                 /** @description Text to look for; which fields are searched depends on the list. Case does not matter. */
                 search?: string;
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
             };
             header?: never;
             path?: never;
@@ -3646,7 +4231,12 @@ export interface operations {
     };
     DriverDocumentsController_upload: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which "Other" slot (1 to 5). Required for kind `other`, ignored otherwise. */
+                slot?: number;
+                /** @description What the document is, for example "Insurance card". Required for kind `other`, ignored otherwise. */
+                label?: string;
+            };
             header?: never;
             path: {
                 id: string;
@@ -3731,230 +4321,6 @@ export interface operations {
             path: {
                 id: string;
                 noteId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    SmsController_status: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SmsStatusDto"];
-                };
-            };
-        };
-    };
-    SmsController_list: {
-        parameters: {
-            query: {
-                /** @description Texts per page (1 to 100), newest first. */
-                limit: number;
-                /** @description The `nextCursor` of the previous page, to get the texts before it. Omit for the newest. */
-                before?: string;
-            };
-            header?: never;
-            path: {
-                kind: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SmsMessageListDto"];
-                };
-            };
-        };
-    };
-    SmsController_send: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                kind: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendSmsDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SmsMessageDto"];
-                };
-            };
-        };
-    };
-    SmsController_sync: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                kind: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SmsSyncResultDto"];
-                };
-            };
-        };
-    };
-    SmsController_files: {
-        parameters: {
-            query: {
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-            };
-            header?: never;
-            path: {
-                kind: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SmsFileListDto"];
-                };
-            };
-        };
-    };
-    QuoWebhookController_receive: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MessageTemplatesController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageTemplateDto"][];
-                };
-            };
-        };
-    };
-    MessageTemplatesController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateMessageTemplateDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageTemplateDto"];
-                };
-            };
-        };
-    };
-    MessageTemplatesController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateMessageTemplateDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageTemplateDto"];
-                };
-            };
-        };
-    };
-    MessageTemplatesController_remove: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
             };
             cookie?: never;
         };
@@ -4690,6 +5056,77 @@ export interface operations {
             };
         };
     };
+    DriverNotesController_list: {
+        parameters: {
+            query: {
+                /** @description Page number, starting at 1. */
+                page: number;
+                /** @description Items per page (1 to 100). */
+                limit: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverNoteListDto"];
+                };
+            };
+        };
+    };
+    DriverNotesController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDriverNoteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverNoteDto"];
+                };
+            };
+        };
+    };
+    DriverNotesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     LedgerController_list: {
         parameters: {
             query: {
@@ -4792,6 +5229,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerEntryDetailsDto"];
+                };
+            };
+        };
+    };
+    LedgerController_edit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                entryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditLedgerEntryDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerEntryDto"];
                 };
             };
         };
@@ -4991,102 +5454,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssignPaymentResultDto"];
-                };
-            };
-        };
-    };
-    DashboardController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DashboardDto"];
-                };
-            };
-        };
-    };
-    DashboardController_dailyOperationsPage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyOperationsDto"];
-                };
-            };
-        };
-    };
-    DashboardController_collectionsPage: {
-        parameters: {
-            query: {
-                /** @description How to group: one row per month, per Monday-to-Sunday week, or per day. */
-                view: components["schemas"]["CollectionView"];
-                /** @description First day to include, e.g. `2026-10-01`. */
-                from?: string;
-                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
-                to?: string;
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CollectionPeriodsDto"];
-                };
-            };
-        };
-    };
-    DashboardController_revenueByDriver: {
-        parameters: {
-            query: {
-                /** @description Page number, starting at 1. */
-                page: number;
-                /** @description Items per page (1 to 100). */
-                limit: number;
-                /** @description First day to include, e.g. `2026-10-01`. */
-                from?: string;
-                /** @description Last day to include, e.g. `2026-10-15` (the whole day counts). */
-                to?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RevenueByDriverDto"];
                 };
             };
         };

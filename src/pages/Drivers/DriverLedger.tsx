@@ -4,14 +4,17 @@ import { Link, useParams } from "react-router";
 import { useDriver } from "../../api/drivers.queries";
 import {
   useAddLedgerEntry,
+  useEditLedgerEntry,
   useLedgerOverview,
   useReverseLedgerEntry,
   type LedgerEntry,
   type LedgerRow,
 } from "../../api/ledger.queries";
 import { useRecordPayment, useVoidPayment } from "../../api/payments.queries";
+import DriverNotesCard from "../../components/drivers/DriverNotesCard";
 import ReverseLedgerEntryDialog from "../../components/drivers/ReverseLedgerEntryDialog";
 import AgingTiles from "../../components/ledger/AgingTiles";
+import EditEntryDialog from "../../components/ledger/EditEntryDialog";
 import EntryDetailsDialog from "../../components/ledger/EntryDetailsDialog";
 import LedgerHeader from "../../components/ledger/LedgerHeader";
 import { LEDGER_URL_FILTERS } from "../../components/ledger/ledgerFilters";
@@ -32,8 +35,9 @@ interface AddRequest {
 
 /**
  * A driver's ledger on its own page (B86, `/admin/drivers/:id/ledger`): the balance, what is owed by age, and the
- * register of every entry with filters, a search, sorting and totals; a details window per entry; and the manual actions (charge, credit, credit against a charge, reverse, record a payment, void it).
- * Nothing is ever edited or deleted: a mistake is a reversal.
+ * register of every entry with filters, a search, sorting and totals; a details window per entry; the manual actions
+ * (charge, credit, credit against a charge, reverse, edit, record a payment, void it); and the staff-only account notes.
+ * Nothing is ever deleted. An edit changes the entry in place (D99) and is logged with the old and new values.
  */
 export default function DriverLedger() {
   const { id = "" } = useParams();
@@ -43,6 +47,7 @@ export default function DriverLedger() {
 
   const add = useAddLedgerEntry(id);
   const reverse = useReverseLedgerEntry(id);
+  const edit = useEditLedgerEntry(id);
   const record = useRecordPayment();
   const voidPayment = useVoidPayment();
 
@@ -50,6 +55,7 @@ export default function DriverLedger() {
   const [addRound, setAddRound] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [reversing, setReversing] = useState<LedgerEntry | null>(null);
+  const [editing, setEditing] = useState<LedgerEntry | null>(null);
   const [voidingId, setVoidingId] = useState<string | null>(null);
 
   const openAdd = (mode: EntryMode, appliesTo?: AppliesTo) => {
@@ -61,6 +67,10 @@ export default function DriverLedger() {
   const openReverse = (entry: LedgerEntry) => {
     reverse.reset();
     setReversing(entry);
+  };
+  const openEdit = (entry: LedgerEntry) => {
+    edit.reset();
+    setEditing(entry);
   };
   const openVoid = (paymentId: string) => {
     voidPayment.reset();
@@ -151,7 +161,10 @@ export default function DriverLedger() {
         onOpen={(row) => setOpenId(row.id)}
         onCredit={creditRow}
         onReverse={openReverse}
+        onEdit={openEdit}
       />
+
+      <DriverNotesCard driverId={id} />
 
       <EntryDetailsDialog
         driverId={id}
@@ -165,6 +178,10 @@ export default function DriverLedger() {
         onReverse={(entry) => {
           setOpenId(null);
           openReverse(entry);
+        }}
+        onEdit={(entry) => {
+          setOpenId(null);
+          openEdit(entry);
         }}
         onVoid={(paymentId) => {
           setOpenId(null);
@@ -206,6 +223,22 @@ export default function DriverLedger() {
         }}
         onCancel={() => setReversing(null)}
       />
+
+      {editing && (
+        <EditEntryDialog
+          key={`edit-${editing.id}`}
+          entry={editing}
+          busy={edit.isPending}
+          error={edit.error?.message ?? null}
+          onSave={(changes) =>
+            edit.mutate(
+              { entryId: editing.id, changes },
+              { onSuccess: () => setEditing(null) },
+            )
+          }
+          onCancel={() => setEditing(null)}
+        />
+      )}
 
       <VoidPaymentDialog
         key={`void-${voidingId ?? "none"}`}

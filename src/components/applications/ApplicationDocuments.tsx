@@ -21,7 +21,16 @@ const KIND_LABEL: Record<ApplicationDocumentKind, string> = {
   rating: "Rating screenshot",
   earnings: "Earnings screenshot",
   contract: "Signed contract",
+  license_back: "Driver's licence (back)",
+  other: "Other document",
 };
+
+/** How many "Other" documents a driver can have (Fleet revisions section 5): each is a named slot. */
+const OTHER_SLOTS = [1, 2, 3, 4, 5];
+
+/** A tile's key: the kind, plus the slot for an "Other" document (0 for every fixed kind). */
+const slotKey = (kind: ApplicationDocumentKind, slot: number) =>
+  `${kind}:${slot}`;
 
 /** What a document tile says when its file cannot be opened (yet). */
 function unavailableNote(
@@ -36,13 +45,17 @@ function unavailableNote(
 }
 
 function DocumentTile({
-  kind,
+  title,
+  nameField,
   document,
   connected,
   busy,
   onPick,
 }: {
-  kind: ApplicationDocumentKind;
+  /** What the tile is called: the kind's name, or the name staff gave an "Other" document. */
+  title: string;
+  /** An "Other" document is named by staff before its file is chosen. */
+  nameField?: { value: string; onChange: (value: string) => void };
   /** Null: nothing in this slot yet. */
   document: ApplicationDocument | null;
   connected: boolean;
@@ -55,10 +68,19 @@ function DocumentTile({
   const isImage = document?.contentType?.startsWith("image/") ?? false;
   return (
     <div className="min-w-0">
+      {nameField && (
+        <input
+          type="text"
+          value={nameField.value}
+          maxLength={60}
+          placeholder="Name this document"
+          aria-label={`Name of ${title}`}
+          onChange={(event) => nameField.onChange(event.target.value)}
+          className="mb-1.5 h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-theme-xs text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden"
+        />
+      )}
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <p className="text-theme-xs font-medium text-gray-700">
-          {KIND_LABEL[kind]}
-        </p>
+        <p className="text-theme-xs font-medium text-gray-700">{title}</p>
         <button
           type="button"
           disabled={busy}
@@ -71,7 +93,7 @@ function DocumentTile({
           ref={input}
           type="file"
           accept={FILE_ACCEPT}
-          aria-label={`${document ? "Replace" : "Upload"} ${KIND_LABEL[kind]}`}
+          aria-label={`${document ? "Replace" : "Upload"} ${title}`}
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];
@@ -85,7 +107,7 @@ function DocumentTile({
           {isImage ? (
             <img
               src={document.url!}
-              alt={KIND_LABEL[kind]}
+              alt={title}
               className="aspect-[4/3] w-full rounded-lg border border-gray-200 object-cover"
             />
           ) : (
@@ -132,12 +154,17 @@ interface DocumentsQuery {
 
 /** What the panel needs from an upload mutation. */
 interface DocumentUpload {
-  mutate: (vars: { kind: ApplicationDocumentKind; file: File }) => void;
+  mutate: (vars: {
+    kind: ApplicationDocumentKind;
+    file: File;
+    slot?: number;
+    label?: string;
+  }) => void;
   reset: () => void;
   isPending: boolean;
   isError: boolean;
   error: Error | null;
-  variables?: { kind: ApplicationDocumentKind };
+  variables?: { kind: ApplicationDocumentKind; slot?: number };
 }
 
 /**
@@ -161,7 +188,8 @@ export default function ApplicationDocuments({
 }
 
 /**
- * The licence and earnings files of a driver (D85) and the driver's signed contract (D90), on the driver page: the
+ * The licence (front and back) and earnings files of a driver (D85), the driver's signed contract (D90) and up to five
+ * "Other" documents named by staff (Fleet revisions section 5), on the driver page: the
  * application's files for a driver who came from an application (the same slots, so both pages agree), the driver's own
  * for one added directly. The contract is always the driver's own, whatever the application does.
  */
@@ -170,7 +198,8 @@ export function DriverDocuments({ driverId }: { driverId: string }) {
     <DocumentsPanel
       documents={useDriverDocuments(driverId)}
       upload={useUploadDriverDocument(driverId)}
-      kinds={["license", "earnings", "contract"]}
+      kinds={["license", "license_back", "earnings", "contract"]}
+      otherSlots={OTHER_SLOTS}
     />
   );
 }
@@ -180,16 +209,23 @@ function DocumentsPanel({
   documents,
   upload,
   kinds,
+  otherSlots = [],
 }: {
   documents: DocumentsQuery;
   upload: DocumentUpload;
   kinds: ApplicationDocumentKind[];
+  /** The "Other" slots offered (empty: none). */
+  otherSlots?: number[];
 }) {
   /** A file chosen for a filled slot, waiting for the admin to confirm the replacement. */
   const [replacing, setReplacing] = useState<{
     kind: ApplicationDocumentKind;
+    slot: number;
+    label?: string;
     file: File;
   } | null>(null);
+  /** The names typed for "Other" slots, by slot, not saved until a file is chosen. */
+  const [names, setNames] = useState<Record<number, string>>({});
   /** Why the chosen file was refused before it was sent. */
   const [pickError, setPickError] = useState<string | null>(null);
 
@@ -204,22 +240,41 @@ function DocumentsPanel({
 
   const connected =
     documents.data.sourceConnected && documents.data.storageConnected;
-  const byKind = new Map(documents.data.items.map((d) => [d.kind, d]));
+  const byKey = new Map(
+    documents.data.items.map((d) => [slotKey(d.kind, d.slot), d]),
+  );
 
-  const send = (kind: ApplicationDocumentKind, file: File) => {
+  const send = (
+    kind: ApplicationDocumentKind,
+    file: File,
+    slot: number,
+    label?: string,
+  ) => {
     setReplacing(null);
-    upload.mutate({ kind, file });
+    upload.mutate(
+      kind === "other" ? { kind, file, slot, label } : { kind, file },
+    );
   };
-  const onPick = (kind: ApplicationDocumentKind, file: File) => {
+  const onPick = (
+    kind: ApplicationDocumentKind,
+    file: File,
+    slot = 0,
+    label?: string,
+  ) => {
     setPickError(null);
     upload.reset();
     const problem = fileProblem(file);
     if (problem) {
-      setPickError(`${KIND_LABEL[kind]}: ${problem}`);
+      setPickError(`${label || KIND_LABEL[kind]}: ${problem}`);
       return;
     }
-    if (byKind.has(kind)) setReplacing({ kind, file });
-    else send(kind, file);
+    if (kind === "other" && !label?.trim()) {
+      setPickError("Type a name for this document first.");
+      return;
+    }
+    if (byKey.has(slotKey(kind, slot)))
+      setReplacing({ kind, slot, label, file });
+    else send(kind, file, slot, label);
   };
 
   return (
@@ -233,35 +288,72 @@ function DocumentsPanel({
         {kinds.map((kind) => (
           <DocumentTile
             key={kind}
-            kind={kind}
-            document={byKind.get(kind) ?? null}
+            title={KIND_LABEL[kind]}
+            document={byKey.get(slotKey(kind, 0)) ?? null}
             connected={connected}
             busy={upload.isPending && upload.variables?.kind === kind}
             onPick={(file) => onPick(kind, file)}
           />
         ))}
       </div>
+      {otherSlots.length > 0 && (
+        <>
+          <h3 className="pt-2 text-sm font-semibold text-gray-800">
+            Other documents
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {otherSlots.map((slot) => {
+              const document = byKey.get(slotKey("other", slot)) ?? null;
+              const name = names[slot] ?? document?.label ?? "";
+              return (
+                <DocumentTile
+                  key={slot}
+                  title={name.trim() || `Other document ${slot}`}
+                  nameField={{
+                    value: name,
+                    onChange: (value) =>
+                      setNames((all) => ({ ...all, [slot]: value })),
+                  }}
+                  document={document}
+                  connected={connected}
+                  busy={
+                    upload.isPending &&
+                    upload.variables?.kind === "other" &&
+                    upload.variables.slot === slot
+                  }
+                  onPick={(file) => onPick("other", file, slot, name.trim())}
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
       <ConfirmDialog
         isOpen={replacing !== null}
         title={
           replacing
-            ? `Replace the ${KIND_LABEL[replacing.kind].toLowerCase()}?`
+            ? `Replace the ${(replacing.label || KIND_LABEL[replacing.kind]).toLowerCase()}?`
             : ""
         }
         confirmLabel="Replace"
         onCancel={() => setReplacing(null)}
-        onConfirm={() => replacing && send(replacing.kind, replacing.file)}
+        onConfirm={() =>
+          replacing &&
+          send(replacing.kind, replacing.file, replacing.slot, replacing.label)
+        }
       >
         The current file is removed and replaced by{" "}
         <span className="font-medium">{replacing?.file.name}</span>. This cannot
         be undone.
-        {replacing && byKind.get(replacing.kind)?.origin === "firma" && (
-          <>
-            {" "}
-            The current file is the copy of the contract signed through our app;
-            the original stays on the contract page.
-          </>
-        )}
+        {replacing &&
+          byKey.get(slotKey(replacing.kind, replacing.slot))?.origin ===
+            "firma" && (
+            <>
+              {" "}
+              The current file is the copy of the contract signed through our
+              app; the original stays on the contract page.
+            </>
+          )}
       </ConfirmDialog>
     </div>
   );

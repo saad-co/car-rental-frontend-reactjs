@@ -105,6 +105,8 @@ export const queryKeys = {
     detail: (id: string) => ["drivers", "detail", id] as const,
     /** The licence and earnings files of one driver (D85). */
     documents: (id: string) => ["drivers", "documents", id] as const,
+    /** The internal notes of one driver's account (Fleet revisions section 5), all loaded pages. */
+    notes: (id: string) => ["drivers", "notes", id] as const,
     /** Everything of one driver's ledger (the page, its overview and entry details): invalidated after any ledger change. */
     ledger: (id: string) => ["drivers", "ledger", id] as const,
     /** One page of the ledger page's table with its filters. */
@@ -119,6 +121,11 @@ export const queryKeys = {
     /** Every entry of a date range, for the printable statement. */
     ledgerStatement: (id: string, from: string, to: string) =>
       ["drivers", "ledger", id, "statement", from, to] as const,
+  },
+  /** Payment reminders (Fleet revisions section 6): the settings, and the reminders sent to one driver. */
+  reminders: {
+    settings: ["reminders", "settings"] as const,
+    driver: (id: string) => ["reminders", "driver", id] as const,
   },
   /** The admin dashboard's figures (`GET /dashboard`, D88). */
   dashboard: ["dashboard"] as const,

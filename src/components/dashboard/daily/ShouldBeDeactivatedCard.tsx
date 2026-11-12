@@ -71,6 +71,7 @@ export default function ShouldBeDeactivatedCard({ rows }: { rows: Row[] }) {
       rows={rows}
       emptyText="Nobody meets a deactivation rule."
       danger={rows.length > 0}
+      ledgerLink
     />
   );
 }

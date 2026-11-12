@@ -45,8 +45,11 @@ export interface ApplicationsListState {
   deletedNotice?: string;
 }
 
-const isDeletable = (application: ApplicationListItem) =>
-  application.status !== "approved";
+/**
+ * Any application can be deleted, approved ones too (Fleet revisions section 5): the delete is logged with who and when,
+ * and the driver the approval made stays, with the application's files.
+ */
+const isDeletable = (_application: ApplicationListItem) => true;
 
 /** The person is already an active or inactive driver: archiving the application archives the driver too (D84). */
 const hasLiveDriver = (application: ApplicationListItem) =>
@@ -284,7 +287,10 @@ export default function ApplicationsList() {
       >
         {deleteCount === 1 ? "Its documents are" : "Their documents are"}{" "}
         removed too, and the text history unless another application or a driver
-        has the same phone. This cannot be undone.
+        has the same phone. This cannot be undone. The deletion is logged with
+        your name and the time.
+        {toDelete?.some((a) => a.status === "approved") &&
+          " An approved application's driver stays, and keeps its documents."}
       </ConfirmDialog>
 
       <TableCard
@@ -363,7 +369,6 @@ export default function ApplicationsList() {
               selected,
               onChange: setSelected,
               canSelect: isDeletable,
-              disabledReason: "Approved applications cannot be deleted",
               label: (a) => `${a.firstName} ${a.lastName}`,
             }}
             dimmed={isPlaceholderData}

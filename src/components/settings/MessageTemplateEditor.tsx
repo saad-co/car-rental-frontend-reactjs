@@ -18,8 +18,19 @@ const MAX_TEMPLATE_LENGTH = 1000;
 /** Longest template name. */
 const MAX_NAME_LENGTH = 60;
 
-/** The sample person the preview is filled in with. */
-const SAMPLE = { firstName: "Pat", lastName: "Smith" };
+/**
+ * The sample person and figures the preview is filled in with (the reminder texts use the money and date ones). Preview
+ * only: the real text is filled in by the API, and an empty payment link drops its whole line there.
+ */
+const SAMPLE = {
+  firstName: "Pat",
+  lastName: "Smith",
+  amount: "$250.00",
+  due: "Friday 6:00 PM",
+  balance: "$150.00",
+  missedCount: "2",
+  paymentLink: "https://pay.example.com",
+};
 
 /** Placeholders every application text may use (the API refuses any other). */
 const APPLICATION_PLACEHOLDERS = ["firstName", "lastName"];

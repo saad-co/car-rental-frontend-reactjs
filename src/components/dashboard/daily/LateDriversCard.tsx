@@ -57,6 +57,7 @@ export function LatePaymentsCard({ rows }: { rows: Row[] }) {
       columns={COLUMNS}
       rows={rows}
       emptyText="Nobody is late."
+      ledgerLink
     />
   );
 }
@@ -73,6 +74,7 @@ export function EarlyWarningCard({ rows }: { rows: Row[] }) {
       columns={COLUMNS}
       rows={rows}
       emptyText="Nobody is a full day late."
+      ledgerLink
     />
   );
 }

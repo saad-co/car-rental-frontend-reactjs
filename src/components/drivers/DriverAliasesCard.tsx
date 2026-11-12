@@ -14,6 +14,7 @@ import {
   ALIAS_TYPE_LABEL,
 } from "../payments/paymentLabels";
 import Button from "../ui/button/Button";
+import PaymentMethodLogo from "../payments/PaymentMethodLogo";
 import ConfirmDialog from "../ui/modal/ConfirmDialog";
 
 /** The payment methods to choose from, in display order. */
@@ -142,6 +143,17 @@ export default function DriverAliasesCard({ driver }: { driver: Driver }) {
           {groups.map(([groupType, items]) => (
             <div key={groupType}>
               <h3 className="mb-1.5 text-theme-xs font-medium text-gray-500">
+                <PaymentMethodLogo
+                  method={
+                    groupType === "zelle" ||
+                    groupType === "cashapp" ||
+                    groupType === "venmo" ||
+                    groupType === "stripe"
+                      ? groupType
+                      : null
+                  }
+                  size={16}
+                />{" "}
                 {ALIAS_TYPE_LABEL[groupType]}
               </h3>
               <div className="flex flex-wrap gap-2">

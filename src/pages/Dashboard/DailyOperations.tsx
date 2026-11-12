@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router";
 import { useDailyOperations } from "../../api/dashboard.queries";
 import {
   plural,
@@ -16,6 +17,7 @@ import {
 import ShouldBeDeactivatedCard from "../../components/dashboard/daily/ShouldBeDeactivatedCard";
 import WeeklyTotalCard from "../../components/dashboard/daily/WeeklyTotalCard";
 import Button from "../../components/ui/button/Button";
+import { PlusIcon } from "../../icons";
 import Spinner from "../../components/ui/spinner/Spinner";
 import StatTile from "../../components/ui/stat/StatTile";
 import { formatCents, formatDateTime } from "../../utils";
@@ -27,6 +29,7 @@ import { formatCents, formatDateTime } from "../../utils";
  */
 export default function DailyOperations() {
   const { data, error, refetch, isFetching } = useDailyOperations();
+  const navigate = useNavigate();
 
   if (!data) {
     if (error) {
@@ -71,60 +74,89 @@ export default function DailyOperations() {
               {weekdayName(data.today)}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isFetching}
-            onClick={() => void refetch()}
-          >
-            {isFetching ? "Refreshing…" : "Refresh"}
-          </Button>
+          <div className="flex gap-2">
+            {/* Quick action (Fleet revisions section 5): the same form as Drivers > Add driver. */}
+            <Button
+              size="sm"
+              startIcon={<PlusIcon />}
+              onClick={() => void navigate("/admin/drivers/new")}
+            >
+              Add driver
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              {isFetching ? "Refreshing…" : "Refresh"}
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatTile
             label="Due today"
             value={String(data.dueToday.length)}
             hint={plural(data.dueToday.length, "payment")}
+            to="#due-today"
           />
           <StatTile
             label="Late payments"
             value={String(data.late.length)}
             hint={plural(data.late.length, "driver")}
+            to="#late-payments"
             tone={data.late.length > 0 ? "warm" : "none"}
           />
           <StatTile
             label="Early warning"
             value={String(data.earlyWarning.length)}
             hint="a full day or more late"
+            to="#early-warning"
             tone={data.earlyWarning.length > 0 ? "warm" : "none"}
           />
           <StatTile
             label="Should be deactivated"
             value={String(data.shouldBeDeactivated.length)}
             hint={plural(data.shouldBeDeactivated.length, "driver")}
+            to="#should-be-deactivated"
             tone={data.shouldBeDeactivated.length > 0 ? "hot" : "none"}
           />
           <StatTile
             label="Collected this week"
             value={formatCents(thisWeek.totalCents)}
             hint={plural(thisWeek.paymentCount, "payment")}
+            to="#weekly-total"
           />
           <StatTile
             label="Deposits pending"
             value={formatCents(data.depositsPending.totalCents)}
             hint={plural(data.depositsPending.drivers.length, "driver")}
+            to="#deposits-pending"
           />
         </div>
       </header>
 
-      <DueTodayCard rows={data.dueToday} />
-      <LatePaymentsCard rows={data.late} />
-      <EarlyWarningCard rows={data.earlyWarning} />
-      <ShouldBeDeactivatedCard rows={data.shouldBeDeactivated} />
-      <WeeklyTotalCard weeks={data.weeks} />
+      {/* The ids are where the headline tiles scroll to (scroll-mt-24 keeps the card clear of the sticky header). */}
+      <div id="due-today" className="scroll-mt-24">
+        <DueTodayCard rows={data.dueToday} />
+      </div>
+      <div id="late-payments" className="scroll-mt-24">
+        <LatePaymentsCard rows={data.late} />
+      </div>
+      <div id="early-warning" className="scroll-mt-24">
+        <EarlyWarningCard rows={data.earlyWarning} />
+      </div>
+      <div id="should-be-deactivated" className="scroll-mt-24">
+        <ShouldBeDeactivatedCard rows={data.shouldBeDeactivated} />
+      </div>
+      <div id="weekly-total" className="scroll-mt-24">
+        <WeeklyTotalCard weeks={data.weeks} />
+      </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <DepositsCollectedCard data={data.depositsCollected} />
-        <DepositsPendingCard data={data.depositsPending} />
+        <div id="deposits-pending" className="scroll-mt-24">
+          <DepositsPendingCard data={data.depositsPending} />
+        </div>
       </div>
       <CollectionsCard data={data.collections} />
     </div>

@@ -24,6 +24,7 @@ import DepositDialog from "../../components/drivers/DepositDialog";
 import { DriverDocuments } from "../../components/applications/ApplicationDocuments";
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
 import DriverProfileCard from "../../components/drivers/DriverProfileCard";
+import DriverRemindersCard from "../../components/drivers/DriverRemindersCard";
 import RentSettingsCard from "../../components/drivers/RentSettingsCard";
 import LeavingDialog from "../../components/drivers/LeavingDialog";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
@@ -39,6 +40,8 @@ import {
   MATCH_METHOD_LABEL,
   paymentSourceLabel,
 } from "../../components/payments/paymentLabels";
+import PaymentMethodLogo from "../../components/payments/PaymentMethodLogo";
+import { logoMethodOf } from "../../components/payments/logoMethod";
 import ConversationCard from "../../components/sms/ConversationCard";
 import {
   Table,
@@ -585,6 +588,7 @@ export default function DriverDetail() {
           />
           <ContractCard driverId={driver.id} />
           <RentSettingsCard driver={driver} />
+          <DriverRemindersCard driverId={driver.id} />
           <Card title="Contact">
             <Rows
               rows={[
@@ -656,6 +660,13 @@ export default function DriverDetail() {
                             {payment.senderName}
                           </span>
                           <span className="block text-theme-xs">
+                            <PaymentMethodLogo
+                              method={logoMethodOf(
+                                payment.source,
+                                payment.manualMethod,
+                              )}
+                              size={16}
+                            />{" "}
                             {paymentSourceLabel(
                               payment.source,
                               payment.manualMethod,

@@ -45,6 +45,8 @@ interface LedgerRegisterProps {
   onCredit: (row: LedgerRow) => void;
   /** "Reverse" on an entry that can be reversed. */
   onReverse: (row: LedgerRow) => void;
+  /** "Edit" on an entry that can be corrected. */
+  onEdit: (row: LedgerRow) => void;
 }
 
 /**
@@ -58,6 +60,7 @@ export default function LedgerRegister({
   onOpen,
   onCredit,
   onReverse,
+  onEdit,
 }: LedgerRegisterProps) {
   const type = view.filters.type as LedgerTypeFilter | undefined;
   const oldestFirst = view.filters.order === "asc";
@@ -196,6 +199,15 @@ export default function LedgerRegister({
               className={ROW_BUTTON}
             >
               Credit
+            </button>
+          )}
+          {row.canEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(row)}
+              className={ROW_BUTTON}
+            >
+              Edit
             </button>
           )}
           {row.canReverse && (
