@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
+import { HIDE_FINANCIALS } from "../../../demoMode";
 import { cn } from "../../../utils";
 import DataTable, { type Column } from "../../tables/DataTable";
 import DashboardCard from "../DashboardCard";
@@ -72,6 +73,9 @@ export default function DailyCard<T extends { driverId: string }>({
   );
 }
 
+/** The columns that show money; left out in the investor-demo mode (`src/demoMode.ts`). */
+const MONEY_COLUMNS = ["rate", "amount", "past", "balance"];
+
 /** The table, or the empty text; also used inside tabs, where the card frame is shared. */
 export function DailyTable<T extends { driverId: string }>({
   columns,
@@ -89,10 +93,13 @@ export function DailyTable<T extends { driverId: string }>({
   if (rows.length === 0) {
     return <p className="py-4 text-theme-sm text-gray-500">{emptyText}</p>;
   }
+  const shown = HIDE_FINANCIALS
+    ? columns.filter((column) => !MONEY_COLUMNS.includes(column.key))
+    : columns;
   return (
     <div className={cn("-mx-5", scroll && "max-h-96 overflow-y-auto")}>
       <DataTable
-        columns={columns}
+        columns={shown}
         rows={rows}
         rowKey={(row) => row.driverId}
         onRowClick={onOpen}
