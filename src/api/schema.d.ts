@@ -1381,6 +1381,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/recurring-charge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /drivers/:id/recurring-charge`: the rent in force (or the next one waiting) and every rent set by hand, newest first.
+         *     `404` unknown driver.
+         */
+        get: operations["RecurringChargesController_get"];
+        put?: never;
+        /**
+         * `POST /drivers/:id/recurring-charge`: "rent from a date". Sets the first rent of a driver with no contract or changes the
+         *     rent of any driver (a charge set by hand or a signed contract). It starts on the first due day on or after the latest of the
+         *     date given, today and the day after the last rent already posted; a rent that has not started yet is replaced; rent entries
+         *     already on the ledger stay as they are. `400` bad body; `404` unknown driver; `409` archived.
+         */
+        post: operations["RecurringChargesController_setRent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drivers/{id}/recurring-charge/{chargeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * `DELETE /drivers/:id/recurring-charge/:chargeId`: removes a rent that has not started yet. `204` with no body; `404` unknown
+         *     driver or rent; `409` the rent has already started.
+         */
+        delete: operations["RecurringChargesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbound-emails": {
         parameters: {
             query?: never;
@@ -3172,6 +3218,44 @@ export interface components {
         ReverseLedgerEntryDto: {
             /** @description Why the entry is cancelled, e.g. "Late fee waived by the owner". 1 to 400 characters after trimming. */
             reason: string;
+        };
+        RecurringChargeDto: {
+            /**
+             * @description `pending`: not started yet (can still be replaced or removed). `current`: in force today. `past`: taken over by a later one.
+             * @enum {string}
+             */
+            status: "pending" | "current" | "past";
+            id: string;
+            /** @enum {string} */
+            schedule: "weekly" | "daily";
+            amountCents: number;
+            /** @description The first rent due date, `YYYY-MM-DD`: the day this rent starts billing. */
+            firstDueDate: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The admin who set it; null if that account was removed since. */
+            createdByEmail: string | null;
+        };
+        DriverRecurringChargeDto: {
+            /** @description The rent set by hand in force today, or the next one waiting to start; `null` when none was ever set. */
+            charge: components["schemas"]["RecurringChargeDto"] | null;
+            /** @description Every rent set by hand, newest first, with where each one is. Empty when none was ever set. */
+            changes: components["schemas"]["RecurringChargeDto"][];
+        };
+        CreateRecurringChargeDto: {
+            /**
+             * @description `weekly` or `daily`: how often the driver pays the amount.
+             * @enum {string}
+             */
+            schedule: "weekly" | "daily";
+            /** @description The rent of one period in whole cents (`40900` = $409.00): a whole number above zero, never a decimal. */
+            amountCents: number;
+            /**
+             * @description `YYYY-MM-DD`, the day the new rent is "from". A weekly rent is due on this day's weekday. The first rent is the first due
+             *     day on or after the latest of this date, today and the day after the last rent already posted, so nothing in the past is
+             *     ever billed and a day that already has its rent is never billed twice.
+             */
+            startDate: string;
         };
         /** @enum {string} */
         InboundEmailProvider: "cashapp" | "venmo" | "zelle_chase" | "stripe" | "chime" | "unknown";
@@ -5307,6 +5391,72 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LedgerEntryDto"];
                 };
+            };
+        };
+    };
+    RecurringChargesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverRecurringChargeDto"];
+                };
+            };
+        };
+    };
+    RecurringChargesController_setRent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRecurringChargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringChargeDto"];
+                };
+            };
+        };
+    };
+    RecurringChargesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                chargeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

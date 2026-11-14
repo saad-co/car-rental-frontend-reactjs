@@ -8,6 +8,7 @@ import {
 import {
   useDeactivateDriver,
   useDriver,
+  useDriverDocuments,
   useReactivateDriver,
   useRemoveFromCollections,
   useSendToCollections,
@@ -17,6 +18,7 @@ import {
   type OnboardingStep,
 } from "../../api/drivers.queries";
 import { usePayments } from "../../api/payments.queries";
+import { useRecurringCharge } from "../../api/recurringCharges.queries";
 import ContractDocumentLinks from "../../components/contracts/ContractDocumentLinks";
 import { CONTRACT_STATUS } from "../../components/contracts/contractStatus";
 import BalanceText from "../../components/drivers/BalanceText";
@@ -25,6 +27,8 @@ import { DriverDocuments } from "../../components/applications/ApplicationDocume
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
 import DriverProfileCard from "../../components/drivers/DriverProfileCard";
 import DriverRemindersCard from "../../components/drivers/DriverRemindersCard";
+import RecurringChargeDialog from "../../components/drivers/RecurringChargeDialog";
+import RentChangesSection from "../../components/drivers/RentChangesSection";
 import RentSettingsCard from "../../components/drivers/RentSettingsCard";
 import LeavingDialog from "../../components/drivers/LeavingDialog";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
@@ -186,10 +190,24 @@ function contractWhen(contract: ContractDraft): string {
  * The Contract card (Module 2): one line about the driver's contract with its status and date (a draft, sent, opened,
  * signed, declined, expired or cancelled) and an "Open" link, plus "Open signed contract" once it is signed and filed, or a
  * "Create contract" link when there is none. The links go to the contract page.
+ * A driver with no contract made here but a contract file uploaded by hand (D90, the paper contract) shows that file
+ * instead of the "Create contract" link: a contract already exists, it was just not made through firma.
+ * The rent can be set by hand for a driver with no signed contract ("Set charge", D100) and changed from a date for any driver,
+ * a charge set by hand or a signed contract (D101): the card then lists the rent changes, which the rent job bills from like a
+ * contract.
  */
 function ContractCard({ driverId }: { driverId: string }) {
   const { data, isPending, isError, error } = useDriverContract(driverId);
+  const documents = useDriverDocuments(driverId);
+  const recurring = useRecurringCharge(driverId);
+  const [settingCharge, setSettingCharge] = useState(false);
   const contract = data?.contract ?? null;
+  const charge = recurring.data?.charge ?? null;
+  const paperContract =
+    documents.data?.items.find(
+      (item) =>
+        item.kind === "contract" && item.status === "stored" && item.url,
+    ) ?? null;
   return (
     <Card title="Contract">
       {isPending ? (
@@ -199,39 +217,89 @@ function ContractCard({ driverId }: { driverId: string }) {
           {error.message}
         </p>
       ) : contract ? (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-sm text-gray-800">
-            <Badge size="sm" color={CONTRACT_STATUS[contract.status].color}>
-              {CONTRACT_STATUS[contract.status].label}
-            </Badge>{" "}
-            {contractWhen(contract)} · {formatCents(contract.totalRateCents)}/
-            {contract.schedule === "weekly" ? "week" : "day"} · from{" "}
-            {formatDay(contract.startDate)} · due at pickup{" "}
-            {formatCents(contract.numbers.amountDueAtPickupCents)}
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <ContractDocumentLinks
-              contract={contract}
-              withCertificate={false}
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm text-gray-800">
+              <Badge size="sm" color={CONTRACT_STATUS[contract.status].color}>
+                {CONTRACT_STATUS[contract.status].label}
+              </Badge>{" "}
+              {contractWhen(contract)} · {formatCents(contract.totalRateCents)}/
+              {contract.schedule === "weekly" ? "week" : "day"} · from{" "}
+              {formatDay(contract.startDate)} · due at pickup{" "}
+              {formatCents(contract.numbers.amountDueAtPickupCents)}
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <ContractDocumentLinks
+                contract={contract}
+                withCertificate={false}
+              />
+              <Link
+                to={`/admin/drivers/${driverId}/contract`}
+                className={LINK_BUTTON}
+              >
+                Open
+              </Link>
+            </div>
+          </div>
+          {contract.status === "signed" && (
+            <RentChangesSection
+              driverId={driverId}
+              signedContract
+              contractRent={{
+                schedule: contract.schedule,
+                amountCents: contract.totalRateCents,
+              }}
             />
+          )}
+        </div>
+      ) : paperContract || charge ? (
+        <div className="space-y-3">
+          {paperContract && (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm text-gray-800">
+                <Badge size="sm" color="success">
+                  Paper contract
+                </Badge>{" "}
+                A signed contract file is on this driver.
+              </p>
+              <a
+                href={paperContract.url!}
+                target="_blank"
+                rel="noreferrer"
+                className={LINK_BUTTON}
+              >
+                Open contract file
+              </a>
+            </div>
+          )}
+          <RentChangesSection driverId={driverId} signedContract={false} />
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-sm text-gray-500">No contract yet.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSettingCharge(true)}
+              className={LINK_BUTTON}
+            >
+              Set charge
+            </button>
             <Link
               to={`/admin/drivers/${driverId}/contract`}
               className={LINK_BUTTON}
             >
-              Open
+              Create contract
             </Link>
           </div>
         </div>
-      ) : (
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">No contract yet.</p>
-          <Link
-            to={`/admin/drivers/${driverId}/contract`}
-            className={LINK_BUTTON}
-          >
-            Create contract
-          </Link>
-        </div>
+      )}
+      {settingCharge && (
+        <RecurringChargeDialog
+          driverId={driverId}
+          mode="set"
+          onClose={() => setSettingCharge(false)}
+        />
       )}
     </Card>
   );
