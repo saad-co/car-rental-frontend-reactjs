@@ -30,6 +30,7 @@ import DriverRemindersCard from "../../components/drivers/DriverRemindersCard";
 import RecurringChargeDialog from "../../components/drivers/RecurringChargeDialog";
 import RentChangesSection from "../../components/drivers/RentChangesSection";
 import RentSettingsCard from "../../components/drivers/RentSettingsCard";
+import VehiclePhotosCard from "../../components/drivers/VehiclePhotosCard";
 import LeavingDialog from "../../components/drivers/LeavingDialog";
 import DriverStatusBadge from "../../components/drivers/DriverStatusBadge";
 import {
@@ -657,6 +658,7 @@ export default function DriverDetail() {
           <ContractCard driverId={driver.id} />
           <RentSettingsCard driver={driver} />
           <DriverRemindersCard driverId={driver.id} />
+          <VehiclePhotosCard driver={driver} />
           <Card title="Contact">
             <Rows
               rows={[

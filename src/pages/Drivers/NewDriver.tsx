@@ -28,8 +28,13 @@ import {
 
 type TextKey = Exclude<
   keyof DriverFormValues,
-  "hasInsurance" | "dateOfBirth" | "rentDueTime"
+  "hasInsurance" | "dateOfBirth" | "rentDueTime" | "preferredLanguage"
 >;
+
+const LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+];
 
 /** The payment methods to choose from, in display order. */
 const METHOD_OPTIONS = (Object.keys(ALIAS_TYPE_LABEL) as AliasType[]).map(
@@ -261,6 +266,20 @@ export default function NewDriver() {
                 value={values.rentDueTime}
                 onChange={(time) =>
                   setValues((current) => ({ ...current, rentDueTime: time }))
+                }
+              />
+            </Field>
+            <Field label="Language for texts and vehicle photos">
+              <Choices
+                name="preferredLanguage"
+                options={LANGUAGES}
+                value={values.preferredLanguage}
+                onChange={(value) =>
+                  setValues((current) => ({
+                    ...current,
+                    preferredLanguage:
+                      value as DriverFormValues["preferredLanguage"],
+                  }))
                 }
               />
             </Field>

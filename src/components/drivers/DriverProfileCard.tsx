@@ -9,6 +9,11 @@ import { FormChoices, FormField } from "../form/FormLayout";
 import Input from "../form/input/InputField";
 import ConfirmDialog from "../ui/modal/ConfirmDialog";
 
+const LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+];
+
 const YES_NO = [
   { value: "yes", label: "Yes" },
   { value: "no", label: "No" },
@@ -24,6 +29,7 @@ interface ProfileForm {
   zip: string;
   dateOfBirth: string;
   hasInsurance: "" | "yes" | "no";
+  preferredLanguage: "en" | "es";
 }
 
 const formOf = (profile: DriverProfile): ProfileForm => ({
@@ -36,6 +42,7 @@ const formOf = (profile: DriverProfile): ProfileForm => ({
   dateOfBirth: profile.dateOfBirth ?? "",
   hasInsurance:
     profile.hasInsurance === null ? "" : profile.hasInsurance ? "yes" : "no",
+  preferredLanguage: profile.preferredLanguage,
 });
 
 /** The address on one or two lines, or null when none of it is known. */
@@ -67,7 +74,10 @@ function EditProfileDialog({
   const set = (key: keyof ProfileForm, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
   const text = (
-    key: Exclude<keyof ProfileForm, "dateOfBirth" | "hasInsurance">,
+    key: Exclude<
+      keyof ProfileForm,
+      "dateOfBirth" | "hasInsurance" | "preferredLanguage"
+    >,
   ) => ({
     id: `profile-${key}`,
     value: form[key],
@@ -139,6 +149,14 @@ function EditProfileDialog({
             onChange={(value) => set("hasInsurance", value)}
           />
         </FormField>
+        <FormField label="Language for texts and vehicle photos">
+          <FormChoices
+            name="profile-preferredLanguage"
+            options={LANGUAGES}
+            value={form.preferredLanguage}
+            onChange={(value) => set("preferredLanguage", value)}
+          />
+        </FormField>
       </div>
     </ConfirmDialog>
   );
@@ -174,6 +192,7 @@ export default function DriverProfileCard({
           ? "Yes"
           : "No",
     ],
+    ["Language", profile.preferredLanguage === "es" ? "Español" : "English"],
   ];
 
   return (

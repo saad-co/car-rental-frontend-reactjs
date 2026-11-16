@@ -58,6 +58,8 @@ export type InboundEmailsListParams =
 export const queryKeys = {
   /** The logged-in user (`GET /auth/me`). */
   me: ["auth", "me"] as const,
+  /** What the driver's photo page shows for one link (`GET /i/:token`, Module 3). */
+  inspectionCapture: (token: string) => ["inspection-capture", token] as const,
   applications: {
     all: ["applications"] as const,
     /** Prefix of every list query, whatever its filter and page. */
@@ -107,6 +109,8 @@ export const queryKeys = {
     documents: (id: string) => ["drivers", "documents", id] as const,
     /** The internal notes of one driver's account (Fleet revisions section 5), all loaded pages. */
     notes: (id: string) => ["drivers", "notes", id] as const,
+    /** The vehicle check-in / check-out inspections of one driver (Module 3), every loaded page. */
+    inspections: (id: string) => ["drivers", "inspections", id] as const,
     /** The daily or weekly charge set by hand for one driver (D100). */
     recurringCharge: (id: string) =>
       ["drivers", "recurring-charge", id] as const,

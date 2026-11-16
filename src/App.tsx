@@ -22,6 +22,7 @@ import NewDriver from "./pages/Drivers/NewDriver";
 import LedgerStatement from "./pages/Drivers/LedgerStatement";
 import PaymentsList from "./pages/Payments/PaymentsList";
 import EmailLogList from "./pages/EmailLog/EmailLogList";
+import CapturePage from "./pages/Inspection/CapturePage";
 import Settings from "./pages/Settings/Settings";
 
 /**
@@ -95,6 +96,9 @@ export default function App() {
           <Route index element={<DriverHome />} />
           <Route path="change-password" element={<ChangePassword />} />
         </Route>
+
+        {/* The driver's texted link for the vehicle photos (Module 3): public, no login, the link is the credential. */}
+        <Route path="/i/:token" element={<CapturePage />} />
 
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
