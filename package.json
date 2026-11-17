@@ -12,7 +12,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "api:generate": "npx --yes openapi-typescript@7.13.0 ../car-rental-backend-nestjs/openapi.json -o src/api/schema.d.ts"
+    "api:generate": "npx --yes openapi-typescript@7.13.0 ../car-rental-backend-nestjs/openapi.json -o src/api/schema.d.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",
@@ -37,6 +38,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
-    "vite-plugin-svgr": "^5.2.0"
+    "vite-plugin-svgr": "^5.2.0",
+    "vitest": "^4.1.11"
   }
 }

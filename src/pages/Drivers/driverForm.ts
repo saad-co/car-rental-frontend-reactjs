@@ -25,6 +25,8 @@ export interface DriverFormValues {
   /** `YYYY-MM-DD` or "". */
   dateOfBirth: string;
   hasInsurance: "" | "yes" | "no";
+  /** The language of the driver's texts and vehicle-photo page (D102). English unless changed. */
+  preferredLanguage: "en" | "es";
   street: string;
   apt: string;
   city: string;
@@ -42,6 +44,7 @@ export const EMPTY_DRIVER_VALUES: DriverFormValues = {
   email: "",
   dateOfBirth: "",
   hasInsurance: "",
+  preferredLanguage: "en",
   street: "",
   apt: "",
   city: "",

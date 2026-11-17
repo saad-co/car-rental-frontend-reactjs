@@ -16,6 +16,7 @@ import ReverseLedgerEntryDialog from "../../components/drivers/ReverseLedgerEntr
 import AgingTiles from "../../components/ledger/AgingTiles";
 import EditEntryDialog from "../../components/ledger/EditEntryDialog";
 import EntryDetailsDialog from "../../components/ledger/EntryDetailsDialog";
+import InspectionSummaryCard from "../../components/ledger/InspectionSummaryCard";
 import LedgerHeader from "../../components/ledger/LedgerHeader";
 import { LEDGER_URL_FILTERS } from "../../components/ledger/ledgerFilters";
 import LedgerRegister from "../../components/ledger/LedgerRegister";
@@ -154,6 +155,8 @@ export default function DriverLedger() {
           Statement
         </Link>
       </div>
+
+      <InspectionSummaryCard driverId={id} />
 
       <LedgerRegister
         driverId={id}

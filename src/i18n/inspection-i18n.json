@@ -1,0 +1,392 @@
+{
+  "_meta": {
+    "module": "GonzoCar Vehicle Check-In / Check-Out Photo Module",
+    "version": "1.2",
+    "languages": [
+      "en",
+      "es"
+    ],
+    "default": "Use the phone's language (navigator.language starts with 'es' -> es, otherwise en). Driver can switch on the welcome screen; save choice to the driver record (preferred_language) and to localStorage for this link.",
+    "placeholders": "Words in {curly_braces} are filled in by the app. Keep them exactly as written in both languages.",
+    "spanish_register": "Formal 'usted' throughout.",
+    "welcome_layout": "Welcome screen order: welcome_headline, GonzoCar logo (image), intro line, vehicle_line, language switch, tips, start button."
+  },
+  "en": {
+    "lang_toggle": {
+      "label": "Language",
+      "en": "English",
+      "es": "Español"
+    },
+    "welcome": {
+      "title_check_in": "Vehicle Check-In",
+      "title_check_out": "Vehicle Check-Out",
+      "title_spot_check": "Vehicle Spot Check",
+      "vehicle_line": "{year} {make} {model} · Plate {plate} · VIN ending {vin_last4}",
+      "time_estimate": "This takes about 5 minutes.",
+      "welcome_headline": "Welcome to GonzoCar",
+      "intro_check_in": "Let's begin your check-in.",
+      "intro_check_out": "Let's begin your check-out.",
+      "intro_spot_check": "Let's begin your vehicle check.",
+      "start_button_check_in": "Begin check-in",
+      "start_button_check_out": "Begin check-out",
+      "start_button_spot_check": "Begin"
+    },
+    "permissions": {
+      "camera_denied_title": "Camera is blocked",
+      "camera_denied_ios": "On iPhone: open Settings > Safari > Camera and choose Allow. Then come back and tap Try again.",
+      "camera_denied_android": "On Android: tap the lock icon next to the web address, choose Permissions, and turn on Camera. Then tap Try again.",
+      "try_again": "Try again"
+    },
+    "tips": {
+      "tip_light": "Good light.",
+      "tip_distance": "Step back for full-side photos.",
+      "tip_key": "Have the key — you'll turn the car on for mileage and fuel."
+    },
+    "capture": {
+      "progress": "Photo {current} of {total}",
+      "take_photo": "Take photo",
+      "retake": "Retake",
+      "back": "Back",
+      "damage_note_label": "Describe any damage in this photo",
+      "damage_note_placeholder": "Example: 3-inch scratch below the door handle",
+      "chars_left": "{count} characters left",
+      "quality_dark": "This photo is too dark. Please move to better light and retake.",
+      "quality_blurry": "This photo is blurry. Hold the phone still and retake.",
+      "saved_offline": "Saved on your phone. It will upload when you have signal.",
+      "damage_note_link": "+ Damage note",
+      "tap_thumb_retake": "Tap to retake"
+    },
+    "shots": {
+      "EXT_DRIVER_SIDE": {
+        "title": "Driver side, full",
+        "instruction": "Stand back so the whole driver side fits, front bumper to rear bumper."
+      },
+      "EXT_LEFT_FRONT_CORNER": {
+        "title": "Left front corner",
+        "instruction": "Stand at an angle to the front-left corner. Show the bumper, headlight and fender."
+      },
+      "TIRE_FRONT_LEFT": {
+        "title": "Front left tire and tread",
+        "instruction": "Turn the wheel if needed. Show the tread surface and the rim."
+      },
+      "EXT_FRONT": {
+        "title": "Front",
+        "instruction": "Face the car straight on. Show the whole front bumper, grille, hood and plate."
+      },
+      "EXT_WINDSHIELD": {
+        "title": "Windshield",
+        "instruction": "Fit the whole windshield in the photo. Get close enough to show any chips or cracks."
+      },
+      "EXT_RIGHT_FRONT_CORNER": {
+        "title": "Right front corner",
+        "instruction": "Stand at an angle to the front-right corner. Show the bumper, headlight and fender."
+      },
+      "TIRE_FRONT_RIGHT": {
+        "title": "Front right tire and tread",
+        "instruction": "Show the tread surface and the rim."
+      },
+      "EXT_PASSENGER_SIDE": {
+        "title": "Passenger side, full",
+        "instruction": "Stand back so the whole passenger side fits, front bumper to rear bumper."
+      },
+      "EXT_RIGHT_REAR_CORNER": {
+        "title": "Rear right corner",
+        "instruction": "Stand at an angle to the rear-right corner. Show the bumper, taillight and side panel."
+      },
+      "TIRE_REAR_RIGHT": {
+        "title": "Rear right tire and tread",
+        "instruction": "Show the tread surface and the rim."
+      },
+      "EXT_REAR": {
+        "title": "Rear",
+        "instruction": "Face the back of the car straight on. Show the whole rear bumper, trunk lid and plate."
+      },
+      "TRUNK_INTERIOR": {
+        "title": "Trunk / cargo area",
+        "instruction": "Open the trunk. Show the whole cargo area and floor."
+      },
+      "TRUNK_SPARE_JACK": {
+        "title": "Spare tire and jack",
+        "instruction": "Lift the trunk floor. Show both the spare tire and the jack."
+      },
+      "EXT_LEFT_REAR_CORNER": {
+        "title": "Rear left corner",
+        "instruction": "Stand at an angle to the rear-left corner. Show the bumper, taillight and side panel."
+      },
+      "TIRE_REAR_LEFT": {
+        "title": "Rear left tire and tread",
+        "instruction": "Show the tread surface and the rim."
+      },
+      "INT_ODOMETER": {
+        "title": "Mileage (odometer)",
+        "instruction": "Turn the car on. Make sure the mileage numbers are clear and readable."
+      },
+      "INT_FUEL": {
+        "title": "Fuel level",
+        "instruction": "Make sure the fuel gauge is clear and readable."
+      },
+      "INT_FRONT_SEATS": {
+        "title": "Front seats",
+        "instruction": "From the open driver door or the back seat, show both front seats and the dashboard."
+      },
+      "INT_REAR_SEATS": {
+        "title": "Rear seats",
+        "instruction": "From an open rear door, show the whole back seat and floor."
+      }
+    },
+    "readings": {
+      "odometer_label": "Type the mileage shown",
+      "odometer_placeholder": "Example: 84213",
+      "odometer_error": "Please enter the mileage using numbers only.",
+      "fuel_label": "Select the fuel level",
+      "fuel_levels": {
+        "empty": "Empty",
+        "1_8": "1/8",
+        "1_4": "1/4",
+        "3_8": "3/8",
+        "1_2": "1/2",
+        "5_8": "5/8",
+        "3_4": "3/4",
+        "7_8": "7/8",
+        "full": "Full"
+      }
+    },
+    "damage": {
+      "question": "Any other damage?",
+      "yes": "Yes",
+      "no": "No",
+      "title": "Damage photo {current} of up to {max}",
+      "size_tip": "For small damage, place a coin or key next to it to show the size.",
+      "description_label": "Short note",
+      "description_placeholder": "Example: Small dent on the rear bumper, left side",
+      "add_another": "Add another ({count} of {max})",
+      "max_reached": "You have added the maximum of {max} damage photos.",
+      "done": "Done",
+      "prior_title": "Already recorded at check-in"
+    },
+    "attestation": {
+      "checkbox_required": "Please check the box to submit.",
+      "confirm": "These photos show the car's condition right now."
+    },
+    "submit": {
+      "button": "Submit",
+      "uploading": "Uploading photos… {percent}%",
+      "do_not_close": "Please keep this page open until the upload finishes.",
+      "success_title": "All done. Thank you!",
+      "success_body_check_in": "Your check-in photos were received. Reference number: {reference}.",
+      "success_body_check_out": "Your check-out photos were received. Reference number: {reference}. You may now leave the vehicle and keys as instructed.",
+      "error": "Some photos did not upload. Check your signal and tap Try again.",
+      "retry": "Try again",
+      "thumbs_hint": "Tap any photo to retake it."
+    },
+    "resume": {
+      "body": "Picking up where you left off: {done} of {total} photos done.",
+      "continue": "Continue where I left off"
+    },
+    "link_status": {
+      "expired_title": "This link has expired",
+      "expired_body": "Please contact GonzoCar for a new link.",
+      "revoked_title": "This link is no longer active",
+      "revoked_body": "Please contact GonzoCar for help.",
+      "already_submitted_title": "Already submitted",
+      "already_submitted_body": "These photos were already submitted on {date} at {time}. Reference number: {reference}.",
+      "contact_button": "Call GonzoCar"
+    },
+    "sms": {
+      "check_in_link": "GonzoCar: Hi {first_name}, before you drive the {vehicle} ({plate}), please complete your vehicle check-in photos here: {link} It takes about 5 minutes. Link expires in 24 hours.",
+      "check_out_link": "GonzoCar: Hi {first_name}, today is your return day for the {vehicle} ({plate}). Before you leave the car and keys, please complete your check-out photos here: {link} It takes about 5 minutes.",
+      "check_out_reminder": "GonzoCar: Reminder, {first_name}: we have not received your check-out photos for the {vehicle} ({plate}). Please complete them now: {link}",
+      "confirmation_check_in": "GonzoCar: Thank you, {first_name}. Your check-in photos were received. Reference {reference}.",
+      "confirmation_check_out": "GonzoCar: Thank you, {first_name}. Your check-out photos were received. Reference {reference}."
+    }
+  },
+  "es": {
+    "lang_toggle": {
+      "label": "Idioma",
+      "en": "English",
+      "es": "Español"
+    },
+    "welcome": {
+      "title_check_in": "Entrega del vehículo (inspección inicial)",
+      "title_check_out": "Devolución del vehículo (inspección final)",
+      "title_spot_check": "Inspección de rutina del vehículo",
+      "vehicle_line": "{year} {make} {model} · Placa {plate} · VIN termina en {vin_last4}",
+      "time_estimate": "Esto toma unos 5 minutos.",
+      "welcome_headline": "Bienvenido a GonzoCar",
+      "intro_check_in": "Comencemos con la entrega de su vehículo.",
+      "intro_check_out": "Comencemos con la devolución de su vehículo.",
+      "intro_spot_check": "Comencemos con la revisión de su vehículo.",
+      "start_button_check_in": "Comenzar entrega",
+      "start_button_check_out": "Comenzar devolución",
+      "start_button_spot_check": "Comenzar"
+    },
+    "permissions": {
+      "camera_denied_title": "La cámara está bloqueada",
+      "camera_denied_ios": "En iPhone: abra Configuración > Safari > Cámara y elija Permitir. Luego regrese y toque Intentar de nuevo.",
+      "camera_denied_android": "En Android: toque el ícono del candado junto a la dirección web, elija Permisos y active la Cámara. Luego toque Intentar de nuevo.",
+      "try_again": "Intentar de nuevo"
+    },
+    "tips": {
+      "tip_light": "Buena luz.",
+      "tip_distance": "Aléjese para las fotos de lado completo.",
+      "tip_key": "Tenga la llave: encenderá el auto para el millaje y la gasolina."
+    },
+    "capture": {
+      "progress": "Foto {current} de {total}",
+      "take_photo": "Tomar foto",
+      "retake": "Repetir",
+      "back": "Atrás",
+      "damage_note_label": "Describa cualquier daño en esta foto",
+      "damage_note_placeholder": "Ejemplo: rayón de 3 pulgadas debajo de la manija de la puerta",
+      "chars_left": "Quedan {count} caracteres",
+      "quality_dark": "Esta foto está muy oscura. Muévase a un lugar con mejor luz y repítala.",
+      "quality_blurry": "Esta foto está borrosa. Mantenga el teléfono quieto y repítala.",
+      "saved_offline": "Guardada en su teléfono. Se subirá cuando tenga señal.",
+      "damage_note_link": "+ Nota de daño",
+      "tap_thumb_retake": "Toque para repetir"
+    },
+    "shots": {
+      "EXT_DRIVER_SIDE": {
+        "title": "Lado del conductor, completo",
+        "instruction": "Aléjese para que quepa todo el lado del conductor, de la defensa delantera a la trasera."
+      },
+      "EXT_LEFT_FRONT_CORNER": {
+        "title": "Esquina delantera izquierda",
+        "instruction": "Párese en ángulo a la esquina delantera izquierda. Muestre la defensa, el faro y la salpicadera."
+      },
+      "TIRE_FRONT_LEFT": {
+        "title": "Llanta delantera izquierda y su dibujo",
+        "instruction": "Gire el volante si es necesario. Muestre la superficie de la llanta (el dibujo) y el rin."
+      },
+      "EXT_FRONT": {
+        "title": "Frente",
+        "instruction": "Párese de frente al auto. Muestre toda la defensa delantera, la parrilla, el cofre y la placa."
+      },
+      "EXT_WINDSHIELD": {
+        "title": "Parabrisas",
+        "instruction": "Incluya todo el parabrisas en la foto. Acérquese lo suficiente para mostrar golpes o grietas."
+      },
+      "EXT_RIGHT_FRONT_CORNER": {
+        "title": "Esquina delantera derecha",
+        "instruction": "Párese en ángulo a la esquina delantera derecha. Muestre la defensa, el faro y la salpicadera."
+      },
+      "TIRE_FRONT_RIGHT": {
+        "title": "Llanta delantera derecha y su dibujo",
+        "instruction": "Muestre la superficie de la llanta (el dibujo) y el rin."
+      },
+      "EXT_PASSENGER_SIDE": {
+        "title": "Lado del pasajero, completo",
+        "instruction": "Aléjese para que quepa todo el lado del pasajero, de la defensa delantera a la trasera."
+      },
+      "EXT_RIGHT_REAR_CORNER": {
+        "title": "Esquina trasera derecha",
+        "instruction": "Párese en ángulo a la esquina trasera derecha. Muestre la defensa, la calavera y el panel lateral."
+      },
+      "TIRE_REAR_RIGHT": {
+        "title": "Llanta trasera derecha y su dibujo",
+        "instruction": "Muestre la superficie de la llanta (el dibujo) y el rin."
+      },
+      "EXT_REAR": {
+        "title": "Parte trasera",
+        "instruction": "Párese de frente a la parte trasera. Muestre toda la defensa trasera, la tapa de la cajuela y la placa."
+      },
+      "TRUNK_INTERIOR": {
+        "title": "Cajuela / área de carga",
+        "instruction": "Abra la cajuela. Muestre toda el área de carga y el piso."
+      },
+      "TRUNK_SPARE_JACK": {
+        "title": "Llanta de refacción y gato",
+        "instruction": "Levante el piso de la cajuela. Muestre la llanta de refacción y el gato."
+      },
+      "EXT_LEFT_REAR_CORNER": {
+        "title": "Esquina trasera izquierda",
+        "instruction": "Párese en ángulo a la esquina trasera izquierda. Muestre la defensa, la calavera y el panel lateral."
+      },
+      "TIRE_REAR_LEFT": {
+        "title": "Llanta trasera izquierda y su dibujo",
+        "instruction": "Muestre la superficie de la llanta (el dibujo) y el rin."
+      },
+      "INT_ODOMETER": {
+        "title": "Millaje (odómetro)",
+        "instruction": "Encienda el auto. Asegúrese de que los números del millaje se vean claros y legibles."
+      },
+      "INT_FUEL": {
+        "title": "Nivel de gasolina",
+        "instruction": "Asegúrese de que el indicador de gasolina se vea claro y legible."
+      },
+      "INT_FRONT_SEATS": {
+        "title": "Asientos delanteros",
+        "instruction": "Desde la puerta abierta del conductor o el asiento trasero, muestre ambos asientos delanteros y el tablero."
+      },
+      "INT_REAR_SEATS": {
+        "title": "Asientos traseros",
+        "instruction": "Desde una puerta trasera abierta, muestre todo el asiento trasero y el piso."
+      }
+    },
+    "readings": {
+      "odometer_label": "Escriba el millaje que aparece",
+      "odometer_placeholder": "Ejemplo: 84213",
+      "odometer_error": "Por favor escriba el millaje usando solo números.",
+      "fuel_label": "Seleccione el nivel de gasolina",
+      "fuel_levels": {
+        "empty": "Vacío",
+        "1_8": "1/8",
+        "1_4": "1/4",
+        "3_8": "3/8",
+        "1_2": "1/2",
+        "5_8": "5/8",
+        "3_4": "3/4",
+        "7_8": "7/8",
+        "full": "Lleno"
+      }
+    },
+    "damage": {
+      "question": "¿Algún otro daño?",
+      "yes": "Sí",
+      "no": "No",
+      "title": "Foto de daño {current} de hasta {max}",
+      "size_tip": "Para daños pequeños, ponga una moneda o una llave junto al daño para mostrar el tamaño.",
+      "description_label": "Nota corta",
+      "description_placeholder": "Ejemplo: abolladura pequeña en la defensa trasera, lado izquierdo",
+      "add_another": "Agregar otra ({count} de {max})",
+      "max_reached": "Ya agregó el máximo de {max} fotos de daños.",
+      "done": "Listo",
+      "prior_title": "Ya registrado en la entrega"
+    },
+    "attestation": {
+      "checkbox_required": "Por favor marque la casilla para enviar.",
+      "confirm": "Estas fotos muestran el estado del auto en este momento."
+    },
+    "submit": {
+      "button": "Enviar",
+      "uploading": "Subiendo fotos… {percent}%",
+      "do_not_close": "Por favor mantenga esta página abierta hasta que termine de subir.",
+      "success_title": "¡Listo! Gracias.",
+      "success_body_check_in": "Recibimos sus fotos de entrega. Número de referencia: {reference}.",
+      "success_body_check_out": "Recibimos sus fotos de devolución. Número de referencia: {reference}. Ya puede dejar el vehículo y las llaves según las instrucciones.",
+      "error": "Algunas fotos no se subieron. Revise su señal y toque Intentar de nuevo.",
+      "retry": "Intentar de nuevo",
+      "thumbs_hint": "Toque cualquier foto para repetirla."
+    },
+    "resume": {
+      "body": "Continuamos donde se quedó: lleva {done} de {total} fotos.",
+      "continue": "Continuar donde me quedé"
+    },
+    "link_status": {
+      "expired_title": "Este enlace ha vencido",
+      "expired_body": "Por favor comuníquese con GonzoCar para recibir un enlace nuevo.",
+      "revoked_title": "Este enlace ya no está activo",
+      "revoked_body": "Por favor comuníquese con GonzoCar para recibir ayuda.",
+      "already_submitted_title": "Ya fue enviado",
+      "already_submitted_body": "Estas fotos ya se enviaron el {date} a las {time}. Número de referencia: {reference}.",
+      "contact_button": "Llamar a GonzoCar"
+    },
+    "sms": {
+      "check_in_link": "GonzoCar: Hola {first_name}, antes de manejar el {vehicle} ({plate}), por favor complete las fotos de entrega del vehículo aquí: {link} Toma unos 5 minutos. El enlace vence en 24 horas.",
+      "check_out_link": "GonzoCar: Hola {first_name}, hoy es su día de devolución del {vehicle} ({plate}). Antes de dejar el auto y las llaves, por favor complete sus fotos de devolución aquí: {link} Toma unos 5 minutos.",
+      "check_out_reminder": "GonzoCar: Recordatorio, {first_name}: no hemos recibido sus fotos de devolución del {vehicle} ({plate}). Por favor complételas ahora: {link}",
+      "confirmation_check_in": "GonzoCar: Gracias, {first_name}. Recibimos sus fotos de entrega. Referencia {reference}.",
+      "confirmation_check_out": "GonzoCar: Gracias, {first_name}. Recibimos sus fotos de devolución. Referencia {reference}."
+    }
+  }
+}

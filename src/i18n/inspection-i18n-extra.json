@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "about": "A few words the vehicle-photo page needs that the client's translation file (inspection-i18n.json, kept exactly as shipped) does not have. Our addition: the client should read the Spanish.",
+    "spanish_register": "Formal 'usted', like the client's file."
+  },
+  "en": {
+    "loading": "Loading…",
+    "load_error": "We could not load this page. Check your signal and try again.",
+    "next": "Next",
+    "photo_unreadable": "We could not read that photo. Please try again.",
+    "photo_uploading": "Uploading…",
+    "photo_saved": "Saved",
+    "photo_failed": "Not uploaded yet. Tap to try again."
+  },
+  "es": {
+    "loading": "Cargando…",
+    "load_error": "No pudimos cargar esta página. Revise su señal e inténtelo de nuevo.",
+    "next": "Siguiente",
+    "photo_unreadable": "No pudimos leer esa foto. Inténtelo de nuevo.",
+    "photo_uploading": "Subiendo…",
+    "photo_saved": "Guardada",
+    "photo_failed": "Todavía no se subió. Toque para intentar de nuevo."
+  }
+}
