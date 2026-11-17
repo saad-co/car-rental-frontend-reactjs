@@ -67,18 +67,15 @@ describe("CaptureSession", () => {
 
   it("knows which shots have a photo, wherever it is", async () => {
     const { session } = setup();
-    session.hydrate(
-      [
-        {
-          shotId: "EXT_FRONT",
-          position: 1,
-          note: null,
-          thumbUrl: "https://t/1",
-        },
-      ],
-      null,
-      null,
-    );
+    session.hydrate([
+      {
+        shotId: "EXT_FRONT",
+        parentShotId: null,
+        position: 1,
+        note: null,
+        thumbUrl: "https://t/1",
+      },
+    ]);
     session.setPhoto("EXT_REAR", 1, blob("b"), null);
     expect([...session.shotsWithPhoto()].sort()).toEqual([
       "EXT_FRONT",
@@ -87,9 +84,9 @@ describe("CaptureSession", () => {
     await session.settled();
   });
 
-  it("leaves damage photos out of the list of shots", async () => {
+  it("leaves close-ups out of the list of shots", async () => {
     const { session } = setup();
-    session.setPhoto("DAMAGE", 1, blob("d"), null);
+    session.setPhoto("DAMAGE@EXT_FRONT", 1, blob("d"), null);
     expect(session.shotsWithPhoto().size).toBe(0);
     await session.settled();
   });
@@ -129,48 +126,49 @@ describe("CaptureSession", () => {
     expect(sent.at(-1)).toEqual({ shotId: "EXT_FRONT", position: 1, note: "" });
   });
 
-  it("sends the mileage with the odometer photo, and the fuel level with the fuel photo", async () => {
+  it("sends a close-up as DAMAGE with its shot and number, and counts it as a yes for that shot (D112)", async () => {
     const { session, sent } = setup();
-    session.setPhoto("INT_ODOMETER", 1, blob("o"), null);
-    session.setOdometer(84213); // typed while the photo is still in line
-    session.setPhoto("INT_FUEL", 1, blob("f"), null);
-    session.setFuel("3_4");
+    session.setPhoto("DAMAGE@EXT_LEFT_MIRROR", 2, blob("c"), null);
+    session.setNote("DAMAGE@EXT_LEFT_MIRROR", 2, "cracked glass");
     await session.settled();
-    expect(
-      sent.some(
-        (r) => r.shotId === "INT_ODOMETER" && r.odometerMiles === 84213,
-      ),
-    ).toBe(true);
-    expect(
-      sent.some((r) => r.shotId === "INT_FUEL" && r.fuelLevel === "3_4"),
-    ).toBe(true);
-    expect(session.getOdometer()).toBe(84213);
-    expect(session.getFuel()).toBe("3_4");
+    // The photo, then (if it had already left) the note on its own trip: every trip names the shot and the number.
+    for (const request of sent) {
+      expect(request).toMatchObject({
+        shotId: "DAMAGE",
+        parentShotId: "EXT_LEFT_MIRROR",
+        position: 2,
+      });
+    }
+    expect(sent[0].file).toBeInstanceOf(Blob);
+    expect(sent.at(-1)!.note).toBe("cracked glass");
+    expect(session.answerOf("EXT_LEFT_MIRROR")).toBe(true);
   });
 
-  it("sends a changed reading by itself, without the picture", async () => {
-    const { session, sent } = setup();
-    session.setPhoto("INT_ODOMETER", 1, blob("o"), null);
-    session.setOdometer(100);
-    await session.settled();
-    session.setOdometer(101);
-    await session.settled();
-    expect(sent.at(-1)).toEqual({
-      shotId: "INT_ODOMETER",
-      position: 1,
-      odometerMiles: 101,
-    });
-  });
-
-  it("does not send the same reading twice", async () => {
+  it("sends a normal shot with no parent and no reading", async () => {
     const { session, sent } = setup();
     session.setPhoto("INT_FUEL", 1, blob("f"), null);
-    session.setFuel("full");
     await session.settled();
-    const before = sent.length;
-    session.setFuel("full");
+    expect(Object.keys(sent[0]).sort()).toEqual(["file", "position", "shotId"]);
+  });
+
+  it("keeps the close-ups of each shot apart, in order", async () => {
+    const { session } = setup();
+    session.setPhoto("DAMAGE@EXT_FRONT", 2, blob("b"), null);
+    session.setPhoto("DAMAGE@EXT_FRONT", 1, blob("a"), null);
+    session.setPhoto("DAMAGE@EXT_REAR", 1, blob("r"), null);
+    session.setNote("DAMAGE@EXT_FRONT", 3, "a note with no photo yet");
+    expect(session.closeUpPositions("EXT_FRONT")).toEqual([1, 2]);
+    expect(session.closeUpPositions("EXT_REAR")).toEqual([1]);
+    expect(session.closeUpPositions("EXT_WINDSHIELD")).toEqual([]);
     await session.settled();
-    expect(sent.length).toBe(before);
+  });
+
+  it("records an answer the server saved", () => {
+    const { session } = setup();
+    expect(session.answerOf("EXT_FRONT")).toBeUndefined();
+    session.recordAnswer("EXT_FRONT", false);
+    expect(session.answerOf("EXT_FRONT")).toBe(false);
+    expect([...session.answerMap()]).toEqual([["EXT_FRONT", false]]);
   });
 
   it("treats a second photo for the same shot as a retake: it is sent again and the old preview is released", async () => {
@@ -234,14 +232,31 @@ describe("CaptureSession", () => {
       [
         {
           shotId: "EXT_FRONT",
+          parentShotId: null,
           position: 1,
           note: "chip",
           thumbUrl: "https://t/front",
         },
-        { shotId: "DAMAGE", position: 2, note: null, thumbUrl: null },
+        {
+          shotId: "DAMAGE",
+          parentShotId: "EXT_FRONT",
+          position: 2,
+          note: null,
+          thumbUrl: null,
+        },
+        // A free-standing damage photo from before D112: the server keeps it, the page has no place for it.
+        {
+          shotId: "DAMAGE",
+          parentShotId: null,
+          position: 1,
+          note: "old",
+          thumbUrl: null,
+        },
       ],
-      84213,
-      "full",
+      [
+        { shotId: "EXT_FRONT", hasDamage: true },
+        { shotId: "EXT_REAR", hasDamage: false },
+      ],
     );
     expect(session.view("EXT_FRONT")).toEqual({
       hasPhoto: true,
@@ -249,9 +264,11 @@ describe("CaptureSession", () => {
       note: "chip",
       status: "saved",
     });
-    expect(session.view("DAMAGE", 2).hasPhoto).toBe(true);
-    expect(session.getOdometer()).toBe(84213);
-    expect(session.getFuel()).toBe("full");
+    expect(session.view("DAMAGE@EXT_FRONT", 2).hasPhoto).toBe(true);
+    expect(session.view("DAMAGE", 1).hasPhoto).toBe(false);
+    expect(session.closeUpPositions("EXT_FRONT")).toEqual([2]);
+    expect(session.answerOf("EXT_FRONT")).toBe(true);
+    expect(session.answerOf("EXT_REAR")).toBe(false);
     expect(sent).toHaveLength(0); // nothing to send: the server has it all
     expect(session.progress()).toEqual({ done: 2, total: 2 });
   });
@@ -259,18 +276,15 @@ describe("CaptureSession", () => {
   it("does not let the server's thumbnail overwrite a photo taken in this visit", async () => {
     const { session } = setup();
     session.setPhoto("EXT_FRONT", 1, blob("a"), null);
-    session.hydrate(
-      [
-        {
-          shotId: "EXT_FRONT",
-          position: 1,
-          note: null,
-          thumbUrl: "https://t/old",
-        },
-      ],
-      null,
-      null,
-    );
+    session.hydrate([
+      {
+        shotId: "EXT_FRONT",
+        parentShotId: null,
+        position: 1,
+        note: null,
+        thumbUrl: "https://t/old",
+      },
+    ]);
     expect(session.view("EXT_FRONT").previewUrl).toBe("blob:local-1");
     await session.settled();
   });
@@ -309,7 +323,7 @@ describe("CaptureSession", () => {
   });
 });
 
-describe("CaptureSession: damage photos and the phone's storage", () => {
+describe("CaptureSession: the phone's storage", () => {
   /** A session with a recording stand-in for the phone's storage. */
   function withStorage() {
     const calls: string[] = [];
@@ -332,23 +346,14 @@ describe("CaptureSession: damage photos and the phone's storage", () => {
     return { session, calls, sent, state };
   }
 
-  it("lists the damage photos that exist, in order", async () => {
-    const { session } = withStorage();
-    session.setPhoto("DAMAGE", 2, blob("b"), null);
-    session.setPhoto("DAMAGE", 1, blob("a"), null);
-    session.setNote("DAMAGE", 3, "a note with no photo yet");
-    expect(session.damagePositions()).toEqual([1, 2]);
+  it("does not put back an old free-standing damage photo kept on the phone (the server would refuse it)", async () => {
+    const { session, sent } = withStorage();
+    session.restorePhoto("DAMAGE", 1, blob("old"), null);
+    session.restorePhoto("DAMAGE@EXT_FRONT", 1, blob("new"), null);
     await session.settled();
-  });
-
-  it("includes damage photos the server already holds", () => {
-    const { session } = withStorage();
-    session.hydrate(
-      [{ shotId: "DAMAGE", position: 1, note: "dent", thumbUrl: null }],
-      null,
-      null,
-    );
-    expect(session.damagePositions()).toEqual([1]);
+    expect(sent.map((r) => [r.shotId, r.parentShotId])).toEqual([
+      ["DAMAGE", "EXT_FRONT"],
+    ]);
   });
 
   it("keeps a photo on the phone from the moment it is taken until the server has it", async () => {

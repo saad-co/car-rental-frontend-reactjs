@@ -17,6 +17,7 @@ import BackLink from "../../components/ui/button/BackLink";
 import { formatCents } from "../../utils";
 import DamageDecision from "./DamageDecision";
 import {
+  answerLabel,
   fuelChangeLabel,
   fuelLabel,
   mileageLabel,
@@ -65,6 +66,23 @@ function Thumb({
         </div>
       )}
     </div>
+  );
+}
+
+/** Under a pair: what the driver answered at pickup and at return (D112); nothing for older inspections. */
+function AnswerLine({
+  checkIn,
+  checkOut,
+}: {
+  checkIn: string | null;
+  checkOut: string | null;
+}) {
+  if (!checkIn && !checkOut) return null;
+  return (
+    <p className="mt-2 text-theme-xs text-gray-600">
+      Driver said — check-in: {checkIn ?? "not asked"} · check-out:{" "}
+      {checkOut ?? "not asked"}
+    </p>
   );
 }
 
@@ -183,24 +201,41 @@ function CompareBody({ compare }: { compare: Compare }) {
                 {compare.checkOut.reference}
               </dd>
             </div>
+            {/* Typed readings exist only on inspections made before D112; since then staff compare the two photos. */}
             <div>
               <dt className="text-theme-xs text-gray-500">Mileage</dt>
               <dd className="text-sm font-medium text-gray-800">
-                {mileageLabel(compare.checkIn.odometerMiles)} →{" "}
-                {mileageLabel(compare.checkOut.odometerMiles)}
-                <span className="ml-2 font-normal text-gray-500">
-                  ({milesDrivenLabel(compare.milesDriven)})
-                </span>
+                {compare.milesDriven === null ? (
+                  <span className="font-normal text-gray-600">
+                    Compare the two odometer photos below
+                  </span>
+                ) : (
+                  <>
+                    {mileageLabel(compare.checkIn.odometerMiles)} →{" "}
+                    {mileageLabel(compare.checkOut.odometerMiles)}
+                    <span className="ml-2 font-normal text-gray-500">
+                      ({milesDrivenLabel(compare.milesDriven)})
+                    </span>
+                  </>
+                )}
               </dd>
             </div>
             <div>
               <dt className="text-theme-xs text-gray-500">Fuel</dt>
               <dd className="text-sm font-medium text-gray-800">
-                {fuelLabel(compare.checkIn.fuelLevel)} →{" "}
-                {fuelLabel(compare.checkOut.fuelLevel)}
-                <span className="ml-2 font-normal text-gray-500">
-                  ({fuelChangeLabel(compare.fuelChangeEighths)})
-                </span>
+                {compare.fuelChangeEighths === null ? (
+                  <span className="font-normal text-gray-600">
+                    Compare the two fuel photos below
+                  </span>
+                ) : (
+                  <>
+                    {fuelLabel(compare.checkIn.fuelLevel)} →{" "}
+                    {fuelLabel(compare.checkOut.fuelLevel)}
+                    <span className="ml-2 font-normal text-gray-500">
+                      ({fuelChangeLabel(compare.fuelChangeEighths)})
+                    </span>
+                  </>
+                )}
               </dd>
             </div>
           </dl>
@@ -233,7 +268,7 @@ function CompareBody({ compare }: { compare: Compare }) {
         <>
           <div className="rounded-2xl border border-gray-200 bg-surface p-6">
             <h2 className="text-base font-semibold text-gray-800">
-              The 19 photos, side by side
+              The {compare.pairs.length} photos, side by side
             </h2>
             <ul className="mt-2 divide-y divide-gray-100">
               {compare.pairs.map((pair) => (
@@ -262,6 +297,41 @@ function CompareBody({ compare }: { compare: Compare }) {
                         }
                       />
                     </div>
+                    <AnswerLine
+                      checkIn={answerLabel(
+                        pair.checkInAnswer,
+                        pair.checkInCloseUps.length,
+                      )}
+                      checkOut={answerLabel(
+                        pair.checkOutAnswer,
+                        pair.checkOutCloseUps.length,
+                      )}
+                    />
+                    {pair.checkInCloseUps.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-theme-xs text-gray-500">
+                          Damage already there at pickup (not charged)
+                        </p>
+                        <div className="mt-1 grid grid-cols-4 gap-2">
+                          {pair.checkInCloseUps.map((photo) => (
+                            <div key={photo.id}>
+                              <Thumb
+                                label={`Close-up ${photo.position}`}
+                                photo={photo}
+                                onOpen={() =>
+                                  openOne(photo, `Check-in ${checkInRef}`)
+                                }
+                              />
+                              {photo.driverNote && (
+                                <p className="mt-1 text-theme-xs text-gray-500">
+                                  “{photo.driverNote}”
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="self-center">
                     {decisionFor(
@@ -270,80 +340,113 @@ function CompareBody({ compare }: { compare: Compare }) {
                       shotTitle(pair.shotId),
                     )}
                   </div>
+                  {pair.checkOutCloseUps.length > 0 && (
+                    <ul className="space-y-3 rounded-xl bg-gray-50 p-3 lg:col-span-2">
+                      {pair.checkOutCloseUps.map(({ photo, damageItem }) => (
+                        <li
+                          key={photo.id}
+                          className="grid gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]"
+                        >
+                          <div className="flex gap-3">
+                            <div className="w-1/3">
+                              <Thumb
+                                label={`Return close-up ${photo.position}`}
+                                photo={photo}
+                                onOpen={() => openOne(photo, "Check-out")}
+                              />
+                            </div>
+                            {photo.driverNote && (
+                              <p className="self-end text-sm text-gray-600">
+                                Driver’s note: “{photo.driverNote}”
+                              </p>
+                            )}
+                          </div>
+                          <div className="self-center">
+                            {decisionFor(damageItem, photo, photoTitle(photo))}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-surface p-6">
-            <h2 className="text-base font-semibold text-gray-800">
-              Damage already there at pickup ({compare.checkInDamage.length})
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              The driver photographed these on the check-in. They are not
-              charged.
-            </p>
-            {compare.checkInDamage.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-500">
-                None reported at pickup.
+          {/* Damage photos that belong to no shot: inspections made before the per-shot question (D112). */}
+          {compare.checkInDamage.length > 0 && (
+            <div className="rounded-2xl border border-gray-200 bg-surface p-6">
+              <h2 className="text-base font-semibold text-gray-800">
+                Damage already there at pickup ({compare.checkInDamage.length})
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                The driver photographed these on the check-in. They are not
+                charged.
               </p>
-            ) : (
-              <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {compare.checkInDamage.map((photo) => (
-                  <div key={photo.id}>
-                    <Thumb
-                      label={photoTitle(photo)}
-                      photo={photo}
-                      onOpen={() => openOne(photo, `Check-in ${checkInRef}`)}
-                    />
-                    {photo.driverNote && (
-                      <p className="mt-1 text-theme-xs text-gray-500">
-                        “{photo.driverNote}”
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 bg-surface p-6">
-            <h2 className="text-base font-semibold text-gray-800">
-              Damage photos added at return ({compare.checkOutDamage.length})
-            </h2>
-            {compare.checkOutDamage.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-500">
-                The driver added no damage photos at return.
-              </p>
-            ) : (
-              <ul className="mt-2 divide-y divide-gray-100">
-                {compare.checkOutDamage.map(({ photo, damageItem }) => (
-                  <li
-                    key={photo.id}
-                    className="grid gap-4 py-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]"
-                  >
-                    <div className="flex gap-3">
-                      <div className="w-1/2">
-                        <Thumb
-                          label={photoTitle(photo)}
-                          photo={photo}
-                          onOpen={() => openOne(photo, "Check-out")}
-                        />
-                      </div>
+              {compare.checkInDamage.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-500">
+                  None reported at pickup.
+                </p>
+              ) : (
+                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {compare.checkInDamage.map((photo) => (
+                    <div key={photo.id}>
+                      <Thumb
+                        label={photoTitle(photo)}
+                        photo={photo}
+                        onOpen={() => openOne(photo, `Check-in ${checkInRef}`)}
+                      />
                       {photo.driverNote && (
-                        <p className="self-end text-sm text-gray-600">
-                          Driver’s note: “{photo.driverNote}”
+                        <p className="mt-1 text-theme-xs text-gray-500">
+                          “{photo.driverNote}”
                         </p>
                       )}
                     </div>
-                    <div className="self-center">
-                      {decisionFor(damageItem, photo, photoTitle(photo))}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {compare.checkOutDamage.length > 0 && (
+            <div className="rounded-2xl border border-gray-200 bg-surface p-6">
+              <h2 className="text-base font-semibold text-gray-800">
+                Damage photos added at return ({compare.checkOutDamage.length})
+              </h2>
+              {compare.checkOutDamage.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-500">
+                  The driver added no damage photos at return.
+                </p>
+              ) : (
+                <ul className="mt-2 divide-y divide-gray-100">
+                  {compare.checkOutDamage.map(({ photo, damageItem }) => (
+                    <li
+                      key={photo.id}
+                      className="grid gap-4 py-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]"
+                    >
+                      <div className="flex gap-3">
+                        <div className="w-1/2">
+                          <Thumb
+                            label={photoTitle(photo)}
+                            photo={photo}
+                            onOpen={() => openOne(photo, "Check-out")}
+                          />
+                        </div>
+                        {photo.driverNote && (
+                          <p className="self-end text-sm text-gray-600">
+                            Driver’s note: “{photo.driverNote}”
+                          </p>
+                        )}
+                      </div>
+                      <div className="self-center">
+                        {decisionFor(damageItem, photo, photoTitle(photo))}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </>
       )}
 
@@ -398,7 +501,7 @@ function CompareBody({ compare }: { compare: Compare }) {
 
 /**
  * `/admin/inspections/:id/compare`: a check-out beside the check-in it is paired with (Module 3 chat 2, step 3). Staff look at
- * the 19 pairs, mark "New damage" where the check-out shows something the check-in does not, and charge it to the driver's ledger
+ * the pairs of shots (with the driver's damage answers and close-ups, D112), mark "New damage" where the check-out shows something the check-in does not, and charge it to the driver's ledger
  * through the ledger's own charge window. Damage already on the check-in is shown read-only and is never charged.
  */
 export default function InspectionCompare() {

@@ -47,7 +47,7 @@ function Row({
         {done
           ? `submitted ${formatDateTime(inspection.submittedAt)}`
           : `made ${formatDateTime(inspection.createdAt)}`}{" "}
-        · {inspection.photoCount} of 19 photos
+        · {inspection.photoCount} of {inspection.requiredPhotoCount} photos
         {inspection.damagePhotoCount > 0
           ? `, ${inspection.damagePhotoCount} damage`
           : ""}

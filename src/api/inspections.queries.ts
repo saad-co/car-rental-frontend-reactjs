@@ -293,7 +293,7 @@ export function useAddInspectionNote(inspectionId: string, driverId: string) {
 /** A check-out set beside its check-in, with the damage marked so far. `available: false` carries a `reason` in words. */
 export type InspectionCompare = components["schemas"]["InspectionCompareDto"];
 
-/** One of the 19 shots: the check-in photo, the check-out photo and the damage item staff marked (null = no change). */
+/** One shot: the check-in and check-out photos, the damage item staff marked (null = no change), and each side's damage answer and close-ups (D112). */
 export type ComparePair = components["schemas"]["ComparePairDto"];
 
 /** New damage found on a check-out photo, and the charge it led to. */

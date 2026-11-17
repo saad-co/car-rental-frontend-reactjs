@@ -6,6 +6,7 @@ import {
   fuelLabel,
   mileageLabel,
   milesDrivenLabel,
+  answerLabel,
   photoTitle,
   SHOT_ORDER,
   shotTitle,
@@ -13,18 +14,45 @@ import {
 } from "./inspectionFormat";
 
 describe("the staff words for the vehicle photos", () => {
-  it("lists the 19 shots in the order the driver takes them", () => {
-    expect(SHOT_ORDER).toHaveLength(19);
+  it("lists the 21 shots in the order the driver takes them, mirrors included (D112)", () => {
+    expect(SHOT_ORDER).toHaveLength(21);
+    expect(new Set(SHOT_ORDER).size).toBe(21);
     expect(SHOT_ORDER[0]).toBe("EXT_DRIVER_SIDE");
-    expect(SHOT_ORDER[3]).toBe("EXT_FRONT");
-    expect(SHOT_ORDER[15]).toBe("INT_ODOMETER");
-    expect(SHOT_ORDER[16]).toBe("INT_FUEL");
+    expect(SHOT_ORDER[2]).toBe("EXT_LEFT_MIRROR");
+    expect(SHOT_ORDER[4]).toBe("EXT_FRONT");
+    expect(SHOT_ORDER[7]).toBe("EXT_RIGHT_MIRROR");
+    expect(SHOT_ORDER[17]).toBe("INT_ODOMETER");
+    expect(SHOT_ORDER[18]).toBe("INT_FUEL");
     expect(SHOT_ORDER.at(-1)).toBe("INT_REAR_SEATS");
+    expect(shotTitle("EXT_RIGHT_MIRROR")).toBe("Right side mirror");
   });
 
   it("uses the client's English titles", () => {
     expect(shotTitle("INT_ODOMETER")).toBe("Mileage (odometer)");
     expect(shotTitle("NOT_A_SHOT")).toBe("NOT_A_SHOT");
+  });
+
+  it("names a close-up after its shot, and says the driver's answer (D112)", () => {
+    expect(
+      photoTitle({ shotId: "DAMAGE", position: 2, parentShotId: "EXT_FRONT" }),
+    ).toBe("Front — damage close-up 2");
+    expect(answerLabel(false, 0)).toBe("No damage");
+    expect(answerLabel(true, 1)).toBe("Damage: 1 close-up");
+    expect(answerLabel(true, 3)).toBe("Damage: 3 close-ups");
+    expect(answerLabel(null, 0)).toBeNull();
+    expect(answerLabel(undefined, 0)).toBeNull();
+    expect(
+      eventLabel({
+        type: "damage_answered",
+        meta: { shotId: "EXT_LEFT_MIRROR", hasDamage: true },
+      }),
+    ).toBe("Driver answered “damage” for Left side mirror");
+    expect(
+      eventLabel({
+        type: "photo_uploaded",
+        meta: { shotId: "DAMAGE", parentShotId: "EXT_REAR", position: 1 },
+      }),
+    ).toBe("Rear — damage close-up 1 uploaded");
   });
 
   it("names a damage photo by its number", () => {

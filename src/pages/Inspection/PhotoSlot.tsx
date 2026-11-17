@@ -12,14 +12,15 @@ export const MAX_NOTE_LENGTH = 200;
 interface Props {
   language: Language;
   session: CaptureSession;
+  /** The page's slot name: a shot id, or `DAMAGE@<shot>` for a close-up. */
   shotId: string;
-  /** 1 for a required shot; 1 to 15 for a damage photo. */
+  /** 1 for a required shot; 1 to 5 for a close-up. */
   position: number;
   /** What the picture shows, for screen readers. */
   alt: string;
   /**
    * `link`: a "+ Damage note" link opens the note box (a required shot). `always`: the note box shows as soon as there is a
-   * photo (a damage photo, whose whole point is its note).
+   * photo (a damage close-up; the note is optional there, D112).
    */
   noteMode: "link" | "always";
   /** Called after a photo was accepted, with the result of the quality check. */
@@ -81,7 +82,7 @@ export default function PhotoSlot({
   const showNote = view.hasPhoto && (noteMode === "always" || noteOpen);
   const noteLabel =
     noteMode === "always"
-      ? t(language, "damage.description_label")
+      ? `${t(language, "damage.description_label")} ${t(language, "x.note_optional")}`
       : t(language, "capture.damage_note_label");
   const notePlaceholder =
     noteMode === "always"

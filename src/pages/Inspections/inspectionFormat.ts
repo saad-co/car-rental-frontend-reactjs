@@ -1,14 +1,44 @@
 import texts from "../../i18n/inspection-i18n.json";
+import extraTexts from "../../i18n/inspection-i18n-extra.json";
 
 /**
  * Words for the staff pages of the vehicle photos (Module 3 chat 2). Staff read English, so the titles come from the English side
  * of the client's translation file, the same words the driver's page shows.
  */
 
-/** The 19 shot ids in the order the driver is guided through them (the order of the client's file). */
-export const SHOT_ORDER: string[] = Object.keys(texts.en.shots);
+/**
+ * The 21 shot ids in the order the driver is guided through them: the client's 19, with the two side mirrors added next to the
+ * front corner of their side (D112). The same order as `inspection_shots.position` in the database.
+ */
+export const SHOT_ORDER: string[] = [
+  "EXT_DRIVER_SIDE",
+  "EXT_LEFT_FRONT_CORNER",
+  "EXT_LEFT_MIRROR",
+  "TIRE_FRONT_LEFT",
+  "EXT_FRONT",
+  "EXT_WINDSHIELD",
+  "EXT_RIGHT_FRONT_CORNER",
+  "EXT_RIGHT_MIRROR",
+  "TIRE_FRONT_RIGHT",
+  "EXT_PASSENGER_SIDE",
+  "EXT_RIGHT_REAR_CORNER",
+  "TIRE_REAR_RIGHT",
+  "EXT_REAR",
+  "TRUNK_INTERIOR",
+  "TRUNK_SPARE_JACK",
+  "EXT_LEFT_REAR_CORNER",
+  "TIRE_REAR_LEFT",
+  "INT_ODOMETER",
+  "INT_FUEL",
+  "INT_FRONT_SEATS",
+  "INT_REAR_SEATS",
+];
 
-const SHOTS = texts.en.shots as Record<string, { title: string } | undefined>;
+/** Shot titles: the client's file, and our extra file for the two mirrors (D112). */
+const SHOTS = {
+  ...texts.en.shots,
+  ...extraTexts.en.shots,
+} as Record<string, { title: string } | undefined>;
 const FUEL = texts.en.readings.fuel_levels as Record<
   string,
   string | undefined
@@ -19,14 +49,32 @@ export function shotTitle(shotId: string): string {
   return SHOTS[shotId]?.title ?? shotId;
 }
 
-/** A photo's name on screen: the shot's title, or "Damage photo 2" for a damage close-up. */
+/**
+ * A photo's name on screen: the shot's title; "Left side mirror — damage close-up 2" for a close-up of a shot (D112); or
+ * "Damage photo 2" for an old free-standing damage photo.
+ */
 export function photoTitle(photo: {
   shotId: string;
   position: number;
+  parentShotId?: string | null;
 }): string {
-  return photo.shotId === "DAMAGE"
-    ? `Damage photo ${photo.position}`
-    : shotTitle(photo.shotId);
+  if (photo.shotId !== "DAMAGE") return shotTitle(photo.shotId);
+  return photo.parentShotId
+    ? `${shotTitle(photo.parentShotId)} — damage close-up ${photo.position}`
+    : `Damage photo ${photo.position}`;
+}
+
+/**
+ * The driver's damage answer for a shot, in words: "No damage", "Damage: 2 close-ups", or null when there is no answer (an
+ * inspection made before the per-shot question, D112, or one not finished).
+ */
+export function answerLabel(
+  answer: boolean | null | undefined,
+  closeUps: number,
+): string | null {
+  if (answer === null || answer === undefined) return null;
+  if (!answer) return "No damage";
+  return `Damage: ${closeUps} close-up${closeUps === 1 ? "" : "s"}`;
 }
 
 /** The fuel level in words ("3/4", "Full"), or a dash when it is not known. */
@@ -90,9 +138,13 @@ export function eventLabel(event: {
       const photo = {
         shotId: String(meta.shotId ?? ""),
         position: Number(meta.position ?? 1),
+        parentShotId:
+          typeof meta.parentShotId === "string" ? meta.parentShotId : null,
       };
       return `${photoTitle(photo)} ${meta.retake ? "retaken" : "uploaded"}`;
     }
+    case "damage_answered":
+      return `Driver answered ${meta.hasDamage ? "“damage”" : "“no damage”"} for ${shotTitle(String(meta.shotId ?? ""))}`;
     case "language_changed":
       return `Driver chose ${meta.language === "es" ? "Español" : "English"}`;
     case "submitted":

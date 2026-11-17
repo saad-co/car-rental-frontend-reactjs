@@ -303,7 +303,8 @@ export default function VehiclePhotosCard({ driver }: { driver: CardDriver }) {
                           ? `Link ${inspection.status === "expired" ? "expired" : "works until"} ${formatDateTime(inspection.tokenExpiresAt)}`
                           : `Made ${formatDateTime(inspection.createdAt)}`}
                     {" · "}
-                    {inspection.photoCount} of 19 photos
+                    {inspection.photoCount} of {inspection.requiredPhotoCount}{" "}
+                    photos
                     {inspection.damagePhotoCount > 0
                       ? `, ${inspection.damagePhotoCount} damage`
                       : ""}
@@ -389,7 +390,7 @@ export default function VehiclePhotosCard({ driver }: { driver: CardDriver }) {
       >
         <p>
           This texts {driver.firstName} ({formatUsPhone(driver.phone)}) a link
-          in {language}. The link works for 24 hours.
+          in {language}. The link works for at least 72 hours.
           {sending?.kind === "again" &&
             " An earlier link stops working: the photos already taken are kept."}
         </p>

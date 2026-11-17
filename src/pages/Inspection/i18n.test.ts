@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import clientTexts from "../../i18n/inspection-i18n.json";
 import extraTexts from "../../i18n/inspection-i18n-extra.json";
-import { fuelText, pickLanguage, shotText, t, vehicleLine } from "./i18n";
+import { pickLanguage, shotText, t, vehicleLine } from "./i18n";
 
 /** Every dotted path of every text in an object. */
 function paths(node: unknown, prefix = ""): string[] {
@@ -33,23 +33,28 @@ describe("the client's translation file and our extras", () => {
     }
   });
 
-  it("has the nine fuel levels in both languages", () => {
-    const levels = [
-      "empty",
-      "1_8",
-      "1_4",
-      "3_8",
-      "1_2",
-      "5_8",
-      "3_4",
-      "7_8",
-      "full",
-    ];
-    for (const level of levels) {
-      expect(fuelText("en", level)).not.toBe(level);
-      expect(fuelText("es", level)).not.toBe(level);
+  it("has the two mirror shots in our extras, both languages (D112)", () => {
+    expect(shotText("en", "EXT_LEFT_MIRROR").title).toBe("Left side mirror");
+    expect(shotText("es", "EXT_RIGHT_MIRROR").title).toBe(
+      "Espejo lateral derecho",
+    );
+    for (const language of ["en", "es"] as const) {
+      for (const shotId of ["EXT_LEFT_MIRROR", "EXT_RIGHT_MIRROR"]) {
+        expect(shotText(language, shotId).instruction.length).toBeGreaterThan(
+          10,
+        );
+      }
     }
-    expect(fuelText("es", "empty")).toBe("Vacío");
+  });
+
+  it("asks the damage question and counts the close-ups in both languages", () => {
+    expect(t("en", "x.damage_question")).toBe(
+      "Is there any damage in this photo?",
+    );
+    expect(t("es", "x.damage_count", { count: 2 })).toBe("Daños: 2");
+    expect(t("en", "x.closeups_taken", { count: 1, max: 5 })).toBe(
+      "Damage photos for this part: 1 of 5",
+    );
   });
 });
 

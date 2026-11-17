@@ -1,7 +1,8 @@
 {
   "_meta": {
     "about": "A few words the vehicle-photo page needs that the client's translation file (inspection-i18n.json, kept exactly as shipped) does not have. Our addition: the client should read the Spanish.",
-    "spanish_register": "Formal 'usted', like the client's file."
+    "spanish_register": "Formal 'usted', like the client's file.",
+    "revisions_2026_11_17": "Words for the per-shot damage question, the two mirror shots and the fuel sample (D112). Our wording; the client should read it."
   },
   "en": {
     "loading": "Loading…",
@@ -10,7 +11,27 @@
     "photo_unreadable": "We could not read that photo. Please try again.",
     "photo_uploading": "Uploading…",
     "photo_saved": "Saved",
-    "photo_failed": "Not uploaded yet. Tap to try again."
+    "photo_failed": "Not uploaded yet. Tap to try again.",
+    "tip_key": "Have the key — you'll turn the car on to photograph the mileage and the fuel gauge.",
+    "damage_question": "Is there any damage in this photo?",
+    "damage_question_hint": "Look for scratches, dents, chips or cracks. If you see any, tap Yes and take close-up photos.",
+    "closeups_taken": "Damage photos for this part: {count} of {max}",
+    "note_optional": "(optional)",
+    "fuel_sample": "Example: your photo should show the fuel gauge like this",
+    "fuel_sample_alt": "A sample fuel gauge with the needle between half and full",
+    "answer_failed": "We could not save your answer. Check your signal and try again.",
+    "no_damage": "No damage",
+    "damage_count": "Damage: {count}",
+    "shots": {
+      "EXT_LEFT_MIRROR": {
+        "title": "Left side mirror",
+        "instruction": "Show the whole left side mirror: the glass and the housing."
+      },
+      "EXT_RIGHT_MIRROR": {
+        "title": "Right side mirror",
+        "instruction": "Show the whole right side mirror: the glass and the housing."
+      }
+    }
   },
   "es": {
     "loading": "Cargando…",
@@ -19,6 +40,26 @@
     "photo_unreadable": "No pudimos leer esa foto. Inténtelo de nuevo.",
     "photo_uploading": "Subiendo…",
     "photo_saved": "Guardada",
-    "photo_failed": "Todavía no se subió. Toque para intentar de nuevo."
+    "photo_failed": "Todavía no se subió. Toque para intentar de nuevo.",
+    "tip_key": "Tenga la llave: encenderá el auto para fotografiar el millaje y el indicador de combustible.",
+    "damage_question": "¿Hay algún daño en esta foto?",
+    "damage_question_hint": "Busque rayones, abolladuras, astillas o grietas. Si ve alguno, toque Sí y tome fotos de cerca.",
+    "closeups_taken": "Fotos de daños de esta parte: {count} de {max}",
+    "note_optional": "(opcional)",
+    "fuel_sample": "Ejemplo: su foto debe mostrar el indicador de combustible así",
+    "fuel_sample_alt": "Un indicador de combustible de ejemplo con la aguja entre la mitad y lleno",
+    "answer_failed": "No pudimos guardar su respuesta. Revise su señal e inténtelo de nuevo.",
+    "no_damage": "Sin daños",
+    "damage_count": "Daños: {count}",
+    "shots": {
+      "EXT_LEFT_MIRROR": {
+        "title": "Espejo lateral izquierdo",
+        "instruction": "Muestre todo el espejo lateral izquierdo: el vidrio y la carcasa."
+      },
+      "EXT_RIGHT_MIRROR": {
+        "title": "Espejo lateral derecho",
+        "instruction": "Muestre todo el espejo lateral derecho: el vidrio y la carcasa."
+      }
+    }
   }
 }

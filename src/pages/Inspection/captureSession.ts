@@ -1,27 +1,35 @@
-import { DAMAGE_SHOT, FUEL_SHOT, ODOMETER_SHOT } from "./flow";
+import { apiShotOf, closeUpSlot, DAMAGE_SHOT } from "./flow";
 import { UploadQueue, type Sleep } from "./uploadQueue";
 
-/** What one upload sends: the photo and/or the small things that go with it (all optional, like the API). */
+/** What one upload sends: the photo and/or its note (all optional, like the API). */
 export interface UploadRequest {
+  /** A shot id, or `DAMAGE` for a close-up. */
   shotId: string;
-  /** 1 for a required shot; 1 to 15 for damage. */
+  /** For a close-up: the shot it belongs to (D112). */
+  parentShotId?: string;
+  /** 1 for a required shot; 1 to 5 for a close-up. */
   position: number;
-  /** Present when a new photo (or a retake) is being sent; absent when only the note or a reading changed. */
+  /** Present when a new photo (or a retake) is being sent; absent when only the note changed. */
   file?: Blob;
   /** The note; an empty text clears it. */
   note?: string;
   /** When the phone took the photo (ISO 8601). */
   capturedAt?: string;
-  odometerMiles?: number;
-  fuelLevel?: string;
 }
 
 /** A photo the server already holds (from the state of the link), for resuming. */
 export interface ServerPhoto {
   shotId: string;
+  parentShotId: string | null;
   position: number;
   note: string | null;
   thumbUrl: string | null;
+}
+
+/** A damage answer the server already holds. */
+export interface ServerAnswer {
+  shotId: string;
+  hasDamage: boolean;
 }
 
 /** What the screens need to know about one photo slot. */
@@ -78,15 +86,16 @@ export interface SessionDeps {
   backoffMs?: number[];
 }
 
-/** The key of a photo slot. */
+/** The key of a photo slot. `shotId` is the page's slot name: a shot id, or `DAMAGE@<shot>` for a close-up (see `closeUpSlot`). */
 export const slotKey = (shotId: string, position: number) =>
   `${shotId}:${position}`;
 
 /**
  * Everything the capture page keeps about the photos of one inspection, and the uploading of them in the background (spec
  * p. 4 and 12): each photo is queued the moment it is accepted, sent one at a time, retried when the signal drops, and the note
- * and the typed readings follow the photo they belong to. The server is the source of truth after a reload: `hydrate` rebuilds
- * the slots from what it already holds, so a reopened link resumes.
+ * follows the photo it belongs to. It also keeps the driver's damage answers (D112), which are sent at once, not queued. The
+ * server is the source of truth after a reload: `hydrate` rebuilds the slots and answers from what it already holds, so a
+ * reopened link resumes.
  *
  * Plain TypeScript, no React: `subscribe` and `version` let a screen redraw when anything changes (`useSyncExternalStore`).
  */
@@ -94,10 +103,8 @@ export class CaptureSession {
   private readonly deps: SessionDeps;
   private readonly queue: UploadQueue;
   private readonly slots = new Map<string, Slot>();
-  private odometer: number | null = null;
-  private fuel: string | null = null;
-  private uploadedOdometer: number | null = null;
-  private uploadedFuel: string | null = null;
+  /** The damage answer of each shot the driver answered, as the server holds it. */
+  private readonly answers = new Map<string, boolean>();
   private listeners = new Set<() => void>();
   private changeCount = 0;
   private closedReported = false;
@@ -134,16 +141,18 @@ export class CaptureSession {
    * Fills in what the server already holds (a reopened link). Slots that already exist here are left alone: a photo taken in
    * this visit is newer than the server's thumbnail.
    */
-  hydrate(
-    photos: ServerPhoto[],
-    odometerMiles: number | null,
-    fuelLevel: string | null,
-  ): void {
+  hydrate(photos: ServerPhoto[], answers: ServerAnswer[] = []): void {
     for (const photo of photos) {
-      const key = slotKey(photo.shotId, photo.position);
+      // A damage photo from before D112 belongs to no shot: the server keeps it, the page has no place for it.
+      if (photo.shotId === DAMAGE_SHOT && !photo.parentShotId) continue;
+      const shotId =
+        photo.shotId === DAMAGE_SHOT && photo.parentShotId
+          ? closeUpSlot(photo.parentShotId)
+          : photo.shotId;
+      const key = slotKey(shotId, photo.position);
       if (this.slots.has(key)) continue;
       this.slots.set(key, {
-        shotId: photo.shotId,
+        shotId,
         position: photo.position,
         blob: null,
         previewUrl: photo.thumbUrl,
@@ -156,13 +165,10 @@ export class CaptureSession {
         uploadedNote: photo.note ?? "",
       });
     }
-    if (this.odometer === null) {
-      this.odometer = odometerMiles;
-      this.uploadedOdometer = odometerMiles;
-    }
-    if (this.fuel === null) {
-      this.fuel = fuelLevel;
-      this.uploadedFuel = fuelLevel;
+    for (const answer of answers) {
+      if (!this.answers.has(answer.shotId)) {
+        this.answers.set(answer.shotId, answer.hasDamage);
+      }
     }
     this.emit();
   }
@@ -190,6 +196,13 @@ export class CaptureSession {
     blob: Blob,
     capturedAt: string | null,
   ): void {
+    // A free-standing damage photo kept by the page before D112: the server now refuses a close-up without its shot.
+    if (shotId === DAMAGE_SHOT) {
+      console.warn(
+        "An old damage photo kept on this phone was not uploaded: damage photos now belong to a shot.",
+      );
+      return;
+    }
     if (this.slots.get(slotKey(shotId, position))?.blob) return;
     this.placePhoto(shotId, position, blob, capturedAt);
   }
@@ -218,26 +231,22 @@ export class CaptureSession {
     else this.emit();
   }
 
-  /** The mileage typed on the odometer shot (null = cleared). It goes to the server with the odometer photo. */
-  setOdometer(miles: number | null): void {
-    this.odometer = miles;
-    this.syncReadingSlot(ODOMETER_SHOT);
-  }
-
-  /** The fuel level chosen on the fuel bar (null = cleared). It goes to the server with the fuel photo. */
-  setFuel(level: string | null): void {
-    this.fuel = level;
-    this.syncReadingSlot(FUEL_SHOT);
+  /** The server saved the driver's damage answer for a shot. */
+  recordAnswer(shotId: string, hasDamage: boolean): void {
+    this.answers.set(shotId, hasDamage);
+    this.emit();
   }
 
   // ------------------------------------------------------------------ reading
 
-  getOdometer(): number | null {
-    return this.odometer;
+  /** The damage answer of a shot: true, false, or undefined when not answered yet. */
+  answerOf(shotId: string): boolean | undefined {
+    return this.answers.get(shotId);
   }
 
-  getFuel(): string | null {
-    return this.fuel;
+  /** Every answer given so far (shot id → has damage). */
+  answerMap(): ReadonlyMap<string, boolean> {
+    return this.answers;
   }
 
   /** The photo slot as the screens show it; a slot nobody touched reads as "none". */
@@ -267,7 +276,7 @@ export class CaptureSession {
     const have = new Set<string>();
     for (const slot of this.slots.values()) {
       if (
-        slot.shotId !== DAMAGE_SHOT &&
+        !slot.shotId.startsWith(DAMAGE_SHOT) &&
         slot.position === 1 &&
         this.hasPhoto(slot)
       ) {
@@ -277,18 +286,19 @@ export class CaptureSession {
     return have;
   }
 
-  /** The numbers (1 to 15) of the damage photos that exist, in order. They are always added one after another. */
-  damagePositions(): number[] {
+  /** The numbers (1 to 5) of the close-ups of one shot that exist, in order. They are always added one after another. */
+  closeUpPositions(parentShotId: string): number[] {
+    const slotShot = closeUpSlot(parentShotId);
     const positions: number[] = [];
     for (const slot of this.slots.values()) {
-      if (slot.shotId === DAMAGE_SHOT && this.hasPhoto(slot)) {
+      if (slot.shotId === slotShot && this.hasPhoto(slot)) {
         positions.push(slot.position);
       }
     }
     return positions.sort((a, b) => a - b);
   }
 
-  /** How many photos (damage included) are on the page, and how many of those the server has with everything that goes with them. */
+  /** How many photos (close-ups included) are on the page, and how many of those the server has with everything that goes with them. */
   progress(): { done: number; total: number } {
     let total = 0;
     let done = 0;
@@ -386,33 +396,12 @@ export class CaptureSession {
     slot.ownsPreview = false;
   }
 
-  private syncReadingSlot(shotId: string): void {
-    const slot = this.slots.get(slotKey(shotId, 1));
-    if (slot && this.hasPhoto(slot)) this.enqueue(slot);
-    else this.emit();
-  }
-
-  /** Whether the server is missing something for this slot: the photo, the note or the reading that goes with it. */
+  /** Whether the server is missing something for this slot: the photo or its note. */
   private isDirty(slot: Slot): boolean {
     if (!this.hasPhoto(slot)) return false;
     if (slot.blob !== null && slot.version !== slot.uploadedVersion)
       return true;
-    if (slot.note !== slot.uploadedNote) return true;
-    if (
-      slot.shotId === ODOMETER_SHOT &&
-      this.odometer !== null &&
-      this.odometer !== this.uploadedOdometer
-    ) {
-      return true;
-    }
-    if (
-      slot.shotId === FUEL_SHOT &&
-      this.fuel !== null &&
-      this.fuel !== this.uploadedFuel
-    ) {
-      return true;
-    }
-    return false;
+    return slot.note !== slot.uploadedNote;
   }
 
   private enqueue(slot: Slot): void {
@@ -425,7 +414,7 @@ export class CaptureSession {
   private async upload(slot: Slot): Promise<void> {
     if (!this.isDirty(slot)) return;
     const request: UploadRequest = {
-      shotId: slot.shotId,
+      ...apiShotOf(slot.shotId),
       position: slot.position,
     };
     const sendingVersion = slot.version;
@@ -437,22 +426,6 @@ export class CaptureSession {
     }
     const sendingNote = slot.note;
     if (sendingNote !== slot.uploadedNote) request.note = sendingNote;
-    const sendingOdometer = this.odometer;
-    if (
-      slot.shotId === ODOMETER_SHOT &&
-      sendingOdometer !== null &&
-      sendingOdometer !== this.uploadedOdometer
-    ) {
-      request.odometerMiles = sendingOdometer;
-    }
-    const sendingFuel = this.fuel;
-    if (
-      slot.shotId === FUEL_SHOT &&
-      sendingFuel !== null &&
-      sendingFuel !== this.uploadedFuel
-    ) {
-      request.fuelLevel = sendingFuel;
-    }
     try {
       await this.deps.send(request);
     } catch (error) {
@@ -468,9 +441,8 @@ export class CaptureSession {
       }
     }
     slot.uploadedNote = sendingNote;
-    if (request.odometerMiles !== undefined)
-      this.uploadedOdometer = request.odometerMiles;
-    if (request.fuelLevel !== undefined) this.uploadedFuel = request.fuelLevel;
+    // The server records "yes, damage" for the shot of a close-up it stored.
+    if (request.parentShotId) this.answers.set(request.parentShotId, true);
     // Something changed while this trip was on the road: the queue runs this slot once more, with the newest data.
     if (this.isDirty(slot)) this.enqueue(slot);
   }

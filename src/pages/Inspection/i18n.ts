@@ -64,26 +64,26 @@ export function pickLanguage(
   return phoneLanguage?.toLowerCase().startsWith("es") ? "es" : "en";
 }
 
-/** The title and instruction of a required shot, in the chosen language. */
+type ShotWords = Record<
+  string,
+  { title: string; instruction: string } | undefined
+>;
+
+/**
+ * The title and instruction of a required shot, in the chosen language: from the client's file, or from our extra file for the
+ * shots added later (the two mirrors, D112).
+ */
 export function shotText(
   language: Language,
   shotId: string,
 ): { title: string; instruction: string } {
-  const shots = MESSAGES[language].shots as Record<
-    string,
-    { title: string; instruction: string } | undefined
-  >;
-  const shot = shots[shotId] ?? (MESSAGES.en.shots as typeof shots)[shotId];
-  return shot ?? { title: shotId, instruction: "" };
-}
-
-/** The words for a fuel level (`"1_8"`, `"full"`...). */
-export function fuelText(language: Language, level: string): string {
-  const levels = MESSAGES[language].readings.fuel_levels as Record<
-    string,
-    string | undefined
-  >;
-  return levels[level] ?? level;
+  for (const lang of [language, "en"] as const) {
+    const shot =
+      (MESSAGES[lang].shots as ShotWords)[shotId] ??
+      (MESSAGES[lang].x.shots as ShotWords)[shotId];
+    if (shot) return shot;
+  }
+  return { title: shotId, instruction: "" };
 }
 
 /** The vehicle as the page shows it: what we know of it. */
