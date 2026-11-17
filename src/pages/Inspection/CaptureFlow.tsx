@@ -1,25 +1,30 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
+  useAnswerDamage,
   useSubmitCapture,
   useUploadCapturePhoto,
   type CaptureState,
 } from "../../api/inspectionCapture.queries";
 import { CaptureSession } from "./captureSession";
 import { deviceInfo, locationIfAllowed } from "./device";
-import { DamageAskScreen, DamageScreen } from "./DamageScreens";
+import { CloseUpScreen, DamageAskScreen } from "./DamageScreens";
 import DoneScreen from "./DoneScreen";
-import { FUEL_SHOT, firstMissingIndex, ODOMETER_SHOT } from "./flow";
-import type { Language } from "./i18n";
+import { resumePoint, type ResumePoint } from "./flow";
+import { shotText, t, type Language } from "./i18n";
 import { openPhotoStore } from "./photoStore";
 import ShotScreen from "./ShotScreen";
 import SubmitScreen from "./SubmitScreen";
 import WelcomeScreen from "./WelcomeScreen";
 
+/**
+ * The screens of the walk-around (D112): for each shot its photo (`shot`), then "Is there any damage in this photo?" (`ask`), then
+ * on "yes" up to 5 close-ups (`closeUp`); after the last shot, submit.
+ */
 type Step =
   | { kind: "welcome" }
   | { kind: "shot"; index: number }
-  | { kind: "damageAsk" }
-  | { kind: "damage"; position: number }
+  | { kind: "ask"; index: number }
+  | { kind: "closeUp"; index: number; position: number }
   | { kind: "submit" }
   | { kind: "done"; reference: string };
 
@@ -33,9 +38,14 @@ interface Props {
   onLinkClosed: () => void;
 }
 
+const statusOf = (error: unknown) =>
+  typeof error === "object" && error !== null
+    ? (error as { status?: unknown }).status
+    : undefined;
+
 /**
- * The walk-around of an open link: welcome, the shots one by one, then submit and done. It owns the `CaptureSession` (photos,
- * notes, readings and the background uploading); the screens only show it and call it.
+ * The walk-around of an open link: welcome, each shot with its damage question and close-ups, then submit and done. It owns the
+ * `CaptureSession` (photos, notes, answers and the background uploading); the screens only show it and call it.
  */
 export default function CaptureFlow({
   token,
@@ -45,6 +55,7 @@ export default function CaptureFlow({
   onLinkClosed,
 }: Props) {
   const upload = useUploadCapturePhoto(token);
+  const answer = useAnswerDamage(token);
   const submit = useSubmitCapture(token);
   // The session is made once and lives as long as the page. `mutateAsync` stays the same function for the life of the hook (it
   // always runs with the current options), and the link's token never changes, so nothing here can go stale.
@@ -59,7 +70,7 @@ export default function CaptureFlow({
       },
       persist: photoStore ?? undefined,
     });
-    created.hydrate(state.photos, state.odometerMiles, state.fuelLevel);
+    created.hydrate(state.photos, state.answers);
     return { session: created, store: photoStore };
   });
   // Photos kept from an earlier visit that never reached the server go back in the upload line.
@@ -93,45 +104,82 @@ export default function CaptureFlow({
   }, [session]);
 
   const [step, setStep] = useState<Step>({ kind: "welcome" });
-  /** True after the driver tapped a photo on the submit screen: the retake returns there instead of going on. */
+  /** True after the driver tapped a photo on the submit screen: the change returns there instead of going on. */
   const [fromSubmit, setFromSubmit] = useState(false);
+  const [answerError, setAnswerError] = useState<string | null>(null);
   const location = useRef<{ lat: number; lng: number } | null>(null);
 
   const shots = state.shots;
-  const maxDamage = state.maxDamagePhotos;
+  const maxCloseUps = state.maxCloseUpsPerShot;
 
-  /** Shots that count as done: a photo, and for the odometer and fuel shots the typed reading too. */
-  function doneShots(): Set<string> {
-    const have = session.shotsWithPhoto();
-    if (session.getOdometer() === null) have.delete(ODOMETER_SHOT);
-    if (session.getFuel() === null) have.delete(FUEL_SHOT);
-    return have;
+  const nextCloseUp = (shotId: string) =>
+    (session.closeUpPositions(shotId).at(-1) ?? 0) + 1;
+
+  /** Where the walk-around stands now; null = everything is in. */
+  function whereNow(): ResumePoint | null {
+    return resumePoint(
+      shots,
+      session.shotsWithPhoto(),
+      session.answerMap(),
+      (shotId) => session.closeUpPositions(shotId).length,
+    );
+  }
+
+  function goTo(step: Step) {
+    setAnswerError(null);
+    setStep(step);
   }
 
   function goToSubmit() {
     setFromSubmit(false);
-    setStep({ kind: "submit" });
+    goTo({ kind: "submit" });
   }
 
   function begin() {
     void locationIfAllowed().then((found) => {
       location.current = found;
     });
-    const index = firstMissingIndex(shots, doneShots());
-    if (index === null) goToSubmit();
-    else setStep({ kind: "shot", index });
+    const point = whereNow();
+    if (point === null) goToSubmit();
+    else if (point.kind === "closeUp") {
+      const shotId = shots[point.index].shotId;
+      goTo({ ...point, position: nextCloseUp(shotId) });
+    } else goTo(point);
   }
 
-  function next(index: number) {
-    if (fromSubmit) goToSubmit();
-    else if (index + 1 >= shots.length) setStep({ kind: "damageAsk" });
-    else setStep({ kind: "shot", index: index + 1 });
+  /** After a shot's photo: its damage question (straight back to submit when retaking from there and already answered). */
+  function afterPhoto(index: number) {
+    if (fromSubmit && session.answerOf(shots[index].shotId) !== undefined) {
+      goToSubmit();
+    } else goTo({ kind: "ask", index });
   }
 
-  function back(index: number) {
-    if (fromSubmit) goToSubmit();
-    else if (index === 0) setStep({ kind: "welcome" });
-    else setStep({ kind: "shot", index: index - 1 });
+  /** After a shot's damage is settled: the next shot, or the submit screen after the last one. */
+  function afterDamage(index: number) {
+    if (fromSubmit || index + 1 >= shots.length) goToSubmit();
+    else goTo({ kind: "shot", index: index + 1 });
+  }
+
+  /** Saves the answer first (the page waits for it), then moves on; a failure stays on the screen with its sentence. */
+  async function sendAnswer(index: number, hasDamage: boolean) {
+    const shotId = shots[index].shotId;
+    setAnswerError(null);
+    try {
+      await answer.mutateAsync({ shotId, hasDamage });
+    } catch (error) {
+      console.error("Saving the damage answer failed", error);
+      const status = statusOf(error);
+      if (status === 410 || status === 409) {
+        onLinkClosed();
+        return;
+      }
+      setAnswerError(t(language, "x.answer_failed"));
+      return;
+    }
+    session.recordAnswer(shotId, hasDamage);
+    if (hasDamage) {
+      goTo({ kind: "closeUp", index, position: nextCloseUp(shotId) });
+    } else afterDamage(index);
   }
 
   async function submitInspection() {
@@ -144,9 +192,9 @@ export default function CaptureFlow({
         deviceInfo: deviceInfo(),
       });
       store?.clear();
-      setStep({ kind: "done", reference: done.reference });
+      goTo({ kind: "done", reference: done.reference });
     } catch (error) {
-      const status = (error as { status?: unknown }).status;
+      const status = statusOf(error);
       if (status === 410 || status === 409) onLinkClosed();
       throw error;
     }
@@ -164,7 +212,6 @@ export default function CaptureFlow({
 
   if (step.kind === "shot") {
     const shot = shots[step.index];
-    const previous = step.index > 0 ? shots[step.index - 1] : null;
     return (
       <ShotScreen
         key={shot.shotId}
@@ -173,77 +220,87 @@ export default function CaptureFlow({
         shot={shot}
         index={step.index}
         total={shots.length}
-        previousPreview={
-          previous ? session.view(previous.shotId, 1).previewUrl : null
-        }
-        onBack={() => back(step.index)}
-        onBackToPrevious={() =>
-          setStep({ kind: "shot", index: step.index - 1 })
-        }
-        onNext={() => next(step.index)}
+        onBack={() => {
+          if (fromSubmit) goToSubmit();
+          else if (step.index === 0) goTo({ kind: "welcome" });
+          else goTo({ kind: "ask", index: step.index - 1 });
+        }}
+        onNext={() => afterPhoto(step.index)}
       />
     );
   }
 
-  if (step.kind === "damageAsk") {
-    const positions = session.damagePositions();
+  if (step.kind === "ask") {
+    const shot = shots[step.index];
     return (
       <DamageAskScreen
+        key={shot.shotId}
         language={language}
-        count={positions.length}
-        max={maxDamage}
-        prior={state.priorDamage}
-        onBack={() => setStep({ kind: "shot", index: shots.length - 1 })}
-        onYes={() =>
-          setStep({ kind: "damage", position: (positions.at(-1) ?? 0) + 1 })
+        shotTitle={shotText(language, shot.shotId).title}
+        photoUrl={session.view(shot.shotId, 1).previewUrl}
+        prior={state.priorDamage.filter(
+          (item) => item.parentShotId === shot.shotId,
+        )}
+        closeUpCount={session.closeUpPositions(shot.shotId).length}
+        max={maxCloseUps}
+        busy={answer.isPending}
+        error={answerError}
+        onBack={() =>
+          fromSubmit ? goToSubmit() : goTo({ kind: "shot", index: step.index })
         }
-        onNo={goToSubmit}
+        onYes={() => void sendAnswer(step.index, true)}
+        onNo={() => void sendAnswer(step.index, false)}
+        onAddAnother={() =>
+          goTo({
+            kind: "closeUp",
+            index: step.index,
+            position: nextCloseUp(shot.shotId),
+          })
+        }
+        onContinue={() => afterDamage(step.index)}
       />
     );
   }
 
-  if (step.kind === "damage") {
+  if (step.kind === "closeUp") {
+    const shot = shots[step.index];
     return (
-      <DamageScreen
-        key={step.position}
+      <CloseUpScreen
+        key={`${shot.shotId}:${step.position}`}
         language={language}
         session={session}
+        parentShotId={shot.shotId}
+        shotTitle={shotText(language, shot.shotId).title}
         position={step.position}
-        max={maxDamage}
-        onBack={() =>
-          fromSubmit ? goToSubmit() : setStep({ kind: "damageAsk" })
-        }
+        max={maxCloseUps}
+        onBack={() => goTo({ kind: "ask", index: step.index })}
         onAddAnother={() =>
-          setStep({
-            kind: "damage",
-            position: (session.damagePositions().at(-1) ?? 0) + 1,
+          goTo({
+            kind: "closeUp",
+            index: step.index,
+            position: nextCloseUp(shot.shotId),
           })
         }
-        onDone={goToSubmit}
+        onDone={() => afterDamage(step.index)}
       />
     );
   }
 
   if (step.kind === "submit") {
-    const have = doneShots();
     return (
       <SubmitScreen
         language={language}
         session={session}
         shots={shots}
-        damagePositions={session.damagePositions()}
-        maxDamage={maxDamage}
-        complete={shots.every(
-          (shot) => !shot.required || have.has(shot.shotId),
-        )}
-        onBack={() => setStep({ kind: "damageAsk" })}
+        complete={whereNow() === null}
+        onBack={() => goTo({ kind: "ask", index: shots.length - 1 })}
         onRetake={(index) => {
           setFromSubmit(true);
-          setStep({ kind: "shot", index });
+          goTo({ kind: "shot", index });
         }}
-        onEditDamage={(position) => {
+        onEditDamage={(index) => {
           setFromSubmit(true);
-          setStep({ kind: "damage", position });
+          goTo({ kind: "ask", index });
         }}
         onSubmit={submitInspection}
       />

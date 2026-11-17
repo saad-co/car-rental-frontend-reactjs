@@ -17,6 +17,7 @@ import Button from "../../components/ui/button/Button";
 import BackLink from "../../components/ui/button/BackLink";
 import { formatDateTime } from "../../utils";
 import {
+  answerLabel,
   coordinatesLabel,
   fuelLabel,
   mileageLabel,
@@ -38,15 +39,21 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** One thumbnail tile; a click opens the viewer on it. */
+/** One thumbnail tile; a click opens the viewer on it. Under a shot: the driver's damage answer and its close-ups (D112). */
 function Tile({
   title,
   photo,
   onOpen,
+  answer,
+  closeUps = [],
+  onOpenPhoto,
 }: {
   title: string;
   photo: InspectionPhoto | undefined;
   onOpen: () => void;
+  answer?: string | null;
+  closeUps?: InspectionPhoto[];
+  onOpenPhoto?: (photo: InspectionPhoto) => void;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -76,29 +83,77 @@ function Tile({
         </div>
       )}
       <p className="text-theme-xs text-gray-700">{title}</p>
+      {answer && (
+        <div>
+          <Badge size="sm" color={closeUps.length > 0 ? "warning" : "light"}>
+            {answer}
+          </Badge>
+        </div>
+      )}
       {photo?.driverNote && (
         <p className="text-theme-xs text-gray-500">“{photo.driverNote}”</p>
       )}
+      {closeUps.length > 0 && (
+        <div className="grid grid-cols-3 gap-1.5">
+          {closeUps.map((closeUp) => (
+            <button
+              key={closeUp.id}
+              type="button"
+              onClick={() => onOpenPhoto?.(closeUp)}
+              aria-label={`Open ${photoTitle(closeUp)}`}
+              title={closeUp.driverNote ?? photoTitle(closeUp)}
+              className="aspect-square overflow-hidden rounded-lg bg-gray-100 ring-1 ring-warning-500"
+            >
+              {closeUp.thumbUrl ? (
+                <img
+                  src={closeUp.thumbUrl}
+                  alt={photoTitle(closeUp)}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-theme-xs text-gray-500">
+                  {closeUp.position}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+      {closeUps
+        .filter((closeUp) => closeUp.driverNote)
+        .map((closeUp) => (
+          <p key={closeUp.id} className="text-theme-xs text-gray-500">
+            {closeUp.position}: “{closeUp.driverNote}”
+          </p>
+        ))}
     </div>
   );
 }
 
-/** The inspection once loaded: the header facts, the 19 shots, the damage photos, and the viewer. */
+/** The inspection once loaded: the header facts, the shots with their damage answers and close-ups, and the viewer. */
 function InspectionBody({ inspection }: { inspection: InspectionDetail }) {
   const driver = useDriver(inspection.driverId);
   const exporter = useExportInspection();
   const [viewing, setViewing] = useState<number | null>(null);
 
-  // The viewer walks the photos in the order shown: the 19 shots that have one, then the damage photos.
-  const bySlot = new Map(
-    inspection.photos.map((p) => [`${p.shotId}:${p.position}`, p]),
+  // The viewer walks the photos in the order shown: each shot then its close-ups (D112), then old free-standing damage photos.
+  const answers = new Map(
+    inspection.answers.map((a) => [a.shotId, a.hasDamage]),
   );
-  const shots = SHOT_ORDER.map((id) => ({ id, photo: bySlot.get(`${id}:1`) }));
-  const damage = inspection.photos.filter((p) => p.shotId === "DAMAGE");
+  const shots = SHOT_ORDER.map((id) => ({
+    id,
+    photo: inspection.photos.find((p) => p.shotId === id),
+    closeUps: inspection.photos.filter((p) => p.parentShotId === id),
+  }));
+  const damage = inspection.photos.filter(
+    (p) => p.shotId === "DAMAGE" && !p.parentShotId,
+  );
   const viewable = [
-    ...shots.flatMap((s) => (s.photo ? [s.photo] : [])),
+    ...shots.flatMap((s) => [...(s.photo ? [s.photo] : []), ...s.closeUps]),
     ...damage,
   ];
+  const damagedShots = [...answers.values()].filter(Boolean).length;
   const openPhoto = (photo: InspectionPhoto) =>
     setViewing(viewable.findIndex((p) => p.id === photo.id));
 
@@ -190,11 +245,23 @@ function InspectionBody({ inspection }: { inspection: InspectionDetail }) {
             label="Submitted"
             value={formatDateTime(inspection.submittedAt)}
           />
+          {/* Typed before D112; since then staff read them from the photos. */}
           <Fact
             label="Mileage"
-            value={mileageLabel(inspection.odometerMiles)}
+            value={
+              inspection.odometerMiles === null
+                ? "See the odometer photo"
+                : mileageLabel(inspection.odometerMiles)
+            }
           />
-          <Fact label="Fuel" value={fuelLabel(inspection.fuelLevel)} />
+          <Fact
+            label="Fuel"
+            value={
+              inspection.fuelLevel === null
+                ? "See the fuel photo"
+                : fuelLabel(inspection.fuelLevel)
+            }
+          />
           <Fact
             label="Driver confirmed the photos show the car now"
             value={
@@ -210,29 +277,37 @@ function InspectionBody({ inspection }: { inspection: InspectionDetail }) {
 
       <div className="rounded-2xl border border-gray-200 bg-surface p-6">
         <h2 className="text-base font-semibold text-gray-800">
-          The 19 photos ({inspection.photoCount} received)
+          The {inspection.requiredPhotoCount} photos ({inspection.photoCount}{" "}
+          received)
         </h2>
+        {answers.size > 0 && (
+          <p className="mt-1 text-sm text-gray-500">
+            {damagedShots === 0
+              ? "The driver reported no damage on any shot."
+              : `The driver reported damage on ${damagedShots} shot${damagedShots === 1 ? "" : "s"}; the close-ups are under each one.`}
+          </p>
+        )}
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {shots.map(({ id, photo }) => (
+          {shots.map(({ id, photo, closeUps }) => (
             <Tile
               key={id}
               title={shotTitle(id)}
               photo={photo}
               onOpen={() => photo && openPhoto(photo)}
+              answer={answerLabel(answers.get(id), closeUps.length)}
+              closeUps={closeUps}
+              onOpenPhoto={openPhoto}
             />
           ))}
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-surface p-6">
-        <h2 className="text-base font-semibold text-gray-800">
-          Damage photos added by the driver ({damage.length})
-        </h2>
-        {damage.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-500">
-            The driver reported no damage.
-          </p>
-        ) : (
+      {/* Damage photos that belong to no shot: inspections made before the per-shot question (D112). */}
+      {damage.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-surface p-6">
+          <h2 className="text-base font-semibold text-gray-800">
+            Damage photos added by the driver ({damage.length})
+          </h2>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {damage.map((photo) => (
               <Tile
@@ -243,8 +318,8 @@ function InspectionBody({ inspection }: { inspection: InspectionDetail }) {
               />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <ReviewPanel inspection={inspection} />
       <ActivityPanel inspection={inspection} />

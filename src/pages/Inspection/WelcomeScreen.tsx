@@ -78,7 +78,7 @@ export default function WelcomeScreen({
       <ul className="list-disc space-y-1 pl-6 text-sm text-gray-700">
         <li>{t(language, "tips.tip_light")}</li>
         <li>{t(language, "tips.tip_distance")}</li>
-        <li>{t(language, "tips.tip_key")}</li>
+        <li>{t(language, "x.tip_key")}</li>
       </ul>
       <p className="text-center text-sm text-gray-500">
         {t(language, "welcome.time_estimate")}

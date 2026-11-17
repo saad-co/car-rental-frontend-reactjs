@@ -5,39 +5,55 @@ export interface ShotInfo {
   required: boolean;
 }
 
-/** The shots the driver is guided through, in order. */
-export const ODOMETER_SHOT = "INT_ODOMETER";
+/** The fuel shot: it shows a sample gauge so the driver knows what to photograph (D112). */
 export const FUEL_SHOT = "INT_FUEL";
+/** The API's shot id of a damage close-up. */
 export const DAMAGE_SHOT = "DAMAGE";
 
-/** Which typed reading goes with a shot, if any: the mileage on the odometer shot, the fuel level on the fuel shot. */
-export function readingOf(shotId: string): "odometer" | "fuel" | null {
-  if (shotId === ODOMETER_SHOT) return "odometer";
-  if (shotId === FUEL_SHOT) return "fuel";
-  return null;
+/**
+ * Inside the page, a damage close-up of a shot lives in its own photo slot, named `DAMAGE@<shot>` (e.g. `DAMAGE@EXT_FRONT`), so
+ * the close-ups of different shots never share a slot. The API gets `DAMAGE` with `parentShotId` (see `apiShotOf`).
+ */
+export const closeUpSlot = (parentShotId: string) =>
+  `${DAMAGE_SHOT}@${parentShotId}`;
+
+/** What the API calls a page slot: the shot itself, or `DAMAGE` with the shot it belongs to. */
+export function apiShotOf(slotShotId: string): {
+  shotId: string;
+  parentShotId?: string;
+} {
+  const prefix = `${DAMAGE_SHOT}@`;
+  return slotShotId.startsWith(prefix)
+    ? { shotId: DAMAGE_SHOT, parentShotId: slotShotId.slice(prefix.length) }
+    : { shotId: slotShotId };
 }
 
+/** Where the walk-around stands for one shot: take its photo, answer its damage question, or add its first close-up. */
+export type ResumePoint =
+  | { kind: "shot"; index: number }
+  | { kind: "ask"; index: number }
+  | { kind: "closeUp"; index: number };
+
 /**
- * Where to pick up: the index of the first required shot with no photo yet, or null when every required shot has one (then the
- * page goes on to the submit screen).
+ * Where to pick up (D112): the first required shot that has no photo, or no damage answer, or "yes" with no close-up yet. Null
+ * when every shot is complete (then the page goes on to the submit screen).
  */
-export function firstMissingIndex(
+export function resumePoint(
   shots: ShotInfo[],
-  have: ReadonlySet<string>,
-): number | null {
-  const index = shots.findIndex((s) => s.required && !have.has(s.shotId));
-  return index === -1 ? null : index;
-}
-
-/**
- * The mileage typed from the odometer: digits only, a whole number, up to 7 digits (the server accepts up to 2,000,000).
- * @returns the number, or null when it is empty or not a valid mileage.
- */
-export function parseMileage(text: string): number | null {
-  const trimmed = text.trim();
-  if (!/^\d{1,7}$/.test(trimmed)) return null;
-  const miles = Number(trimmed);
-  return miles <= 2_000_000 ? miles : null;
+  haveShot: ReadonlySet<string>,
+  answers: ReadonlyMap<string, boolean>,
+  closeUpCount: (shotId: string) => number,
+): ResumePoint | null {
+  for (const [index, shot] of shots.entries()) {
+    if (!shot.required) continue;
+    if (!haveShot.has(shot.shotId)) return { kind: "shot", index };
+    const answer = answers.get(shot.shotId);
+    if (answer === undefined) return { kind: "ask", index };
+    if (answer && closeUpCount(shot.shotId) === 0) {
+      return { kind: "closeUp", index };
+    }
+  }
+  return null;
 }
 
 /**

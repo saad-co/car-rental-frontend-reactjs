@@ -1727,12 +1727,33 @@ export interface paths {
         get?: never;
         /**
          * `PUT /i/:token/photos/:shotId`: stores one photo, as multipart form data: the file `photo` (a JPEG, at most 10 MB) and the
-         *     optional text fields `position` (damage only, 1 to 15), `note`, `capturedAt`, `odometerMiles` (shot `INT_ODOMETER`) and
-         *     `fuelLevel` (shot `INT_FUEL`). `shotId` is a required shot or `DAMAGE`. Safe to repeat: the same file changes nothing, a
-         *     different one is a retake. Without a file it only updates the note or reading of a photo already stored.
+         *     optional text fields `position` (close-ups only, 1 to 5), `parentShotId` (close-ups only: the shot the damage is on), `note`,
+         *     `capturedAt`, `odometerMiles` (shot `INT_ODOMETER`) and `fuelLevel` (shot `INT_FUEL`). `shotId` is a required shot or `DAMAGE`
+         *     (a close-up, D112; it also records "yes, damage" for its shot). Safe to repeat: the same file changes nothing, a different one
+         *     is a retake. Without a file it only updates the note or reading of a photo already stored.
          *     `410` expired, unknown or revoked link; `409` already submitted; `400` bad input.
          */
         put: operations["InspectionCaptureController_uploadPhoto"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/i/{token}/shots/{shotId}/damage-answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * `PUT /i/:token/shots/:shotId/damage-answer`: the driver's answer to "Is there any damage on the <shot>?" (`hasDamage`,
+         *     D112). Safe to repeat. `404` not a required shot; `409` already submitted, or "no" while the shot has close-ups; `410` expired.
+         */
+        put: operations["InspectionCaptureController_answerDamage"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1750,8 +1771,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * `POST /i/:token/submit`: closes the inspection. Needs every required photo, the mileage, the fuel level and
-         *     `attested: true`; `gpsLat` and `gpsLng` (both or neither) and `deviceInfo` are optional. Repeating it after success returns the
+         * `POST /i/:token/submit`: closes the inspection. Needs every required photo with its damage answer, at least one close-up for
+         *     each "yes", and `attested: true`; `gpsLat` and `gpsLng` (both or neither) and `deviceInfo` are optional. Repeating it after success returns the
          *     same answer. `410` expired link; `400` something missing.
          */
         post: operations["InspectionCaptureController_submit"];
@@ -3659,6 +3680,8 @@ export interface components {
             fuelLevel: "empty" | "1_8" | "1_4" | "3_8" | "1_2" | "5_8" | "3_4" | "7_8" | "full" | null;
             /** @description Photos of the required shots received so far. */
             photoCount: number;
+            /** @description How many shots are required (21 since D112), for "x of 21 photos". */
+            requiredPhotoCount: number;
             /** @description Damage close-ups received so far. */
             damagePhotoCount: number;
             /**
@@ -3714,9 +3737,11 @@ export interface components {
         };
         InspectionPhotoDto: {
             id: string;
-            /** @description A shot id from the 19-shot list, or `DAMAGE` for a close-up added by the driver. */
+            /** @description A shot id from the shot list, or `DAMAGE` for a damage close-up added by the driver. */
             shotId: string;
-            /** @description 1 for a shot; 1 to 15 for damage. */
+            /** @description For a close-up: the shot it shows damage on (D112). Null for a shot, and for an old free-standing damage photo. */
+            parentShotId: string | null;
+            /** @description 1 for a shot; 1 to 5 for a close-up (1 to 15 for an old free-standing damage photo). */
             position: number;
             /** @description The driver's note under the photo. */
             driverNote: string | null;
@@ -3738,8 +3763,12 @@ export interface components {
             thumbUrl: string | null;
             /** @description The full photo, to show full screen. */
             fullUrl: string | null;
-            /** @description The full photo as a download (the browser saves it as `<reference>_<NN>_<SHOT>.jpg`). */
+            /** @description The full photo as a download, saved as `<reference>_05_EXT_FRONT.jpg`, or `..._damage_2.jpg` for a close-up. */
             downloadUrl: string | null;
+        };
+        ShotAnswerDto: {
+            shotId: string;
+            hasDamage: boolean;
         };
         InspectionDetailDto: {
             /**
@@ -3776,6 +3805,8 @@ export interface components {
             fuelLevel: "empty" | "1_8" | "1_4" | "3_8" | "1_2" | "5_8" | "3_4" | "7_8" | "full" | null;
             /** @description Photos of the required shots received so far. */
             photoCount: number;
+            /** @description How many shots are required (21 since D112), for "x of 21 photos". */
+            requiredPhotoCount: number;
             /** @description Damage close-ups received so far. */
             damagePhotoCount: number;
             /**
@@ -3805,8 +3836,10 @@ export interface components {
              * @description When the driver ticked the box that the photos show the car's condition right now.
              */
             attestedAt: string | null;
-            /** @description The 19 shots in order, then the damage close-ups in the order taken. */
+            /** @description The shots in order, each followed by its damage close-ups; then any old free-standing damage photos. */
             photos: components["schemas"]["InspectionPhotoDto"][];
+            /** @description The driver's answer to "Is there any damage in this photo?", per shot answered (D112). Empty for older inspections. */
+            answers: components["schemas"]["ShotAnswerDto"][];
         };
         SendInspectionLinkDto: {
             /**
@@ -3841,8 +3874,10 @@ export interface components {
             photoId: string;
             /** @description Where on the car: a shot id, or `DAMAGE` for a close-up the driver added. */
             shotId: string;
+            /** @description For a close-up: the shot it belongs to (D112). */
+            parentShotId: string | null;
             /**
-             * @description `driver_reported` = the driver added the close-up; `staff_flagged` = staff found it on one of the 19 shots.
+             * @description `driver_reported` = the driver added the close-up; `staff_flagged` = staff found it on one of the shots.
              * @enum {string}
              */
             source: "driver_reported" | "staff_flagged";
@@ -3857,36 +3892,41 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        CompareDamagePhotoDto: {
+            photo: components["schemas"]["InspectionPhotoDto"];
+            damageItem: components["schemas"]["DamageItemDto"] | null;
+        };
         ComparePairDto: {
             shotId: string;
             checkIn: components["schemas"]["InspectionPhotoDto"] | null;
             checkOut: components["schemas"]["InspectionPhotoDto"] | null;
             /** @description Null = "No change". */
             damageItem: components["schemas"]["DamageItemDto"] | null;
-        };
-        CompareDamagePhotoDto: {
-            photo: components["schemas"]["InspectionPhotoDto"];
-            damageItem: components["schemas"]["DamageItemDto"] | null;
+            /** @description The driver's damage answer at pickup and at return; null when not answered (older inspections). */
+            checkInAnswer: boolean | null;
+            checkOutAnswer: boolean | null;
+            checkInCloseUps: components["schemas"]["InspectionPhotoDto"][];
+            checkOutCloseUps: components["schemas"]["CompareDamagePhotoDto"][];
         };
         InspectionCompareDto: {
             available: boolean;
             reason: string | null;
             checkOut: components["schemas"]["InspectionDto"];
             checkIn: components["schemas"]["InspectionDto"] | null;
-            /** @description Check-out odometer minus check-in odometer. */
+            /** @description Check-out odometer minus check-in odometer; null unless both were typed (inspections made before D112). */
             milesDriven: number | null;
-            /** @description Check-out fuel minus check-in fuel, in eighths of a tank. */
+            /** @description Check-out fuel minus check-in fuel, in eighths of a tank; null unless both were chosen (before D112). */
             fuelChangeEighths: number | null;
             pairs: components["schemas"]["ComparePairDto"][];
-            /** @description Damage the driver photographed at pickup: already there, read-only and never chargeable. */
+            /** @description Old free-standing damage photos of the check-in (before D112): already there, read-only and never chargeable. */
             checkInDamage: components["schemas"]["InspectionPhotoDto"][];
-            /** @description Damage close-ups the driver added at return, each markable as new damage. */
+            /** @description Old free-standing damage photos of the check-out (before D112), each markable as new damage. */
             checkOutDamage: components["schemas"]["CompareDamagePhotoDto"][];
         };
         CreateDamageItemDto: {
             /**
              * Format: uuid
-             * @description The check-out photo that shows the damage (one of its 19 shots or one of its damage close-ups).
+             * @description The check-out photo that shows the damage (one of its shots or one of its damage close-ups).
              */
             photoId: string;
             /** @description What the damage is, 1 to 500 characters after trimming. */
@@ -3909,13 +3949,16 @@ export interface components {
         CapturePhotoDto: {
             /** @description A shot id, or `DAMAGE`. */
             shotId: string;
-            /** @description 1 for a required shot; 1 to 15 for damage. */
+            /** @description 1 for a required shot; 1 to 5 for a close-up (1 to 15 for an old free-standing damage photo). */
             position: number;
+            /** @description For a close-up: the required shot it belongs to. */
+            parentShotId: string | null;
             note: string | null;
             /** @description A short-lived link to the 400 px thumbnail; null when the bucket is not set up. */
             thumbUrl: string | null;
         };
         PriorDamageDto: {
+            parentShotId: string | null;
             note: string | null;
             thumbUrl: string | null;
         };
@@ -3933,15 +3976,17 @@ export interface components {
             vehicle: components["schemas"]["CaptureVehicleDto"] | null;
             /** @description Every shot, in order; `required` ones must all have a photo before the page can submit. */
             shots: components["schemas"]["CaptureShotDto"][];
-            /** @description The photos received so far, damage included. */
+            /** @description The photos received so far, close-ups included. */
             photos: components["schemas"]["CapturePhotoDto"][];
+            /** @description The damage answers given so far, one per shot answered. */
+            answers: components["schemas"]["ShotAnswerDto"][];
             odometerMiles: number | null;
             /** @enum {string|null} */
             fuelLevel: "empty" | "1_8" | "1_4" | "3_8" | "1_2" | "5_8" | "3_4" | "7_8" | "full" | null;
             /** @description The damage photos of the paired check-in, for a check-out. Empty otherwise. */
             priorDamage: components["schemas"]["PriorDamageDto"][];
-            /** @description The most damage photos allowed. */
-            maxDamagePhotos: number;
+            /** @description The most close-ups one shot can hold (5). */
+            maxCloseUpsPerShot: number;
             /**
              * Format: date-time
              * @description When the link stops working (open only).
@@ -3958,6 +4003,7 @@ export interface components {
         UploadedPhotoDto: {
             shotId: string;
             position: number;
+            parentShotId: string | null;
             /** @description True when this call stored a new file (a first photo or a retake); false when only the note or reading was updated. */
             stored: boolean;
             /** @description How many times the driver replaced this photo. */
@@ -3965,6 +4011,9 @@ export interface components {
             /** @description The server's SHA-256 fingerprint of the file. */
             sha256: string;
             thumbUrl: string | null;
+        };
+        DamageAnswerDto: {
+            hasDamage: boolean;
         };
         SubmitInspectionDto: {
             /** @description The one checkbox: "These photos show the car's condition right now." Must be `true`. */
@@ -6562,8 +6611,10 @@ export interface operations {
                 "multipart/form-data": {
                     /** Format: binary */
                     photo?: string;
-                    /** @description Damage photos only, 1 to 15 */
+                    /** @description Damage close-ups only, 1 to 5 */
                     position?: number;
+                    /** @description Damage close-ups only: the required shot they belong to */
+                    parentShotId?: string;
                     note?: string;
                     /** @description ISO 8601, from the phone */
                     capturedAt?: string;
@@ -6584,6 +6635,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UploadedPhotoDto"];
+                };
+            };
+        };
+    };
+    InspectionCaptureController_answerDamage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                shotId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DamageAnswerDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShotAnswerDto"];
                 };
             };
         };

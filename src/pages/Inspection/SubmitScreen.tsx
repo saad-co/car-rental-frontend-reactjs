@@ -2,29 +2,27 @@ import { useState } from "react";
 import Checkbox from "../../components/form/input/Checkbox";
 import Button from "../../components/ui/button/Button";
 import type { CaptureSession } from "./captureSession";
-import { DAMAGE_SHOT, percent, type ShotInfo } from "./flow";
+import { closeUpSlot, percent, type ShotInfo } from "./flow";
 import { shotText, t, type Language } from "./i18n";
 
 interface Props {
   language: Language;
   session: CaptureSession;
   shots: ShotInfo[];
-  /** The numbers of the damage photos added (shown after the shots, tap one to change it). */
-  damagePositions: number[];
-  maxDamage: number;
-  /** Everything needed is on the page: every required shot has a photo and both readings are typed. */
+  /** Everything needed is on the page: every required shot has its photo and damage answer, and each "yes" a close-up. */
   complete: boolean;
   onBack: () => void;
   /** The driver tapped a photo: go and retake it. */
   onRetake: (index: number) => void;
-  /** The driver tapped a damage photo: go and change it. */
-  onEditDamage: (position: number) => void;
+  /** The driver tapped a shot's damage line: go back to its damage question. */
+  onEditDamage: (index: number) => void;
   /** Called once the photos are all on the server and the box is checked; throws when the server refuses. */
   onSubmit: () => Promise<void>;
 }
 
 /**
- * The last screen before the end: a strip of every photo (tap one to retake it), the one checkbox, and Submit. Submit waits for
+ * The last screen before the end: every shot's photo (tap one to retake it) with its damage answer under it ("No damage" or
+ * "Damage: 2"; tap it to change the close-ups, D112), the one checkbox, and Submit. Submit waits for
  * the background uploads to finish, shows how far they are, and offers "Try again" for any the server refused; only then does it
  * close the inspection.
  */
@@ -32,8 +30,6 @@ export default function SubmitScreen({
   language,
   session,
   shots,
-  damagePositions,
-  maxDamage,
   complete,
   onBack,
   onRetake,
@@ -89,44 +85,23 @@ export default function SubmitScreen({
         {t(language, "submit.thumbs_hint")}
       </p>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {shots.map((shot, index) => {
           const view = session.view(shot.shotId, 1);
-          return (
-            <button
-              key={shot.shotId}
-              type="button"
-              onClick={() => onRetake(index)}
-              aria-label={shotText(language, shot.shotId).title}
-              className={`aspect-square overflow-hidden rounded-lg ring-1 ${
-                view.status === "failed" ? "ring-error-500" : "ring-gray-300"
-              }`}
-            >
-              {view.previewUrl && (
-                <img
-                  src={view.previewUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              )}
-            </button>
+          const closeUps = session.closeUpPositions(shot.shotId);
+          const closeUpFailed = closeUps.some(
+            (position) =>
+              session.view(closeUpSlot(shot.shotId), position).status ===
+              "failed",
           );
-        })}
-      </div>
-
-      {damagePositions.length > 0 && (
-        <div className="grid grid-cols-4 gap-2">
-          {damagePositions.map((position) => {
-            const view = session.view(DAMAGE_SHOT, position);
-            return (
+          const answer = session.answerOf(shot.shotId);
+          const title = shotText(language, shot.shotId).title;
+          return (
+            <div key={shot.shotId} className="flex flex-col gap-1">
               <button
-                key={position}
                 type="button"
-                onClick={() => onEditDamage(position)}
-                aria-label={t(language, "damage.title", {
-                  current: position,
-                  max: maxDamage,
-                })}
+                onClick={() => onRetake(index)}
+                aria-label={title}
                 className={`aspect-square overflow-hidden rounded-lg ring-1 ${
                   view.status === "failed" ? "ring-error-500" : "ring-gray-300"
                 }`}
@@ -139,10 +114,27 @@ export default function SubmitScreen({
                   />
                 )}
               </button>
-            );
-          })}
-        </div>
-      )}
+              <button
+                type="button"
+                onClick={() => onEditDamage(index)}
+                className={`text-left text-xs underline-offset-2 hover:underline ${
+                  closeUpFailed || (answer === true && closeUps.length === 0)
+                    ? "text-error-500"
+                    : answer === true
+                      ? "text-warning-500"
+                      : "text-gray-500"
+                }`}
+              >
+                {answer === undefined
+                  ? t(language, "x.damage_question")
+                  : answer
+                    ? t(language, "x.damage_count", { count: closeUps.length })
+                    : t(language, "x.no_damage")}
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       <Checkbox
         id="attest"

@@ -4,7 +4,6 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { DAMAGE_SHOT } from "../pages/Inspection/flow";
 import type { UploadRequest } from "../pages/Inspection/captureSession";
 import { api } from "./client";
 import { apiErrorMessage } from "./errors";
@@ -22,8 +21,6 @@ export type CaptureState = components["schemas"]["CaptureStateDto"];
 /** The answer of the submit call. */
 export type SubmittedInspection =
   components["schemas"]["SubmittedInspectionDto"];
-
-export type FuelLevel = NonNullable<CaptureState["fuelLevel"]>;
 
 /**
  * An error that remembers the HTTP status. The upload queue reads `status` to tell "the server refused" (stop, show a retry
@@ -76,7 +73,8 @@ export function useReloadCaptureState(token: string) {
 }
 
 /**
- * Sends one photo, and/or the note and the typed reading that go with it, as multipart form data. Built by hand because the
+ * Sends one photo, and/or the note that goes with it, as multipart form data. A damage close-up goes as `DAMAGE` with its shot
+ * (`parentShotId`) and number (D112). Built by hand because the
  * generated type of a file is a text, so the `FormData` is handed over with a cast; the client sends it as it is and the browser
  * sets the multipart boundary. Repeating a request is safe: the server keeps one photo per slot.
  */
@@ -85,17 +83,12 @@ export function useUploadCapturePhoto(token: string) {
     mutationFn: async (request: UploadRequest) => {
       const body = new FormData();
       if (request.file) body.append("photo", request.file, "photo.jpg");
-      if (request.shotId === DAMAGE_SHOT) {
+      if (request.parentShotId) {
+        body.append("parentShotId", request.parentShotId);
         body.append("position", String(request.position));
       }
       if (request.note !== undefined) body.append("note", request.note);
       if (request.capturedAt) body.append("capturedAt", request.capturedAt);
-      if (request.odometerMiles !== undefined) {
-        body.append("odometerMiles", String(request.odometerMiles));
-      }
-      if (request.fuelLevel !== undefined) {
-        body.append("fuelLevel", request.fuelLevel);
-      }
       const { data, error, response } = await api.PUT(
         "/i/{token}/photos/{shotId}",
         {
@@ -114,7 +107,35 @@ export function useUploadCapturePhoto(token: string) {
   });
 }
 
-/** Closes the inspection: the readings are already on the server, this sends the checkbox, the place and the device. */
+/**
+ * Saves the driver's answer to "Is there any damage in this photo?" for one shot (D112). Sent at once, not queued: the page waits
+ * for it before moving on, and shows the error when it fails.
+ */
+export function useAnswerDamage(token: string) {
+  return useMutation({
+    mutationFn: async (input: { shotId: string; hasDamage: boolean }) => {
+      const { data, error, response } = await api.PUT(
+        "/i/{token}/shots/{shotId}/damage-answer",
+        {
+          params: { path: { token, shotId: input.shotId } },
+          body: { hasDamage: input.hasDamage },
+        },
+      );
+      if (!data) {
+        throw httpError(
+          apiErrorMessage(
+            error,
+            `Saving the answer failed (${response.status}).`,
+          ),
+          response.status,
+        );
+      }
+      return data;
+    },
+  });
+}
+
+/** Closes the inspection: the photos and answers are already on the server, this sends the checkbox, the place and the device. */
 export function useSubmitCapture(token: string) {
   return useMutation({
     mutationFn: async (body: components["schemas"]["SubmitInspectionDto"]) => {

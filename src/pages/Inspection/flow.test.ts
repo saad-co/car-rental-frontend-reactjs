@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  firstMissingIndex,
+  apiShotOf,
+  closeUpSlot,
   fitWithin,
-  parseMileage,
   percent,
-  readingOf,
+  resumePoint,
   type ShotInfo,
 } from "./flow";
 
@@ -14,53 +14,67 @@ const shots: ShotInfo[] = ["A", "B", "C", "D"].map((shotId, i) => ({
   required: true,
 }));
 
-describe("firstMissingIndex()", () => {
-  it("starts at the first shot when nothing is done", () => {
-    expect(firstMissingIndex(shots, new Set())).toBe(0);
+describe("resumePoint() (D112)", () => {
+  const none = () => 0;
+  const all = new Set(["A", "B", "C", "D"]);
+  const answered = (yes: string[] = []) =>
+    new Map(["A", "B", "C", "D"].map((id) => [id, yes.includes(id)]));
+
+  it("starts at the first shot's photo when nothing is done", () => {
+    expect(resumePoint(shots, new Set(), new Map(), none)).toEqual({
+      kind: "shot",
+      index: 0,
+    });
   });
 
   it("resumes at the first shot with no photo, even if a later one has one", () => {
-    expect(firstMissingIndex(shots, new Set(["A", "B", "D"]))).toBe(2);
+    expect(
+      resumePoint(shots, new Set(["A", "B", "D"]), answered(), none),
+    ).toEqual({ kind: "shot", index: 2 });
   });
 
-  it("is null when every required shot has a photo", () => {
-    expect(firstMissingIndex(shots, new Set(["A", "B", "C", "D"]))).toBeNull();
+  it("asks the damage question of a shot that has its photo but no answer", () => {
+    const answers = new Map([["A", false]]);
+    expect(resumePoint(shots, all, answers, none)).toEqual({
+      kind: "ask",
+      index: 1,
+    });
+  });
+
+  it("goes to the close-ups of a shot answered yes with none taken yet", () => {
+    expect(
+      resumePoint(shots, all, answered(["C"]), (id) => (id === "C" ? 0 : 0)),
+    ).toEqual({ kind: "closeUp", index: 2 });
+    expect(
+      resumePoint(shots, all, answered(["C"]), (id) => (id === "C" ? 1 : 0)),
+    ).toBeNull();
+  });
+
+  it("is null when every shot has its photo and answer", () => {
+    expect(resumePoint(shots, all, answered(), none)).toBeNull();
   });
 
   it("skips a shot that is not required", () => {
     const list = [...shots.slice(0, 3), { ...shots[3], required: false }];
-    expect(firstMissingIndex(list, new Set(["A", "B", "C"]))).toBeNull();
+    const answers = new Map([
+      ["A", false],
+      ["B", false],
+      ["C", false],
+    ]);
+    expect(
+      resumePoint(list, new Set(["A", "B", "C"]), answers, none),
+    ).toBeNull();
   });
 });
 
-describe("readingOf()", () => {
-  it("links the mileage to the odometer shot and the fuel level to the fuel shot", () => {
-    expect(readingOf("INT_ODOMETER")).toBe("odometer");
-    expect(readingOf("INT_FUEL")).toBe("fuel");
-    expect(readingOf("EXT_FRONT")).toBeNull();
-  });
-});
-
-describe("parseMileage()", () => {
-  it("reads whole numbers typed with digits only", () => {
-    expect(parseMileage("84213")).toBe(84213);
-    expect(parseMileage(" 84213 ")).toBe(84213);
-    expect(parseMileage("0")).toBe(0);
-  });
-
-  it("refuses anything else", () => {
-    for (const bad of [
-      "",
-      "  ",
-      "84k",
-      "84,213",
-      "84.2",
-      "-5",
-      "1e3",
-      "12345678",
-    ]) {
-      expect(parseMileage(bad)).toBeNull();
-    }
+describe("close-up slots", () => {
+  it("names a close-up's slot after its shot, and tells the API DAMAGE with the parent", () => {
+    expect(closeUpSlot("EXT_FRONT")).toBe("DAMAGE@EXT_FRONT");
+    expect(apiShotOf("DAMAGE@EXT_FRONT")).toEqual({
+      shotId: "DAMAGE",
+      parentShotId: "EXT_FRONT",
+    });
+    expect(apiShotOf("EXT_FRONT")).toEqual({ shotId: "EXT_FRONT" });
   });
 });
 
@@ -82,10 +96,10 @@ describe("fitWithin()", () => {
 
 describe("percent()", () => {
   it("is whole numbers from 0 to 100", () => {
-    expect(percent(0, 19)).toBe(0);
-    expect(percent(5, 19)).toBe(26);
-    expect(percent(19, 19)).toBe(100);
+    expect(percent(0, 21)).toBe(0);
+    expect(percent(5, 21)).toBe(23);
+    expect(percent(21, 21)).toBe(100);
     expect(percent(0, 0)).toBe(0);
-    expect(percent(30, 19)).toBe(100);
+    expect(percent(30, 21)).toBe(100);
   });
 });
