@@ -23,6 +23,8 @@ import LedgerStatement from "./pages/Drivers/LedgerStatement";
 import PaymentsList from "./pages/Payments/PaymentsList";
 import EmailLogList from "./pages/EmailLog/EmailLogList";
 import CapturePage from "./pages/Inspection/CapturePage";
+import InspectionCompare from "./pages/Inspections/InspectionCompare";
+import InspectionView from "./pages/Inspections/InspectionView";
 import Settings from "./pages/Settings/Settings";
 
 /**
@@ -68,6 +70,11 @@ export default function App() {
             <Route path="drivers/new" element={<NewDriver />} />
             <Route path="drivers/:id" element={<DriverDetail />} />
             <Route path="drivers/:id/ledger" element={<DriverLedger />} />
+            <Route path="inspections/:id" element={<InspectionView />} />
+            <Route
+              path="inspections/:id/compare"
+              element={<InspectionCompare />}
+            />
             <Route path="drivers/:id/contract" element={<ContractDraft />} />
             <Route
               path="drivers/:id/ledger/statement"

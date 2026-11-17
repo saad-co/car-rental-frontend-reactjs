@@ -73,6 +73,8 @@ interface NewEntryDialogProps {
   initialMode: EntryMode;
   /** Set to credit against one charge: tabs hidden, the amount starts at what is left, the description says "Waived: ...". */
   appliesTo?: AppliesTo;
+  /** Set to make one charge for a known reason (damage found on a check-out): the charge tab only, the description filled in. */
+  prefill?: { description: string };
   busy: boolean;
   /** The last charge or credit save's error. */
   entryError: Error | null;
@@ -109,6 +111,7 @@ export default function NewEntryDialog({
   balanceCents,
   initialMode,
   appliesTo,
+  prefill,
   busy,
   entryError,
   paymentError,
@@ -117,7 +120,11 @@ export default function NewEntryDialog({
   onCancel,
 }: NewEntryDialogProps) {
   const today = chicagoToday();
-  const startMode: EntryMode = appliesTo ? "credit" : initialMode;
+  const startMode: EntryMode = appliesTo
+    ? "credit"
+    : prefill
+      ? "debit"
+      : initialMode;
   const startAmount = appliesTo
     ? centsToDollars(appliesTo.creditableCents)
     : startMode === "payment"
@@ -125,7 +132,9 @@ export default function NewEntryDialog({
       : "";
   const startDescription = appliesTo
     ? `Waived: ${appliesTo.description}`.slice(0, MAX_TEXT)
-    : "";
+    : prefill
+      ? prefill.description.slice(0, MAX_TEXT)
+      : "";
 
   const [mode, setMode] = useState<EntryMode>(startMode);
   const [amount, setAmount] = useState(startAmount);
@@ -212,7 +221,7 @@ export default function NewEntryDialog({
   };
 
   /** The preset cards for the tab: charges for a charge, credits for a credit. */
-  const cards = (presets.data ?? []).filter(
+  const cards = (prefill ? [] : (presets.data ?? [])).filter(
     (preset) => preset.kind === (mode === "debit" ? "charge" : "credit"),
   );
 
@@ -255,7 +264,11 @@ export default function NewEntryDialog({
       className="max-w-xl p-6 sm:p-8"
     >
       <h2 className="text-lg font-semibold text-gray-800">
-        {appliesTo ? "Credit against a charge" : "New ledger entry"}
+        {appliesTo
+          ? "Credit against a charge"
+          : prefill
+            ? "Charge for damage"
+            : "New ledger entry"}
         <span className="ml-2 text-sm font-normal text-gray-500">
           · {driverName}
         </span>
@@ -276,7 +289,7 @@ export default function NewEntryDialog({
             </span>{" "}
             left
           </p>
-        ) : (
+        ) : prefill ? null : (
           <div role="radiogroup" aria-label="Kind of entry">
             <div className="grid grid-cols-3 gap-3">
               {MODES.map((m) => (

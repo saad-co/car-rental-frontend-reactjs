@@ -13,9 +13,12 @@ import {
 import { formatDateTime, formatUsPhone } from "../../utils";
 import { FormField } from "../form/FormLayout";
 import Input from "../form/input/InputField";
-import Badge, { type BadgeColor } from "../ui/badge/Badge";
+import { Link } from "react-router";
+import Badge from "../ui/badge/Badge";
 import Button from "../ui/button/Button";
 import ConfirmDialog from "../ui/modal/ConfirmDialog";
+import AttentionBadge from "./AttentionBadge";
+import { TYPE_LABEL, isOpen, statusOf } from "./inspectionLabels";
 import Pagination from "../ui/pagination/Pagination";
 
 /** What the card needs to know about the driver. */
@@ -26,47 +29,6 @@ interface CardDriver {
   smsOptedOut: boolean;
   profile: { preferredLanguage: "en" | "es" };
 }
-
-const TYPE_LABEL: Record<InspectionType, string> = {
-  check_in: "Check-in",
-  check_out: "Check-out",
-};
-
-/** The status as words and a colour. `expired` is worked out by the API from the link time. */
-function statusOf(inspection: Inspection): {
-  label: string;
-  color: BadgeColor;
-} {
-  switch (inspection.status) {
-    case "created":
-      return { label: "No link yet", color: "light" };
-    case "link_sent":
-      return {
-        label: inspection.linkSentAt ? "Link sent" : "Link made (not texted)",
-        color: "info",
-      };
-    case "opened":
-      return { label: "Opened", color: "info" };
-    case "in_progress":
-      return { label: "In progress", color: "warning" };
-    case "submitted":
-      return { label: "Submitted", color: "success" };
-    case "reviewed":
-      return { label: "Reviewed", color: "success" };
-    case "flagged":
-      return { label: "Flagged", color: "error" };
-    case "revoked":
-      return { label: "Revoked", color: "light" };
-    case "expired":
-      return { label: "Link expired", color: "error" };
-  }
-}
-
-/** True while the driver can still use (or be given) a link: not submitted, reviewed, flagged or revoked. */
-const isOpen = (inspection: Inspection) =>
-  ["created", "link_sent", "opened", "in_progress", "expired"].includes(
-    inspection.status,
-  );
 
 /** The link, shown once, with a copy button (the clipboard can be blocked, so it is also selectable text). */
 function LinkBox({ link }: { link: string }) {
@@ -319,6 +281,7 @@ export default function VehiclePhotosCard({ driver }: { driver: CardDriver }) {
                     <Badge size="sm" color={status.color}>
                       {status.label}
                     </Badge>
+                    <AttentionBadge inspection={inspection} />
                     <span className="text-theme-xs text-gray-500">
                       {inspection.reference}
                     </span>
@@ -345,6 +308,16 @@ export default function VehiclePhotosCard({ driver }: { driver: CardDriver }) {
                       ? `, ${inspection.damagePhotoCount} damage`
                       : ""}
                   </p>
+                  {inspection.photoCount + inspection.damagePhotoCount > 0 && (
+                    <div className="mt-2">
+                      <Link
+                        to={`/admin/inspections/${inspection.id}`}
+                        className="inline-flex rounded-lg bg-surface px-4 py-3 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                      >
+                        View photos
+                      </Link>
+                    </div>
+                  )}
                   {open && (
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button

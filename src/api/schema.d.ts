@@ -1449,6 +1449,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{id}/inspections/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /drivers/:id/inspections/latest`: the driver's latest check-in and latest check-out (revoked ones left out), each
+         *     null when there is none. `404` unknown driver.
+         */
+        get: operations["InspectionsController_latest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inspections/{id}": {
         parameters: {
             query?: never;
@@ -1507,6 +1527,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inspections/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /inspections/:id/review`: marks a submitted or flagged inspection reviewed (who, when, an optional note up to 500
+         *     characters). `409` not submitted yet, revoked, or already reviewed.
+         */
+        post: operations["InspectionsController_review"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspections/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** `POST /inspections/:id/notes`: adds a staff note (1 to 500 characters) to the activity log. `404` unknown. */
+        post: operations["InspectionsController_addNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inspections/{id}/revoke": {
         parameters: {
             query?: never;
@@ -1518,6 +1575,121 @@ export interface paths {
         put?: never;
         /** `POST /inspections/:id/revoke`: cancels the inspection; its link stops working for good. `409` already submitted or revoked. */
         post: operations["InspectionsController_revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspections/{id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /inspections/:id/compare`: the check-out beside its check-in (19 pairs, miles, fuel, damage). `available: false` with
+         *     a `reason` when there is nothing to compare. `404` unknown.
+         */
+        get: operations["InspectionDamageController_compare"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspections/{id}/damage-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /inspections/:id/damage-items`: "New damage" on one check-out photo; flags the inspection. `404` unknown inspection or
+         *     photo; `409` not a submitted, paired check-out, or the photo is already marked.
+         */
+        post: operations["InspectionDamageController_mark"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/damage-items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** `DELETE /damage-items/:id`: back to "No change". `404` unknown; `409` already charged. */
+        delete: operations["InspectionDamageController_unmark"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/damage-items/{id}/charge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /damage-items/:id/charge`: charges the driver for the damage (one ledger debit; the body is the same as a manual
+         *     ledger entry and `direction` must be `debit`). Sending the same `requestKey` again returns the same entry. `400` not a
+         *     debit or the ledger refused it; `404` unknown; `409` already charged.
+         */
+        post: operations["InspectionDamageController_charge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspections/{id}/export.zip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * `GET /inspections/:id/export.zip`: every original photo, `<reference>/NN_<SHOT_ID>.jpg` and `damage_N.jpg`. A photo the
+         *     bucket cannot give is named in `MISSING.txt` inside. `404` unknown; `409` no photos; `503` no file storage.
+         */
+        get: operations["InspectionExportController_zip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspections/{id}/report.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** `GET /inspections/:id/report.pdf`: the one-file report. `404` unknown; `503` no file storage. */
+        get: operations["InspectionExportController_report"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3489,6 +3661,16 @@ export interface components {
             photoCount: number;
             /** @description Damage close-ups received so far. */
             damagePhotoCount: number;
+            /**
+             * Format: date-time
+             * @description When staff marked it reviewed; null until then.
+             */
+            reviewedAt: string | null;
+            /**
+             * @description True when staff should look at it: flagged for new damage, or submitted more than 24 hours ago and still not reviewed
+             *     (spec p. 11). Worked out on read.
+             */
+            needsAttention: boolean;
             /** Format: date-time */
             createdAt: string;
         };
@@ -3502,6 +3684,10 @@ export interface components {
              *     when it creates an inspection).
              */
             contractVehicle: components["schemas"]["InspectionVehicleDto"] | null;
+        };
+        LatestInspectionsDto: {
+            checkIn: components["schemas"]["InspectionDto"] | null;
+            checkOut: components["schemas"]["InspectionDto"] | null;
         };
         InspectionVehicleInputDto: {
             /** @description Make and model as you would say it (the contract keeps one typed text too), e.g. `2021 Toyota Camry`. */
@@ -3525,6 +3711,35 @@ export interface components {
             } | null;
             /** Format: date-time */
             createdAt: string;
+        };
+        InspectionPhotoDto: {
+            id: string;
+            /** @description A shot id from the 19-shot list, or `DAMAGE` for a close-up added by the driver. */
+            shotId: string;
+            /** @description 1 for a shot; 1 to 15 for damage. */
+            position: number;
+            /** @description The driver's note under the photo. */
+            driverNote: string | null;
+            /**
+             * Format: date-time
+             * @description The time on the phone when it was taken (a device value: informative only).
+             */
+            capturedAt: string | null;
+            /**
+             * Format: date-time
+             * @description The server's time when the file arrived: the one to trust.
+             */
+            uploadedAt: string;
+            /** @description How many times the driver replaced this photo. */
+            retakeCount: number;
+            /** @description The server's SHA-256 fingerprint of the file, for disputes. */
+            sha256: string;
+            /** @description The 400 px thumbnail; null when the bucket is not set up. */
+            thumbUrl: string | null;
+            /** @description The full photo, to show full screen. */
+            fullUrl: string | null;
+            /** @description The full photo as a download (the browser saves it as `<reference>_<NN>_<SHOT>.jpg`). */
+            downloadUrl: string | null;
         };
         InspectionDetailDto: {
             /**
@@ -3563,9 +3778,35 @@ export interface components {
             photoCount: number;
             /** @description Damage close-ups received so far. */
             damagePhotoCount: number;
+            /**
+             * Format: date-time
+             * @description When staff marked it reviewed; null until then.
+             */
+            reviewedAt: string | null;
+            /**
+             * @description True when staff should look at it: flagged for new damage, or submitted more than 24 hours ago and still not reviewed
+             *     (spec p. 11). Worked out on read.
+             */
+            needsAttention: boolean;
             /** Format: date-time */
             createdAt: string;
+            /** @description The admin who reviewed it; null until reviewed. */
+            reviewedByEmail: string | null;
+            /** @description The note kept with the review, if any. */
+            reviewNote: string | null;
             events: components["schemas"]["InspectionEventDto"][];
+            /** @description Where the phone was when the driver submitted, if it had already allowed location. */
+            gpsLat: number | null;
+            gpsLng: number | null;
+            /** @description The browser and phone, as the browser reported them. */
+            deviceInfo: string | null;
+            /**
+             * Format: date-time
+             * @description When the driver ticked the box that the photos show the car's condition right now.
+             */
+            attestedAt: string | null;
+            /** @description The 19 shots in order, then the damage close-ups in the order taken. */
+            photos: components["schemas"]["InspectionPhotoDto"][];
         };
         SendInspectionLinkDto: {
             /**
@@ -3583,6 +3824,77 @@ export interface components {
             inspection: components["schemas"]["InspectionDto"];
             /** @description The full link, `<site>/i/<token>`. It cannot be shown again: only its hash is stored (D102). */
             link: string;
+        };
+        ReviewInspectionDto: {
+            /** @description An optional note kept with the review, up to 500 characters. */
+            note?: string | null;
+        };
+        AddInspectionNoteDto: {
+            /** @description A staff note, 1 to 500 characters after trimming. It joins the activity log. */
+            text: string;
+        };
+        DamageItemDto: {
+            id: string;
+            /** @description The check-out it was found on. */
+            inspectionId: string;
+            /** @description The check-out photo that shows it. */
+            photoId: string;
+            /** @description Where on the car: a shot id, or `DAMAGE` for a close-up the driver added. */
+            shotId: string;
+            /**
+             * @description `driver_reported` = the driver added the close-up; `staff_flagged` = staff found it on one of the 19 shots.
+             * @enum {string}
+             */
+            source: "driver_reported" | "staff_flagged";
+            description: string;
+            /** @enum {string} */
+            status: "new_during_rental" | "charged";
+            /** @description The ledger charge made for it (set when `status` is `charged`). */
+            ledgerEntryId: string | null;
+            ledgerRef: string | null;
+            amountCents: number | null;
+            createdByEmail: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ComparePairDto: {
+            shotId: string;
+            checkIn: components["schemas"]["InspectionPhotoDto"] | null;
+            checkOut: components["schemas"]["InspectionPhotoDto"] | null;
+            /** @description Null = "No change". */
+            damageItem: components["schemas"]["DamageItemDto"] | null;
+        };
+        CompareDamagePhotoDto: {
+            photo: components["schemas"]["InspectionPhotoDto"];
+            damageItem: components["schemas"]["DamageItemDto"] | null;
+        };
+        InspectionCompareDto: {
+            available: boolean;
+            reason: string | null;
+            checkOut: components["schemas"]["InspectionDto"];
+            checkIn: components["schemas"]["InspectionDto"] | null;
+            /** @description Check-out odometer minus check-in odometer. */
+            milesDriven: number | null;
+            /** @description Check-out fuel minus check-in fuel, in eighths of a tank. */
+            fuelChangeEighths: number | null;
+            pairs: components["schemas"]["ComparePairDto"][];
+            /** @description Damage the driver photographed at pickup: already there, read-only and never chargeable. */
+            checkInDamage: components["schemas"]["InspectionPhotoDto"][];
+            /** @description Damage close-ups the driver added at return, each markable as new damage. */
+            checkOutDamage: components["schemas"]["CompareDamagePhotoDto"][];
+        };
+        CreateDamageItemDto: {
+            /**
+             * Format: uuid
+             * @description The check-out photo that shows the damage (one of its 19 shots or one of its damage close-ups).
+             */
+            photoId: string;
+            /** @description What the damage is, 1 to 500 characters after trimming. */
+            description: string;
+        };
+        ChargeDamageItemResultDto: {
+            item: components["schemas"]["DamageItemDto"];
+            entry: components["schemas"]["LedgerEntryDto"];
         };
         CaptureVehicleDto: {
             model: string;
@@ -5931,6 +6243,27 @@ export interface operations {
             };
         };
     };
+    InspectionsController_latest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatestInspectionsDto"];
+                };
+            };
+        };
+    };
     InspectionsController_findOne: {
         parameters: {
             query?: never;
@@ -5994,6 +6327,56 @@ export interface operations {
             };
         };
     };
+    InspectionsController_review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewInspectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectionDto"];
+                };
+            };
+        };
+    };
+    InspectionsController_addNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddInspectionNoteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectionEventDto"];
+                };
+            };
+        };
+    };
     InspectionsController_revoke: {
         parameters: {
             query?: never;
@@ -6012,6 +6395,134 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["InspectionDto"];
                 };
+            };
+        };
+    };
+    InspectionDamageController_compare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectionCompareDto"];
+                };
+            };
+        };
+    };
+    InspectionDamageController_mark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDamageItemDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DamageItemDto"];
+                };
+            };
+        };
+    };
+    InspectionDamageController_unmark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectionDamageController_charge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLedgerEntryDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeDamageItemResultDto"];
+                };
+            };
+        };
+    };
+    InspectionExportController_zip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectionExportController_report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
