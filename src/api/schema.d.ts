@@ -848,6 +848,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/drivers/{driverId}/licence/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * `POST /drivers/:driverId/licence/read`: reads everything printed on the front of the driver's licence with the AI,
+         *     for the driver page's "Driver data" card (D116). Nothing is saved; POST because every call asks the AI again. Same
+         *     answers as the contract read: `404` unknown driver, `409` no licence on file or none found in it, `502` the AI or
+         *     the bucket failed, `503` the AI is not set up.
+         */
+        post: operations["ContractsController_readFullLicence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/drivers/{driverId}/contract": {
         parameters: {
             query?: never;
@@ -2912,6 +2934,29 @@ export interface components {
             licenseState: string | null;
             /** @description `YYYY-MM-DD`. */
             dateOfBirth: string | null;
+        };
+        LicenceFullDetailsDto: {
+            /** @description The holder's name as printed. */
+            fullName: string | null;
+            /** @description One line: street, city, state and ZIP. */
+            address: string | null;
+            licenseNumber: string | null;
+            /** @description Two-letter code of the issuing state. */
+            licenseState: string | null;
+            licenseClass: string | null;
+            /** @description `YYYY-MM-DD`. */
+            dateOfBirth: string | null;
+            /** @description `YYYY-MM-DD`. */
+            issueDate: string | null;
+            /** @description `YYYY-MM-DD`; may be in the past (an expired licence). */
+            expiryDate: string | null;
+            sex: string | null;
+            height: string | null;
+            eyeColor: string | null;
+            restrictions: string | null;
+            endorsements: string | null;
+            /** @description The document discriminator (DD). */
+            documentNumber: string | null;
         };
         /** @enum {string} */
         ContractStatus: "draft" | "sent" | "viewed" | "signed" | "declined" | "expired" | "cancelled";
@@ -5379,6 +5424,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LicenceDetailsDto"];
+                };
+            };
+        };
+    };
+    ContractsController_readFullLicence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                driverId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenceFullDetailsDto"];
                 };
             };
         };

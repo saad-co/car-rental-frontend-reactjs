@@ -114,9 +114,9 @@ const applicationDetailOptions = (id: string) =>
     },
   });
 
-/** One application with all its details. */
-export function useApplication(id: string) {
-  return useQuery(applicationDetailOptions(id));
+/** One application with all its details. `enabled: false` skips the request (e.g. a driver with no application). */
+export function useApplication(id: string, enabled = true) {
+  return useQuery({ ...applicationDetailOptions(id), enabled });
 }
 
 /**
