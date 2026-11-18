@@ -33,6 +33,9 @@ export type ContractCompany = components["schemas"]["ContractCompanyDto"];
 /** The driver details the AI read from the licence (B121); null for what it could not read. */
 export type LicenceDetails = components["schemas"]["LicenceDetailsDto"];
 
+/** Everything the AI read from the front of the licence, for the driver page's "Driver data" card (D116). */
+export type LicenceFullDetails = components["schemas"]["LicenceFullDetailsDto"];
+
 /** One of the business's vehicles (B120). */
 export type FleetVehicle = components["schemas"]["FleetVehicleDto"];
 
@@ -239,6 +242,30 @@ export function useReadLicence(driverId: string) {
     mutationFn: async () => {
       const { data, error, response } = await api.POST(
         "/drivers/{driverId}/contract/licence-details",
+        { params: { path: { driverId } } },
+      );
+      if (!data) {
+        throw new Error(
+          apiErrorMessage(
+            error,
+            `Reading the licence failed (${response.status}).`,
+          ),
+        );
+      }
+      return data;
+    },
+  });
+}
+
+/**
+ * Reads everything on the front of the driver's licence with the AI (D116). Nothing is saved: the card keeps the answer
+ * until the page is left, and every call sends the licence to the AI again.
+ */
+export function useReadFullLicence(driverId: string) {
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.POST(
+        "/drivers/{driverId}/licence/read",
         { params: { path: { driverId } } },
       );
       if (!data) {

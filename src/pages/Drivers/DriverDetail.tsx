@@ -25,6 +25,7 @@ import BalanceText from "../../components/drivers/BalanceText";
 import DepositDialog from "../../components/drivers/DepositDialog";
 import { DriverDocuments } from "../../components/applications/ApplicationDocuments";
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
+import DriverDataCard from "../../components/drivers/DriverDataCard";
 import DriverProfileCard from "../../components/drivers/DriverProfileCard";
 import DriverRemindersCard from "../../components/drivers/DriverRemindersCard";
 import RecurringChargeDialog from "../../components/drivers/RecurringChargeDialog";
@@ -668,6 +669,7 @@ export default function DriverDetail() {
             />
           </Card>
           <DriverProfileCard driverId={driver.id} profile={driver.profile} />
+          <DriverDataCard driver={driver} />
           <Card title="Documents">
             <DriverDocuments driverId={driver.id} />
           </Card>
