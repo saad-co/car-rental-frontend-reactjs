@@ -1042,6 +1042,27 @@ export interface paths {
         patch: operations["DriversController_updateProfile"];
         trace?: never;
     };
+    "/drivers/{id}/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * `PATCH /drivers/:id/contact`: changes the driver's email and phone (B148, D117). A field left out stays. Returns the
+         *     updated driver. `400` for a bad email or a phone that is not a US number, `404` if unknown, `409` when another driver
+         *     already has the email or the driver has a login (its email would no longer match).
+         */
+        patch: operations["DriversController_updateContact"];
+        trace?: never;
+    };
     "/drivers/{id}/rent-settings": {
         parameters: {
             query?: never;
@@ -3316,6 +3337,15 @@ export interface components {
              * @enum {string}
              */
             preferredLanguage?: "en" | "es";
+        };
+        UpdateDriverContactDto: {
+            /**
+             * Format: email
+             * @description Stored lower-case.
+             */
+            email?: string;
+            /** @description A US number in any common writing; stored as `+1` and 10 digits. */
+            phone?: string;
         };
         UpdateDriverRentSettingsDto: {
             /** @description The time of day rent is due, Chicago time, `HH:MM`; `null` = not set. */
@@ -5743,6 +5773,31 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateDriverProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverDetailDto"];
+                };
+            };
+        };
+    };
+    DriversController_updateContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDriverContactDto"];
             };
         };
         responses: {
