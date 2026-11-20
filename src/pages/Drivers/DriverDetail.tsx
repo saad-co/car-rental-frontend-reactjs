@@ -25,6 +25,7 @@ import BalanceText from "../../components/drivers/BalanceText";
 import DepositDialog from "../../components/drivers/DepositDialog";
 import { DriverDocuments } from "../../components/applications/ApplicationDocuments";
 import DriverAliasesCard from "../../components/drivers/DriverAliasesCard";
+import DriverContactCard from "../../components/drivers/DriverContactCard";
 import DriverDataCard from "../../components/drivers/DriverDataCard";
 import DriverProfileCard from "../../components/drivers/DriverProfileCard";
 import DriverRemindersCard from "../../components/drivers/DriverRemindersCard";
@@ -660,14 +661,11 @@ export default function DriverDetail() {
           <RentSettingsCard driver={driver} />
           <DriverRemindersCard driverId={driver.id} />
           <VehiclePhotosCard driver={driver} />
-          <Card title="Contact">
-            <Rows
-              rows={[
-                ["Email", driver.email],
-                ["Phone", formatUsPhone(driver.phone)],
-              ]}
-            />
-          </Card>
+          <DriverContactCard
+            driverId={driver.id}
+            email={driver.email}
+            phone={driver.phone}
+          />
           <DriverProfileCard driverId={driver.id} profile={driver.profile} />
           <DriverDataCard driver={driver} />
           <Card title="Documents">

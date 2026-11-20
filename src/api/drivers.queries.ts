@@ -287,6 +287,20 @@ export function useUpdateDriverProfile(id: string) {
   );
 }
 
+/** What an admin can change in a driver's contact details (B148, D117); a field left out stays. */
+export type ContactChangesBody =
+  components["schemas"]["UpdateDriverContactDto"];
+
+/** Changes the driver's email and phone. */
+export function useUpdateDriverContact(id: string) {
+  return useDriverMutation((vars: ContactChangesBody) =>
+    api.PATCH("/drivers/{id}/contact", {
+      params: { path: { id } },
+      body: vars,
+    }),
+  );
+}
+
 /** What an admin can change in the rent settings (D92); a field left out stays, a due time of `null` is cleared. */
 export type RentSettingsChanges =
   components["schemas"]["UpdateDriverRentSettingsDto"];
